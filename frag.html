@@ -285,7 +285,20 @@ const C = {
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
-const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle"];
+/* A general check-up panel: the things worth looking for on your own reports.
+   It is a checklist, not a recommendation about which tests you need -- that is
+   a conversation with a doctor. Edit it freely in Settings. */
+const DEFAULT_PANEL = [
+  "weight_kg","height_cm","bmi","waist_cm",
+  "bp_systolic","bp_diastolic","heart_rate_resting",
+  "glucose_fasting","hba1c_dcct",
+  "cholesterol_total","ldl_c","hdl_c","triglycerides",
+  "alt","ast","ggt","bilirubin_total","albumin",
+  "creatinine","egfr","uric_acid","bun",
+  "haemoglobin","wbc","platelets","hematocrit",
+  "tsh","vit_d_25oh","vit_b12","ferritin","hscrp"
+];
+const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
@@ -293,9 +306,25 @@ const BMI_STD = {
 const ST = {in_range:"In range", watch:"Near the limit", discuss:"Outside the range", act:"Flagged by hand", unknown:"No range on file"};
 const RANK = {act:0, discuss:1, watch:2, unknown:3, in_range:4};
 const BUCKET = {do_first:"Do first", lever:"Lever", quick_win:"Quick win", monitor:"Monitor"};
-function meta(c){ return C[c] || {n:c,u:"",g:"Other"}; }
+/* A lab reports something this catalogue has never heard of. It is still a
+   number on your sheet, so it becomes a metric of its own rather than being
+   dropped. The id is derived from the name, so two devices reading the same
+   report invent the SAME code and converge instead of duplicating. */
+function slug(name){
+  return "c-" + deaccent(String(name||"")).toLowerCase()
+    .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
+}
+function meta(c){
+  if(C[c]) return C[c];
+  const cu = (typeof S!=="undefined" && S && S.customCodes) ? S.customCodes[c] : null;
+  if(cu) return {n:cu.n, u:cu.u||"", g:cu.g||"Also on your reports", custom:true};
+  return {n:c, u:"", g:"Also on your reports", custom:true};
+}
+function isCustom(c){ return !C[c]; }
 function unitsFor(code){
-  const m = meta(code); return [[m.u,1]].concat(m.alt||[]);
+  const m = meta(code);
+  const list = [[m.u,1]].concat(m.alt||[]);
+  return list.filter((x,i)=>x[0]!=="" || i===0);
 }
 /* value as stored (canonical) -> display in a chosen unit */
 function toUnit(v, code, unit){
@@ -367,14 +396,24 @@ function parseReport(text){
     const line=rawLine.replace(/\t/g,"  ").trim();
     if(!line || line.length<3) continue;
     let D=deaccent(line);
-    if(/^(ten xet nghiem|chi so|ket qua|don vi|tri so|gia tri|test|result|unit|reference|normal|binh thuong|stt|no\.)/i.test(D)) continue;
+    if(/^(ten xet nghiem|ten xn|chi tieu xet nghiem|tri so binh thuong|tri so tham chieu|gia tri tham chieu|khoang tham chieu|test name|reference range|result\s+unit|stt\s)/i.test(D)) continue;
     D=D.replace(/^\s*\d{1,3}\s*[.)]\s+/,"");          /* leading row number */
     D=D.replace(/(\d),(\d{1,2})(?!\d)/g,"$1.$2");      /* Vietnamese decimal comma */
     const norm=D.toLowerCase();
     const hit=matchAtStart(norm);
-    if(!hit){ if(/\d/.test(D)) skipped.push(D.slice(0,34).trim()); continue; }
-    const code=hit.code;
-    let rest=D.slice(hit.len);
+    let code, newName="";
+    if(hit){ code=hit.code; }
+    else {
+      /* no catalogue match: treat "Some Name   12.3  unit  1 - 5" as a metric
+         of its own, provided the name reads like a name */
+      const fd = D.search(/\d/);
+      const nm = fd>0 ? D.slice(0,fd).replace(/[.:|\-\u2013\u2014\s]+$/,"").trim() : "";
+      const letters = (nm.match(/[A-Za-z]/g)||[]).length;
+      if(!nm || letters<2 || nm.length>48){ if(/\d/.test(D)) skipped.push(D.slice(0,34).trim()); continue; }
+      code = slug(nm); newName = nm;
+      if(!code || code==="c-"){ skipped.push(D.slice(0,34).trim()); continue; }
+    }
+    let rest = hit ? D.slice(hit.len) : D.slice(D.search(/\d/));
     rest=rest.replace(/^\s*\([^)]*\)/,"");              /* "(GOT)", "(25-OH)" */
     rest=rest.replace(/^[\s:.|\-\u2013\u2014]+/,"");
     const vm=rest.match(/^-?\d+(?:\.\d+)?/);
@@ -382,19 +421,32 @@ function parseReport(text){
     const value=vm[0];
     let after=rest.slice(value.length);
     /* a unit token, accepted only if it is a real unit for THIS test */
+    if(newName && /^\s*[\/\-]\s*\d/.test(after)){ skipped.push(D.slice(0,34).trim()); continue; }
     let unit="";
     const um=after.match(/^\s*([A-Za-z\u00b5%^/0-9.\-]{1,14})/);
     if(um && !/^[<>\u2264\u2265]/.test(um[1]) && !/^-?\d+(\.\d+)?$/.test(um[1])){
       const cand=normUnit(um[1]);
-      if(unitsFor(code).some(x=>x[0]===cand)){ unit=cand; after=after.slice(um[0].length); }
+      /* a known test only accepts its own units; a brand new one takes whatever
+         its report printed, because there is nothing to check it against */
+      if(newName || unitsFor(code).some(x=>x[0]===cand)){ unit=cand; after=after.slice(um[0].length); }
     }
     if(!unit) unit=meta(code).u;
     let lo="",hi="",lab="",m;
     if((m=after.match(/(-?\d+(?:\.\d+)?)\s*[\-\u2013\u2014]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; hi=m[2]; lab=m[1]+"\u2013"+m[2]; }
     else if((m=after.match(/[<\u2264]\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
     else if((m=after.match(/[>\u2265]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    if(newName){
+      const META=/(^|\s)(ngay|date|thoi gian|time|so dien thoai|dien thoai|phone|tel|dia chi|address|ma so|ma benh nhan|patient|benh nhan|bac si|doctor|ho ten|ho va ten|full name|gioi tinh|sex|tuoi|age|stt|barcode|so phieu)(\s|$)/;
+      const looksMeta = META.test(deaccent(newName).toLowerCase());
+      const looksLikeId = /^\d{7,}$/.test(value);
+      const unitHasDigits = /\d/.test(unit);
+      if(looksMeta || looksLikeId || unitHasDigits || (!unit && lo==="" && hi==="")){
+        skipped.push(D.slice(0,34).trim());
+        continue;
+      }
+    }
     rows.push({code,value,unit,refLow:lo,refHigh:hi,refLabel:lab?lab+" "+unit:"",
-      confirmed:false,src:line.slice(0,90)});
+      confirmed:false,src:line.slice(0,90),newName:newName});
   }
   return {rows,skipped};
 }
@@ -686,9 +738,36 @@ function vRecord(){
     const items=G[g].sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]||meta(a.code).n.localeCompare(meta(b.code).n));
     h+='<div class="sec"><h2>'+esc(g)+'</h2><div class="grid g240">'+items.map(obsCard).join("")+'</div></div>';
   }
+  h += panelGaps(L);
   return h;
 }
 
+/* The panel is a checklist of what to look for on a report. Showing the gaps
+   is the whole point of having one -- a test you have never had done is
+   invisible otherwise. */
+function panelGaps(L){
+  const have = new Set((L||[]).map(o=>o.code));
+  const gaps = (S.panel||[]).filter(c=>!have.has(c));
+  const on = (S.panel||[]).length - gaps.length;
+  let h = '<div class="sec"><div class="row" style="justify-content:space-between;align-items:baseline">'+
+    '<h2>Your standard panel</h2>'+
+    '<span class="cap"><span class="num">'+on+'</span> of <span class="num">'+(S.panel||[]).length+'</span> on file</span></div>';
+  if(!gaps.length){
+    h += '<div class="callout c-green"><div class="kick">Complete</div><p>Every test on your panel has at least one reading on file.</p></div>';
+  } else {
+    const G={};
+    gaps.forEach(c=>{ const g=meta(c).g; (G[g]=G[g]||[]).push(c); });
+    const order=GROUPS.filter(g=>G[g]).concat(Object.keys(G).filter(g=>GROUPS.indexOf(g)<0));
+    h += '<div class="card"><div class="hint" style="margin-bottom:var(--s3)">'+
+      'Nothing on file for these yet. It is a checklist for reading your own reports, not advice about which tests you need &mdash; that is a conversation with a doctor. Edit the list in Settings.</div>';
+    for(const g of order){
+      h += '<div class="kick" style="color:var(--ink-muted);margin-top:var(--s3)">'+esc(g)+'</div><div class="row" style="margin-top:var(--s2)">'+
+        G[g].map(c=>'<span class="badge st-unknown"><span class="dot"></span>'+esc(meta(c).n)+'</span>').join("")+'</div>';
+    }
+    h += '</div>';
+  }
+  return h+'</div>';
+}
 function vTrends(){
   const m=person(who);
   const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>series(m.id,c).length>1)
@@ -757,10 +836,12 @@ function line(pts,M){
 function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
   rows:[],fileId:null,fileName:"",fileURL:null,skipped:[]}; }
 function codeOpts(sel){
-  const G={}; for(const c in C){ (G[C[c].g]=G[C[c].g]||[]).push(c); }
+  const G={};
+  for(const c in C){ (G[C[c].g]=G[C[c].g]||[]).push(c); }
+  for(const c in (S.customCodes||{})){ (G["Also on your reports"]=G["Also on your reports"]||[]).push(c); }
   return GROUPS.filter(g=>G[g]).map(g=>'<optgroup label="'+esc(g)+'">'+
-    G[g].sort((a,b)=>C[a].n.localeCompare(C[b].n))
-      .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(C[c].n)+'</option>').join("")+'</optgroup>').join("");
+    G[g].sort((a,b)=>meta(a).n.localeCompare(meta(b).n))
+      .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(meta(c).n)+'</option>').join("")+'</optgroup>').join("");
 }
 function vAdd(){
   if(!draft) draft=newDraft();
@@ -786,8 +867,8 @@ function vAdd(){
     '<button class="btn" id="clearPaste">Clear</button></div>'+
     '<div class="hint">It understands Vietnamese and English test names, commas as decimals, and ranges written <span class="mono">3.9 - 6.4</span>, <span class="mono">&lt; 5.2</span> or <span class="mono">&gt; 1.03</span>. '+
     'On a phone: photograph the sheet, then use the camera&rsquo;s own text selection to copy the table and paste it here — that reads a Vietnamese lab sheet far better than anything this page could run itself.</div>'+
-    (draft.skipped.length?'<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">'+draft.skipped.length+' line(s) not recognised</div>'+
-      '<p>'+esc(draft.skipped.slice(0,8).join(" · "))+'. Add those with the picker below if you want them.</p></div>':'')+
+    (draft.skipped.length?'<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">'+draft.skipped.length+' line(s) had no usable name and number</div>'+
+      '<p>'+esc(draft.skipped.slice(0,8).join(" · "))+'. Anything that looked like a test was added, including metrics the catalogue has never seen. Add the rest with the picker below.</p></div>':'')+
     '<details><summary>Or add one test at a time</summary><div>'+
       '<div class="row"><select class="inp" id="addCode" style="width:auto;min-width:220px">'+codeOpts(null)+'</select>'+
       '<button class="btn" id="addRow">Add row</button></div></div></details>'+
@@ -803,16 +884,23 @@ function vAdd(){
       '<div class="hint" style="margin-bottom:var(--s3)">There is no check-all. Reading each number back against the paper is the one step that keeps a typo out of your record — and editing a value un-checks it.</div>';
     h+='<div style="display:grid;grid-template-columns:'+(draft.fileURL?"minmax(0,1fr) 240px":"1fr")+';gap:var(--s4)"><div>';
     h+=draft.rows.map((r,i)=>{
-      const M=meta(r.code), units=unitsFor(r.code);
+      const M=meta(r.code), units=unitsFor(r.code), fresh=!!r.newName;
+      const label = fresh ? r.newName : M.n;
       return '<div class="crow'+(r.confirmed?" ok":"")+'">'+
-        '<input class="ck" type="checkbox" id="ck'+i+'" data-ck="'+i+'"'+(r.confirmed?" checked":"")+' aria-label="Confirm '+esc(M.n)+'">'+
-        '<div><div class="row" style="justify-content:space-between"><label for="ck'+i+'" style="font-weight:600;cursor:pointer">'+esc(M.n)+'</label>'+
+        '<input class="ck" type="checkbox" id="ck'+i+'" data-ck="'+i+'"'+(r.confirmed?" checked":"")+' aria-label="Confirm '+esc(label)+'">'+
+        '<div><div class="row" style="justify-content:space-between"><label for="ck'+i+'" style="font-weight:600;cursor:pointer">'+esc(label)+
+        (fresh?' <span class="badge st-watch"><span class="dot"></span>New metric</span>':'')+'</label>'+
         '<button class="btn sm warn" data-rm="'+i+'">Remove</button></div>'+
+        (fresh?'<div class="hint">Not in the catalogue, so it will be added to your record and tracked from now on. Check the name and unit read correctly.</div>'+
+          '<div class="cg" style="margin-top:var(--s2)">'+
+          '<div><label class="fl" for="nn'+i+'">Name it</label><input class="inp" id="nn'+i+'" data-f="newName" data-i="'+i+'" value="'+esc(r.newName)+'"></div>'+
+          '<div><label class="fl" for="nu'+i+'">Unit</label><input class="inp" id="nu'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'" placeholder="as printed"></div>'+
+          '</div>':'')+
         (r.src?'<div class="cap mono" style="margin-top:2px">'+esc(r.src.slice(0,80))+'</div>':'')+
         '<div class="cg">'+
           '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
-          '<div><label class="fl" for="u'+i+'">Unit</label><select class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'">'+
-            units.map(u=>'<option value="'+esc(u[0])+'"'+(u[0]===r.unit?" selected":"")+'>'+esc(u[0])+'</option>').join("")+'</select></div>'+
+          (fresh?'':'<div><label class="fl" for="u'+i+'">Unit</label><select class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'">'+
+            units.map(u=>'<option value="'+esc(u[0])+'"'+(u[0]===r.unit?" selected":"")+'>'+esc(u[0])+'</option>').join("")+'</select></div>')+
           '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
           '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
         '</div></div></div>';
@@ -980,7 +1068,19 @@ function vSettings(){
     '</div>').join("");
   h+='<button class="btn" id="addP">Add a person</button>';
 
-  h+='<div class="sec" style="margin-top:var(--s6)"><h2>How this book behaves</h2><div class="card">'+
+  h+='<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
+    '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
+    '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
+    'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
+    '<div class="row" style="margin-top:var(--s3)">'+
+      (S.panel||[]).map(c=>'<span class="badge '+(isCustom(c)?"st-watch":"st-unknown")+'"><span class="dot"></span>'+esc(meta(c).n)+
+        ' <button class="btn sm" data-unpanel="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove from panel">&times;</button></span>').join("")+
+      ((S.panel||[]).length?'':'<span class="cap">Empty &mdash; nothing is being looked for.</span>')+
+    '</div>'+
+    '<div class="row" style="margin-top:var(--s4)"><select class="inp" id="panelAdd" style="width:auto;min-width:230px">'+codeOpts(null)+'</select>'+
+    '<button class="btn" id="panelAddBtn">Add to panel</button>'+
+    '<button class="btn" id="panelReset">Restore the default panel</button></div></div></div>'+
+    '<div class="sec"><h2>How this book behaves</h2><div class="card">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
@@ -1121,12 +1221,15 @@ function syncMerge(a, b){
   const ta=a.tomb||{}, tb=b.tomb||{};
   const tomb = {o:uniq((ta.o||[]).concat(tb.o||[])),
                 a:uniq((ta.a||[]).concat(tb.a||[])),
-                m:uniq((ta.m||[]).concat(tb.m||[]))};
+                m:uniq((ta.m||[]).concat(tb.m||[])),
+                p:uniq((ta.p||[]).concat(tb.p||[]))};
   return {v:2,
     members:      pickById(a.members,      b.members,      tomb.m),
     observations: pickById(a.observations, b.observations, tomb.o),
     actions:      pickById(a.actions,      b.actions,      tomb.a),
     reports:      pickById(a.reports,      b.reports,      []),
+    customCodes:  Object.assign({}, b.customCodes||{}, a.customCodes||{}),
+    panel:        uniq((a.panel||[]).concat(b.panel||[])).filter(c=>tomb.p.indexOf(c)<0),
     tomb:tomb};
 }
 function tombstone(kind, id){
@@ -1258,6 +1361,8 @@ async function syncNow(quiet){
     S.observations = merged.observations;
     S.actions = merged.actions;
     S.reports = merged.reports;
+    S.customCodes = merged.customCodes;
+    if(merged.panel && merged.panel.length) S.panel = merged.panel;
     S.tomb = merged.tomb;
     if(S.members.length && !S.members.some(m=>m.id===who)) who = S.members[0].id;
     if(dedupePeople()) changed = true;
@@ -1270,7 +1375,8 @@ async function syncNow(quiet){
              doc:{v:2, members:keptMembers,
                   observations:S.observations.filter(o=>!isSample(o)),
                   actions:S.actions.filter(a=>!isSample(a)),
-                  reports:S.reports||[], tomb:S.tomb}}]});
+                  reports:S.reports||[], customCodes:S.customCodes||{},
+                  panel:S.panel||[], tomb:S.tomb}}]});
     if(!up.ok) throw new Error((up.body&&(up.body.message||up.body.hint))
       ||("The database refused the write (HTTP "+up.status+")."));
     const after = real(S.observations);
@@ -1340,7 +1446,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1369,6 +1475,10 @@ document.addEventListener("click", async e=>{
     const rid=uid();
     if(draft.fileId) S.reports.push({id:rid,memberId:draft.memberId,date:draft.date,source:draft.source,fileId:draft.fileId,fileName:draft.fileName});
     draft.rows.forEach(r=>{
+      if(isCustom(r.code)){
+        S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
+      }
+      if(S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0) S.panel.push(r.code);
       const v=parseFloat(r.value);
       S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:r.unit,
         value:toCanonical(v,r.code,r.unit),
@@ -1404,6 +1514,19 @@ document.addEventListener("click", async e=>{
     else { o.manualStatus="act"; o.note=prompt("Why are you flagging this? (kept with the reading)",o.note||"")||o.note; }
     save(); render(); return; }
 
+  if(t.dataset.unpanel){
+    const c=t.dataset.unpanel;
+    S.panel=(S.panel||[]).filter(x=>x!==c);
+    S.tomb.p=S.tomb.p||[]; if(S.tomb.p.indexOf(c)<0) S.tomb.p.push(c);
+    save(); render(); return; }
+  if(t.id==="panelAddBtn"){
+    const c=document.getElementById("panelAdd").value;
+    if(c && (S.panel||[]).indexOf(c)<0){ S.panel.push(c); S.tomb.p=(S.tomb.p||[]).filter(x=>x!==c); save(); }
+    render(); return; }
+  if(t.id==="panelReset"){
+    if(!confirm("Restore the default panel? Anything you added stays; removals are undone.")) return;
+    const extra=(S.panel||[]).filter(c=>DEFAULT_PANEL.indexOf(c)<0);
+    S.panel=DEFAULT_PANEL.concat(extra); S.tomb.p=[]; save(); render(); return; }
   if(t.id==="addP"){ const n=prompt("Name for this person:"); if(!n) return;
     const id=uid(); S.members.push({id,name:n.trim(),sex:"female",dob:"",population:"asian_pacific",country:"",mtime:Date.now()});
     who=id; save(); render(); return; }
@@ -1558,7 +1681,9 @@ m.addEventListener?m.addEventListener("change",h):m.addListener(h);}})();
 
 function start(){
   S=load(); S.reports=S.reports||[]; S.actions=S.actions||[];
-  S.tomb=S.tomb||{o:[],a:[],m:[]};
+  S.tomb=S.tomb||{o:[],a:[],m:[]}; S.tomb.p=S.tomb.p||[];
+  S.customCodes=S.customCodes||{};
+  if(!Array.isArray(S.panel)) S.panel=DEFAULT_PANEL.slice();
   loadAuth();
   if(AUTH) dropExamples();
   ensurePerson();
