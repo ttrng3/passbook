@@ -880,13 +880,19 @@ function syncCard(){
       '<span class="cap">'+esc(AUTH.email||"")+'</span></div>'+
       '<div class="hint">Signed in with the same address on your phone and your laptop, the two converge. Merging is per record, so edits made on both sides between syncs both survive, and a delete stays deleted.</div>';
   } else {
-    h+='<div class="hint" style="margin-top:var(--s3)">Sign in with a one-time code. There is no password to set, lose or type on a phone. Use the same address on every device you want to converge.</div>'+
+    h+='<div class="hint" style="margin-top:var(--s3)">Sign in by email. No password to set, lose, or type on a phone. Use the same address on every device you want to converge.</div>'+
       '<div class="row" style="margin-top:var(--s3)">'+
       '<input class="inp" id="syEmail" type="email" autocomplete="email" placeholder="you@example.com" style="flex:1;min-width:200px" value="'+esc(pendingEmail)+'">'+
-      '<button class="btn" id="sendCode">Email me a code</button></div>'+
-      (codeSent?'<div class="row" style="margin-top:var(--s3)">'+
-        '<input class="inp num" id="syCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="max-width:170px">'+
-        '<button class="btn pri" id="verifyCode">Sign in</button></div>':'');
+      '<button class="btn pri" id="sendCode">Email me a sign-in link</button></div>'+
+      (codeSent?'<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">Check your email</div>'+
+        '<p><b>Open the link on this device.</b> It brings you straight back here, signed in. '+
+        'If you open it on a different device, that is the device that gets signed in \u2014 which is fine, just do the same again here.</p></div>':'')+
+      '<details><summary>I have a code instead</summary><div>'+
+        '<div class="hint">Supabase will not put a code in the email on the free plan &mdash; it refuses template changes unless a custom SMTP provider is configured. '+
+        'This box is here for the day one is. <span class="mono">supabase/templates/magic_link.html</span> is already written and waiting.</div>'+
+        '<div class="row" style="margin-top:var(--s3)">'+
+        '<input class="inp num" id="syCode" inputmode="numeric" autocomplete="one-time-code" placeholder="code" style="max-width:170px">'+
+        '<button class="btn" id="verifyCode">Sign in</button></div></div></details>';
   }
   h+='<div class="hint" style="margin-top:var(--s3)"><b>What syncs:</b> readings, people, ranges, follow-ups. '+
      '<b>What does not:</b> attached report photos &mdash; they stay on the device that took them, being the largest and most identifying thing in the book.</div>';
@@ -1052,8 +1058,10 @@ async function renewSession(){
   }
   return false;
 }
+function returnTo(){ return location.origin + location.pathname; }
 async function sendCode(email){
-  const r = await supa("/auth/v1/otp", {method:"POST", noAuth:true, body:{email, create_user:true}});
+  const r = await supa("/auth/v1/otp?redirect_to="+encodeURIComponent(returnTo()),
+    {method:"POST", noAuth:true, body:{email, create_user:true}});
   if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
     || ("Could not send the code (HTTP "+r.status+")."));
   return true;
@@ -1098,6 +1106,33 @@ function tombstone(kind, id){
   if(S.tomb[kind].indexOf(id)<0) S.tomb[kind].push(id);
 }
 function touch(rec){ if(rec) rec.mtime = Date.now(); return rec; }
+
+/* A sign-in link lands back here as #access_token=...&refresh_token=...
+   Take them, clear them out of the address bar, and find out who they belong to. */
+async function consumeSignInLink(){
+  const h = location.hash || "";
+  if(h.indexOf("access_token=")<0 && h.indexOf("error=")<0) return false;
+  const q = new URLSearchParams(h.replace(/^#/,""));
+  try{ history.replaceState(null,"",location.pathname+location.search); }catch(e){}
+  if(q.get("error") || q.get("error_code")){
+    syncMsg = {t:"red", k:"That sign-in link did not work",
+      x:(decodeURIComponent(q.get("error_description")||q.get("error")||"").replace(/\+/g," "))+
+        ". A link can be used once and expires quickly \u2014 ask for a fresh one."};
+    return true;
+  }
+  const tok=q.get("access_token"), ref=q.get("refresh_token");
+  if(!tok) return false;
+  AUTH = {tok:tok, ref:ref, uid:null, email:null};
+  const me = await supa("/auth/v1/user");
+  if(me.ok && me.body && me.body.id){
+    AUTH.uid = me.body.id; AUTH.email = me.body.email || null; saveAuth();
+    syncMsg = {t:"green", k:"Signed in", x:"This device is now connected as "+(AUTH.email||"you")+"."};
+    return true;
+  }
+  AUTH = null; saveAuth();
+  syncMsg = {t:"red", k:"Signed in, but the account could not be read", x:"Ask for a fresh link and try once more."};
+  return true;
+}
 
 async function syncNow(){
   if(syncing) return;
@@ -1303,8 +1338,9 @@ document.addEventListener("click", async e=>{
     if(!em){ document.getElementById("syEmail").focus(); return; }
     pendingEmail=em; syncMsg={t:"blue",k:"Sending",x:"Emailing a code to "+em+"."}; render();
     try{ await sendCode(em); codeSent=true;
-      syncMsg={t:"green",k:"Code sent",x:"Check "+em+". It is good for a few minutes."}; }
-    catch(err){ syncMsg={t:"red",k:"Could not send the code",x:err.message||String(err)}; }
+      syncMsg={t:"green",k:"Link sent",x:"Check "+em+" and open the link on this device. It works once."}; }
+    catch(err){ syncMsg={t:"red",k:"Could not send the sign-in email",x:(err.message||String(err))+
+      " \u2014 the project allows one auth email a minute, so if you just asked for one, wait a moment."}; }
     render(); return; }
   if(t.id==="verifyCode"){
     const c=(document.getElementById("syCode").value||"").trim();
@@ -1418,7 +1454,12 @@ function start(){
   loadAuth();
   const d=document.createElement("div"); d.id="dHost"; document.body.appendChild(d);
   render();
-  if(AUTH && !IS_ARTIFACT) setTimeout(()=>{ syncNow(); }, 400);
+  if(IS_ARTIFACT) return;
+  (async function(){
+    const arrived = await consumeSignInLink();
+    if(arrived){ tab="handoff"; render(); }
+    if(AUTH) await syncNow();
+  })();
 }
 start();
 </script>
