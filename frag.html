@@ -203,7 +203,7 @@ footer.fix b{color:var(--ink)}
 </header>
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
 <div id="dropveil" hidden><div>Drop the report here<small>A PDF has its values read out of it. A photo is attached to check against.</small></div></div>
-<input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" hidden>
+<input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" multiple hidden>
 <footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
 
 <script>
@@ -973,7 +973,7 @@ function line(pts,M){
 
 /* ------------------------------------------------------- add report */
 function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
-  rows:[],fileId:null,fileName:"",fileType:"",fileSize:0,fileURL:null,fileOK:false,skipped:[]}; }
+  rows:[],files:[],busy:"",notes:[],skipped:[]}; }
 function kb(n){ return n>=1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
 function codeOpts(sel){
   const G={};
@@ -983,33 +983,10 @@ function codeOpts(sel){
     G[g].sort((a,b)=>meta(a).n.localeCompare(meta(b).n))
       .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(meta(c).n)+'</option>').join("")+'</optgroup>').join("");
 }
-/* A photographed sheet is easy to get wrong: the previous visit, the second
-   page, somebody else's. Confirm the document before its values are trusted. */
-function docCheck(){
-  const ok = draft.fileOK;
-  let h = '<div class="card"><div class="row" style="justify-content:space-between">'+
-    '<h3>2 \u00b7 Is this the right document?</h3>'+
-    (ok?'<span class="badge st-in_range"><span class="dot"></span>Confirmed</span>'
-       :'<span class="badge st-watch"><span class="dot"></span>Not checked yet</span>')+'</div>';
-  h += '<div class="cap" style="margin-top:var(--s2)">'+esc(draft.fileName)+
-       (draft.fileSize?' \u00b7 '+kb(draft.fileSize):'')+'</div>';
-  if(draft.fileURL){
-    h += '<img class="shot" style="margin-top:var(--s3);max-height:420px;object-fit:contain" src="'+draft.fileURL+'" alt="The attached report">';
-  } else {
-    h += '<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">No preview</div>'+
-      '<p>Only photographs preview here. Check the file name above is the report you meant, or remove it and attach another.</p></div>';
-  }
-  h += '<div class="row" style="margin-top:var(--s3)">'+
-    (ok?'<button class="btn" id="docUnconfirm">Look again</button>'
-       :'<button class="btn pri" id="docConfirm">Yes, this is the right report</button>')+
-    '<button class="btn warn" id="docRemove">Remove it</button></div>'+
-    '<div class="hint">Removing deletes it from this browser. Nothing else in the report is affected.</div></div>';
-  return h;
-}
 function vAdd(){
   if(!draft) draft=newDraft();
   const nOK=draft.rows.filter(r=>r.confirmed).length;
-  const docReady=!draft.fileName||draft.fileOK;
+  const docReady=!draft.files.length||draft.files.every(f=>f.ok);
   const ready=draft.rows.length>0&&nOK===draft.rows.length&&docReady;
   let h='<button class="btn" data-tab="record" style="margin-bottom:var(--s3)">&larr; Back to results</button>'+
     '<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
@@ -1033,9 +1010,11 @@ function vAdd(){
     '</button>'+
     '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
       '<span class="mono">⌘V</span>. A PDF from a lab portal has its values read straight out of it. '+
-      'A photograph cannot be read here — attach it and type from it, or use your phone camera\'s own text selection and paste below.</div>'+
-    (draft.pdfNote?'<div class="callout c-'+(/could not|does not work|carried no|Nothing in/i.test(draft.pdfNote)?'amber':'blue')+'" style="margin-bottom:var(--s4)">'+
-      '<div class="kick">From the file</div><p>'+esc(draft.pdfNote)+'</p></div>':'')+
+      'Photographs are read here too. That is slower and a good deal less certain than a PDF — numbers usually survive, names and ranges often do not — so read every row back against the picture before ticking it.</div>'+
+    (draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
+      '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
+    ((draft.notes&&draft.notes.length)?'<div class="callout c-amber" style="margin-bottom:var(--s4)">'+
+      '<div class="kick">Note</div><p>'+esc(draft.notes.join(" · "))+'</p></div>':'')+
     '<details><summary>Or paste the text of a report</summary><div>'+
     '<textarea class="inp" id="paste" rows="6" placeholder="Glucose        5.4    mmol/L    3.9 - 6.4&#10;Cholesterol toàn phần   5.6   mmol/L   &lt; 5.2&#10;Creatinin      84     µmol/L    62 - 106"></textarea>'+
     '<div class="row" style="margin-top:var(--s2)"><button class="btn pri" id="doParse">Read this and fill the rows</button>'+
@@ -1048,18 +1027,16 @@ function vAdd(){
     '<details><summary>Or add one test at a time</summary><div>'+
       '<div class="row"><select class="inp" id="addCode" style="width:auto;min-width:220px">'+codeOpts(null)+'</select>'+
       '<button class="btn" id="addRow">Add row</button></div></div></details>'+
-    '<details'+(draft.fileName?' open':'')+'><summary>Attach the report itself</summary><div>'+
-      '<input class="inp" id="dFile" type="file" accept="image/*,application/pdf" capture="environment">'+
-      '<div class="hint">On a phone this opens the camera. It stays in this browser, is never uploaded, and does not travel with a sync.</div>'+
-    '</div></details></div>';
+    '</div>';
 
-  if(draft.fileName) h += docCheck();
+  h += docGallery();
 
   if(draft.rows.length){
-    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>'+(draft.fileName?"3":"2")+' · Check every value against the sheet</h3>'+
+    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>'+(draft.files.length?"3":"2")+' · Check every value against the sheet</h3>'+
       '<span class="badge '+(ready?"st-in_range":"st-watch")+'"><span class="dot"></span>'+nOK+' of '+draft.rows.length+' checked</span></div>'+
       '<div class="hint" style="margin-bottom:var(--s3)">There is no check-all. Reading each number back against the paper is the one step that keeps a typo out of your record — and editing a value un-checks it.</div>';
-    h+='<div style="display:grid;grid-template-columns:'+(draft.fileURL?"minmax(0,1fr) 240px":"1fr")+';gap:var(--s4)"><div>';
+    const shownPage = draft.files.find(f=>f.url);
+    h+='<div style="display:grid;grid-template-columns:'+(shownPage?"minmax(0,1fr) 260px":"1fr")+';gap:var(--s4)"><div>';
     h+=draft.rows.map((r,i)=>{
       const M=meta(r.code), units=unitsFor(r.code), fresh=!!r.newName;
       const label = fresh ? r.newName : M.n;
@@ -1068,7 +1045,8 @@ function vAdd(){
         '<div><div class="row" style="justify-content:space-between"><label for="ck'+i+'" style="font-weight:600;cursor:pointer">'+esc(label)+
         (fresh?' <span class="badge st-watch"><span class="dot"></span>New metric</span>':'')+'</label>'+
         '<button class="btn sm warn" data-rm="'+i+'">Remove</button></div>'+
-        (fresh?'<div class="hint">Not in the catalogue, so it will be added to your record and tracked from now on. Check the name and unit read correctly.</div>'+
+        (fresh?'<div class="hint">Not in the catalogue. It will be recorded and tracked, and appears under <b>Also on your reports</b> \u2014 add it to your standard panel in Settings if you want a missing one flagged. '+
+          'If this came off a photograph, check the spelling: reading a photo gets names wrong more often than numbers, and a misread name makes a metric you did not mean. Remove it if it is nonsense.</div>'+
           '<div class="cg" style="margin-top:var(--s2)">'+
           '<div><label class="fl" for="nn'+i+'">Name it</label><input class="inp" id="nn'+i+'" data-f="newName" data-i="'+i+'" value="'+esc(r.newName)+'"></div>'+
           '<div><label class="fl" for="nu'+i+'">Unit</label><input class="inp" id="nu'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'" placeholder="as printed"></div>'+
@@ -1083,13 +1061,15 @@ function vAdd(){
         '</div></div></div>';
     }).join("");
     h+='</div>';
-    if(draft.fileURL) h+='<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">The sheet</div>'+
-      '<img class="shot" src="'+draft.fileURL+'" alt="The attached report"></div>';
+    if(shownPage) h+='<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">The sheet</div>'+
+      '<img class="shot" src="'+shownPage.url+'" alt="'+esc(shownPage.name)+'" data-zoom="'+draft.files.indexOf(shownPage)+'" style="cursor:zoom-in">'+
+      (draft.files.length>1?'<div class="cap" style="margin-top:var(--s2)">'+draft.files.length+' pages attached \u2014 tap to enlarge, or see them all in step 2.</div>':'')+
+      '</div>';
     h+='</div></div>';
     h+='<div class="row" style="margin-top:var(--s4)">'+
       '<button class="btn pri big" id="saveDraft"'+(ready?"":" disabled")+' style="max-width:320px">Save '+draft.rows.length+' value'+(draft.rows.length===1?"":"s")+'</button>'+
       '<button class="btn" id="killDraft">Discard</button>'+
-      (!docReady?'<span class="cap">Confirm the document above first.</span>':'')+'</div>';
+      (!docReady?'<span class="cap">Tick the pages above first.</span>':'')+'</div>';
   }
   return h;
 }
@@ -1703,54 +1683,6 @@ function isPdf(f){
   return (f.type||"").toLowerCase() === "application/pdf" || /\.pdf$/i.test(f.name||"");
 }
 
-async function handleIncomingFile(f){
-  if(!f) return;
-  if(!draft) draft = newDraft();
-  if(!draft.memberId) draft.memberId = who;
-  draft.note = "";
-
-  if(isTextFile(f)){
-    let txt = "";
-    try{ txt = await f.text(); }catch(e){ alert("That file could not be read."); return; }
-    const out = parseReport(txt);
-    draft.rows = draft.rows.concat(out.rows);
-    draft.skipped = out.skipped;
-    draft.pdfNote = out.rows.length
-      ? out.rows.length + " row" + (out.rows.length===1?"":"s") + " read from " + f.name + ". Check each against the original."
-      : "Nothing in " + f.name + " looked like a test row.";
-    tab = "add"; render(); window.scrollTo(0,0);
-    return;
-  }
-
-  if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
-  if(draft.fileId) await delFile(draft.fileId);
-  const id = uid(), stored = await putFile(id, f);
-  draft.fileId = stored ? id : null;
-  draft.fileName = f.name; draft.fileType = f.type || "";
-  draft.fileSize = f.size || 0; draft.fileOK = false;
-  draft.fileURL = (f.type||"").indexOf("image/") === 0 ? URL.createObjectURL(f) : null;
-  draft.pdfNote = "";
-  tab = "add"; render(); window.scrollTo(0,0);
-
-  if(isPdf(f)){
-    draft.pdfNote = "Reading the text out of this PDF…";
-    render();
-    try{
-      const txt = await extractPdfText(f);
-      const out = parseReport(txt);
-      draft.rows = draft.rows.concat(out.rows);
-      draft.skipped = out.skipped;
-      draft.pdfNote = out.rows.length
-        ? out.rows.length + " row" + (out.rows.length===1?"":"s") + " came straight out of the PDF. Every one is unconfirmed — check them against the page above."
-        : "The PDF's text carried no recognisable test rows. It may be a scan rather than text. The file is attached; type the values from it.";
-    }catch(e){
-      draft.pdfNote = IS_ARTIFACT
-        ? "Reading text out of a PDF does not work in this copy — the claude.ai viewer blocks the reader from loading. Open the same book at ttrng3.github.io/famrec and drop it there. The file is attached either way."
-        : "Could not read text from this PDF (" + (e.message || e) + "). It is attached; type the values from it.";
-    }
-    render();
-  }
-}
 
 /* drag anywhere on the page */
 let dragDepth = 0;
@@ -1771,10 +1703,10 @@ window.addEventListener("dragleave", e => {
 });
 window.addEventListener("drop", async e => {
   if(!e.dataTransfer) return;
-  const f = e.dataTransfer.files && e.dataTransfer.files[0];
-  if(!f) return;
+  const fs = e.dataTransfer.files;
+  if(!fs || !fs.length) return;
   e.preventDefault(); dragDepth = 0; dropOverlay(false);
-  await handleIncomingFile(f);
+  await handleIncomingFiles(fs);
 });
 
 /* paste a screenshot or a block of report text straight in */
@@ -1782,11 +1714,8 @@ window.addEventListener("paste", async e => {
   if(tab === "add" && document.activeElement &&
      /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
   const cd = e.clipboardData; if(!cd) return;
-  const item = [...(cd.items||[])].find(i => i.kind === "file");
-  if(item){
-    const f = item.getAsFile();
-    if(f){ e.preventDefault(); await handleIncomingFile(f); return; }
-  }
+  const picked = [...(cd.items||[])].filter(i => i.kind === "file").map(i => i.getAsFile()).filter(Boolean);
+  if(picked.length){ e.preventDefault(); await handleIncomingFiles(picked); return; }
   const txt = cd.getData("text/plain");
   if(txt && txt.split(/\r?\n/).length >= 2){
     const out = parseReport(txt);
@@ -1796,11 +1725,197 @@ window.addEventListener("paste", async e => {
       if(!draft.memberId) draft.memberId = who;
       draft.rows = draft.rows.concat(out.rows);
       draft.skipped = out.skipped;
-      draft.pdfNote = out.rows.length + " row" + (out.rows.length===1?"":"s") + " read from what you pasted.";
+      draft.notes = [out.rows.length + " row" + (out.rows.length===1?"":"s") + " read from what you pasted."];
       tab = "add"; render(); window.scrollTo(0,0);
     }
   }
 });
+
+
+/* ================================================== reading a photograph
+   A photographed sheet has no text layer, so it needs OCR. This runs entirely
+   in the browser: the image is never uploaded anywhere.
+
+   It works on the real site and not inside the claude.ai viewer, which blocks
+   the reader and its language data from loading. Vietnamese and English are
+   both loaded because a Vietnamese lab sheet mixes them.
+
+   Accuracy is decent on a flat, well-lit page and poor on a crumpled one held
+   at an angle. That is survivable here only because every row it produces has
+   to be read back against the picture before it is kept. */
+const TESS_VER = "5.1.1";
+let _tess = null;
+function ensureTesseract(){
+  if(_tess) return _tess;
+  _tess = new Promise((res, rej) => {
+    if(window.Tesseract) return res(window.Tesseract);
+    const el = document.createElement("script");
+    el.src = "https://cdn.jsdelivr.net/npm/tesseract.js@"+TESS_VER+"/dist/tesseract.min.js";
+    el.onload = () => window.Tesseract ? res(window.Tesseract) : rej(new Error("the reader did not load"));
+    el.onerror = () => rej(new Error("the reader could not be fetched"));
+    document.head.appendChild(el);
+  });
+  return _tess;
+}
+
+/* A phone photo is far bigger than OCR needs and the extra pixels only cost
+   time. Downscale, then lift the contrast so faint dot-matrix print survives. */
+async function prepImage(file){
+  const url = URL.createObjectURL(file);
+  try{
+    const img = await new Promise((res, rej) => {
+      const i = new Image();
+      i.onload = () => res(i); i.onerror = () => rej(new Error("not a readable image"));
+      i.src = url;
+    });
+    const MAX = 2000;
+    const scale = Math.min(1, MAX / Math.max(img.width, img.height));
+    const w = Math.round(img.width * scale), h = Math.round(img.height * scale);
+    const c = document.createElement("canvas");
+    c.width = w; c.height = h;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(img, 0, 0, w, h);
+    const d = ctx.getImageData(0, 0, w, h), a = d.data;
+    for(let i = 0; i < a.length; i += 4){
+      const g = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+      const v = g < 110 ? 0 : g > 175 ? 255 : Math.round((g - 110) * (255/65));
+      a[i] = a[i+1] = a[i+2] = v;
+    }
+    ctx.putImageData(d, 0, 0);
+    return await new Promise(r => c.toBlob(r, "image/png"));
+  } finally { try{ URL.revokeObjectURL(url); }catch(e){} }
+}
+
+async function ocrImage(file, onProgress){
+  const T = await ensureTesseract();
+  const prepped = await prepImage(file).catch(() => file);
+  const r = await T.recognize(prepped, "vie+eng", {
+    logger: m => {
+      if(m.status === "recognizing text" && onProgress) onProgress(Math.round((m.progress||0)*100));
+      else if(onProgress && m.status) onProgress(null, m.status);
+    }
+  });
+  return (r && r.data && r.data.text) || "";
+}
+
+/* ============================================ many files, one report
+   A visit produces several pages, and people drop the lot at once. Every file
+   is kept, every one is read if it can be, and the rows they yield all land in
+   the same confirm queue. */
+
+function fileKind(f){
+  const t = (f.type||"").toLowerCase(), n = (f.name||"").toLowerCase();
+  if(t.indexOf("text/") === 0 || /\.(txt|csv|tsv)$/.test(n)) return "text";
+  if(t === "application/pdf" || /\.pdf$/.test(n)) return "pdf";
+  if(t.indexOf("image/") === 0 || /\.(jpe?g|png|heic|heif|webp|gif|bmp|tiff?)$/.test(n)) return "image";
+  return "other";
+}
+
+async function addOneFile(f){
+  const kind = fileKind(f);
+  if(kind === "other"){
+    return {skipped:true, name:f.name, why:"not a report — only photos, PDFs and text files can be read"};
+  }
+  if(kind === "text"){
+    let txt = ""; try{ txt = await f.text(); }catch(e){}
+    const out = parseReport(txt);
+    draft.rows = draft.rows.concat(out.rows);
+    return {rows:out.rows.length, name:f.name, kind:kind};
+  }
+  const id = uid(), stored = await putFile(id, f);
+  const entry = {id:stored?id:null, name:f.name, type:f.type||"", size:f.size||0,
+                 url: kind==="image" ? URL.createObjectURL(f) : null,
+                 kind:kind, ok:false, rows:0, note:""};
+  draft.files.push(entry);
+  return {entry:entry, file:f, kind:kind, name:f.name};
+}
+
+/* Read each file in turn, reporting as it goes: OCR on a phone photo takes
+   real seconds and a page that looks frozen gets closed. */
+async function readQueue(pending){
+  for(let i = 0; i < pending.length; i++){
+    const p = pending[i];
+    if(!p.entry) continue;
+    const where = " (" + (i+1) + " of " + pending.length + ")";
+    try{
+      let txt = "";
+      if(p.kind === "pdf"){
+        draft.busy = "Reading " + p.name + where + "…"; render();
+        txt = await extractPdfText(p.file);
+      } else {
+        draft.busy = "Reading " + p.name + where + " — this can take a moment…"; render();
+        txt = await ocrImage(p.file, (pct, status) => {
+          draft.busy = pct === null
+            ? "Preparing the reader" + where + "… (first time only, it downloads once)"
+            : "Reading " + p.name + where + " — " + pct + "%";
+          const el = document.getElementById("busyline");
+          if(el) el.textContent = draft.busy;
+        });
+      }
+      const out = parseReport(txt);
+      draft.rows = draft.rows.concat(out.rows);
+      p.entry.rows = out.rows.length;
+      p.entry.note = out.rows.length
+        ? out.rows.length + " value" + (out.rows.length===1?"":"s") + " read"
+        : (p.kind === "pdf" ? "no text in this PDF — it may be a scan" : "nothing readable found");
+    }catch(e){
+      p.entry.note = IS_ARTIFACT
+        ? "cannot be read in this copy — open ttrng3.github.io/famrec"
+        : "could not be read (" + (e.message || e) + ")";
+    }
+    render();
+  }
+  draft.busy = "";
+  render();
+}
+
+async function handleIncomingFiles(list){
+  const files = [...(list||[])].filter(Boolean);
+  if(!files.length) return;
+  if(!draft) draft = newDraft();
+  if(!draft.memberId) draft.memberId = who;
+  tab = "add"; draft.busy = "Taking in " + files.length + " file" + (files.length===1?"":"s") + "…";
+  render(); window.scrollTo(0,0);
+
+  const pending = [], notes = [];
+  for(const f of files){
+    const r = await addOneFile(f);
+    if(r.skipped) notes.push(r.name + " — " + r.why);
+    else if(r.entry) pending.push(r);
+    else if(r.rows !== undefined) notes.push(r.name + " — " + r.rows + " row" + (r.rows===1?"":"s") + " read");
+  }
+  draft.notes = notes;
+  render();
+  if(pending.length) await readQueue(pending);
+}
+/* one file, same path */
+async function handleIncomingFile(f){ return handleIncomingFiles(f ? [f] : []); }
+
+function docGallery(){
+  if(!draft.files.length) return "";
+  const done = draft.files.filter(f=>f.ok).length;
+  let h = '<div class="card"><div class="row" style="justify-content:space-between">'+
+    '<h3>2 · Are these the right pages?</h3>'+
+    '<span class="badge '+(done===draft.files.length?"st-in_range":"st-watch")+'"><span class="dot"></span>'+
+      done+' of '+draft.files.length+' checked</span></div>'+
+    '<div class="hint" style="margin-top:var(--s2)">Tap a page to see it full size. Tick the ones that belong to this report and remove any that do not.</div>';
+  if(draft.files.length > 1)
+    h += '<div class="row" style="margin-top:var(--s3)"><button class="btn" id="docAll">'+
+      (done===draft.files.length ? "Untick all" : "These are all correct")+'</button></div>';
+  h += '<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(150px,1fr));margin-top:var(--s3)">';
+  draft.files.forEach((f,i)=>{
+    h += '<div class="card" style="padding:var(--s3);'+(f.ok?'border-color:var(--green-line);background:var(--green-bg)':'')+'">'+
+      (f.url ? '<img src="'+f.url+'" alt="'+esc(f.name)+'" data-zoom="'+i+'" style="width:100%;height:110px;object-fit:cover;border-radius:var(--r-inner);border:1px solid var(--line);cursor:zoom-in;display:block">'
+             : '<div style="height:110px;display:grid;place-items:center;background:var(--sunk);border-radius:var(--r-inner);border:1px solid var(--line);font-size:12px;color:var(--ink-muted)">PDF</div>')+
+      '<div class="cap" style="margin-top:var(--s2);word-break:break-all">'+esc(f.name)+'</div>'+
+      (f.note?'<div class="cap" style="color:'+(f.rows?'var(--green-ink)':'var(--amber-ink)')+'">'+esc(f.note)+'</div>':'')+
+      '<div class="row" style="margin-top:var(--s2)">'+
+        '<button class="btn sm'+(f.ok?'':' pri')+'" data-docok="'+i+'">'+(f.ok?'Ticked':'Tick')+'</button>'+
+        '<button class="btn sm warn" data-docrm="'+i+'">Remove</button>'+
+      '</div></div>';
+  });
+  return h+'</div></div>';
+}
 
 /* =============================================================== app */
 /* Four tabs, five only when the book holds more than one person. "Add a
@@ -1850,7 +1965,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1874,30 +1989,38 @@ document.addEventListener("click", async e=>{
     try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
     applyText(); render(); return; }
   if(t.id==="pickFile" || t.id==="pickFile2"){ document.getElementById("globalPick").click(); return; }
-  if(t.id==="docConfirm"){ draft.fileOK=true; render(); return; }
-  if(t.id==="docUnconfirm"){ draft.fileOK=false; render(); return; }
-  if(t.id==="docRemove"){
-    if(!confirm("Remove "+(draft.fileName||"this document")+" from this browser?")) return;
-    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
-    await delFile(draft.fileId);
-    draft.fileId=null; draft.fileName=""; draft.fileType=""; draft.fileSize=0;
-    draft.fileURL=null; draft.fileOK=false;
-    render(); return; }
+  if(t.dataset.docok!==undefined){ const f=draft.files[+t.dataset.docok]; if(f){ f.ok=!f.ok; render(); } return; }
+  if(t.dataset.docrm!==undefined){
+    const i=+t.dataset.docrm, f=draft.files[i]; if(!f) return;
+    if(!confirm("Remove "+f.name+" from this report?")) return;
+    if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} }
+    await delFile(f.id); draft.files.splice(i,1); render(); return; }
+  if(t.id==="docAll"){
+    const allOn=draft.files.every(f=>f.ok);
+    draft.files.forEach(f=>f.ok=!allOn); render(); return; }
+  if(t.dataset.zoom!==undefined){
+    const f=draft.files[+t.dataset.zoom]; if(!f||!f.url) return;
+    const host=document.getElementById("dHost");
+    host.innerHTML='<div class="scrim" data-x="1"></div>'+
+      '<div style="position:fixed;inset:var(--s5);z-index:41;display:grid;place-items:center;pointer-events:none">'+
+      '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
+      '</div>'; return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
     draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:""}); render(); return; }
   if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
-  if(t.id==="killDraft"){ if((draft.rows.length||draft.fileName)&&!confirm("Discard this report?")) return;
-    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
-    await delFile(draft.fileId);
+  if(t.id==="killDraft"){ if((draft.rows.length||draft.files.length)&&!confirm("Discard this report and everything attached to it?")) return;
+    for(const f of draft.files){ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } await delFile(f.id); }
     draft=null; tab="record"; render(); return; }
   if(t.id==="saveDraft"){
     const rid=uid();
-    if(draft.fileId) S.reports.push({id:rid,memberId:draft.memberId,date:draft.date,source:draft.source,fileId:draft.fileId,fileName:draft.fileName});
+    draft.files.forEach(f=>S.reports.push({id:uid(),reportId:rid,memberId:draft.memberId,
+      date:draft.date,source:draft.source,fileId:f.id,fileName:f.name}));
     draft.rows.forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
       }
-      if(S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0) S.panel.push(r.code);
+      if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
+        S.panel.push(r.code);
       const v=parseFloat(r.value);
       S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:r.unit,
         value:toCanonical(v,r.code,r.unit),
@@ -1905,9 +2028,10 @@ document.addEventListener("click", async e=>{
         refHigh:r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
         refLabel:r.refLabel||((r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
-        note:"",manualStatus:null,origin:"",reportId:draft.fileId?rid:null,sample:false,mtime:Date.now()});
+        note:"",manualStatus:null,origin:"",reportId:draft.files.length?rid:null,sample:false,mtime:Date.now()});
     });
-    save(); if(draft.fileURL) URL.revokeObjectURL(draft.fileURL);
+    save();
+    draft.files.forEach(f=>{ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } });
     who=draft.memberId; draft=null; tab="record"; render(); window.scrollTo(0,0); return;
   }
 
@@ -2116,16 +2240,8 @@ document.addEventListener("change", async e=>{
   if(el.id==="trendSel"){ trendCode=el.value; render(); return; }
   if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
     try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
-  if(el.id==="globalPick"){ const f=el.files&&el.files[0]; el.value=""; if(f) await handleIncomingFile(f); return; }
-  if(el.id==="dFile" && draft){ const f=el.files&&el.files[0]; if(!f) return;
-    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
-    if(draft.fileId) await delFile(draft.fileId);
-    const id=uid(), stored=await putFile(id,f);
-    draft.fileId=stored?id:null; draft.fileName=f.name; draft.fileType=f.type||"";
-    draft.fileSize=f.size||0; draft.fileOK=false;
-    draft.fileURL=f.type.indexOf("image/")===0?URL.createObjectURL(f):null;
-    if(!stored) alert("The file could not be stored in this browser, but you can still read it from your own device while you check the values.");
-    render(); return; }
+  if(el.id==="globalPick"){ const fs=el.files; const copy=fs?[...fs]:[]; el.value=""; if(copy.length) await handleIncomingFiles(copy); return; }
+
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&detail){ detail=null; drawer(); } });
 
