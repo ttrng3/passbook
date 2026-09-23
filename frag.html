@@ -983,11 +983,94 @@ function codeOpts(sel){
     G[g].sort((a,b)=>meta(a).n.localeCompare(meta(b).n))
       .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(meta(c).n)+'</option>').join("")+'</optgroup>').join("");
 }
+
+/* ===================================================== the review step
+   What the spec asks for, and all it asks for: reconcile the row count, put
+   the disagreements in front of a person as a crop of the line they came
+   from, and accept the rest. A value both reads agree on is not improved by
+   being ticked. */
+function reviewBlock(){
+  const rows = draft.rows;
+  if(!rows.length) return "";
+  const doubt = rows.filter(r => !r.agreed || r.rangeDoubt);
+  const ok    = rows.filter(r => r.agreed && !r.rangeDoubt);
+  const keptN = rows.filter(r => r.confirmed).length;
+  const seen  = draft.files.reduce((a,f) => a + (f.seen||0), 0);
+  const step  = draft.files.length ? "3" : "2";
+
+  let h = '<div class="card"><div class="row" style="justify-content:space-between">'+
+    '<h3>'+step+' &middot; What was read</h3>'+
+    '<span class="badge '+(doubt.length?"st-watch":"st-in_range")+'"><span class="dot"></span>'+
+      keptN+' ready to save'+(doubt.length?', '+doubt.length+' to check':'')+'</span></div>';
+
+  /* row-count reconciliation — a dropped row is otherwise invisible */
+  if(seen && seen > rows.length + 2){
+    h += '<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">Some lines were not read</div>'+
+      '<p>The pages look like they hold about <b>'+seen+'</b> result lines and <b>'+rows.length+'</b> were read. '+
+      'The rest were probably headings or notes, but if something you wanted is missing, add it under '+
+      '<b>Or add one test at a time</b> above.</p></div>';
+  }
+
+  if(doubt.length){
+    h += '<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">'+
+      doubt.length+' value'+(doubt.length===1?'':'s')+' the two reads did not agree on</div>'+
+      '<p>Each page was read twice. These are the only ones where the two attempts differed, so these are the only ones worth your eyes. '+
+      'The picture beside each is the line it came from.</p></div>';
+    h += doubt.map(r => doubtRow(r, rows.indexOf(r))).join("");
+  } else {
+    h += '<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Both reads agree</div>'+
+      '<p>Every page was read twice and the two attempts matched on all '+rows.length+' value'+(rows.length===1?'':'s')+'. Nothing needs checking.</p></div>';
+  }
+
+  if(ok.length){
+    h += '<details><summary>'+ok.length+' value'+(ok.length===1?'':'s')+' accepted &mdash; look if you want to</summary><div>'+
+      '<div class="tw"><table><thead><tr><th>Test</th><th class="n">Value</th><th>Range on the report</th><th>From</th></tr></thead><tbody>'+
+      ok.map(r => {
+        const M = meta(r.code);
+        return '<tr><td>'+esc(r.newName || M.n)+'</td>'+
+          '<td class="n">'+esc(r.value)+' '+esc(r.unit||"")+'</td>'+
+          '<td class="cap">'+esc(r.refLabel || "none printed")+'</td>'+
+          '<td class="cap">'+esc(r.from||"")+'</td></tr>';
+      }).join("")+'</tbody></table></div>'+
+      '<div class="hint" style="margin-top:var(--s3)">Anything here can still be corrected after saving: open the value and press <b>Correct the value</b>.</div>'+
+      '</div></details>';
+  }
+  h += '</div>';
+
+  h += '<div class="row" style="margin-top:var(--s4)">'+
+    '<button class="btn pri big" id="saveDraft"'+(keptN?"":" disabled")+' style="max-width:360px">'+
+      (keptN ? 'Save '+keptN+' value'+(keptN===1?'':'s')+' to the record' : 'Nothing to save yet')+'</button>'+
+    '<button class="btn" id="killDraft">Discard</button></div>';
+  return h;
+}
+
+function doubtRow(r, i){
+  const M = meta(r.code), label = r.newName || M.n;
+  return '<div class="card" style="margin-top:var(--s3);border-color:var(--amber-line)">'+
+    '<div style="display:grid;grid-template-columns:'+(r.crop?'minmax(0,1fr) 300px':'1fr')+';gap:var(--s4)">'+
+    '<div>'+
+      '<div class="row" style="justify-content:space-between"><b>'+esc(label)+'</b>'+
+      '<button class="btn sm warn" data-rm="'+i+'">Not a result</button></div>'+
+      '<div class="cap" style="margin-top:2px">'+esc(r.why || "the two reads disagreed on the printed range")+'</div>'+
+      '<div class="cg" style="margin-top:var(--s3)">'+
+        '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
+        '<div><label class="fl" for="u'+i+'">Unit</label><input class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'"></div>'+
+        '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+        '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+      '</div>'+
+      '<div class="row" style="margin-top:var(--s3)">'+
+        '<button class="btn '+(r.confirmed?'':'pri')+'" data-keep="'+i+'">'+(r.confirmed?'Will be saved':'Looks right, keep it')+'</button>'+
+        (r.alt!==null && r.alt!==undefined && String(r.alt)!==String(r.value)
+          ? '<button class="btn" data-usealt="'+i+'">The other read says '+esc(r.alt)+'</button>' : '')+
+      '</div>'+
+    '</div>'+
+    (r.crop?'<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">On the page</div>'+
+      '<img src="'+r.crop+'" alt="the line this came from" style="width:100%;border:1px solid var(--line);border-radius:var(--r-inner);background:var(--card)"></div>':'')+
+    '</div></div>';
+}
+
 function vAdd(){
   if(!draft) draft=newDraft();
-  const nOK=draft.rows.filter(r=>r.confirmed).length;
-  const docReady=!draft.files.length||draft.files.every(f=>f.ok);
-  const ready=draft.rows.length>0&&nOK===draft.rows.length&&docReady;
   let h='<button class="btn" data-tab="record" style="margin-bottom:var(--s3)">&larr; Back to results</button>'+
     '<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
 
@@ -1031,46 +1114,7 @@ function vAdd(){
 
   h += docGallery();
 
-  if(draft.rows.length){
-    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>'+(draft.files.length?"3":"2")+' · Check every value against the sheet</h3>'+
-      '<span class="badge '+(ready?"st-in_range":"st-watch")+'"><span class="dot"></span>'+nOK+' of '+draft.rows.length+' checked</span></div>'+
-      '<div class="hint" style="margin-bottom:var(--s3)">There is no check-all. Reading each number back against the paper is the one step that keeps a typo out of your record — and editing a value un-checks it.</div>';
-    const shownPage = draft.files.find(f=>f.url);
-    h+='<div style="display:grid;grid-template-columns:'+(shownPage?"minmax(0,1fr) 260px":"1fr")+';gap:var(--s4)"><div>';
-    h+=draft.rows.map((r,i)=>{
-      const M=meta(r.code), units=unitsFor(r.code), fresh=!!r.newName;
-      const label = fresh ? r.newName : M.n;
-      return '<div class="crow'+(r.confirmed?" ok":"")+'">'+
-        '<input class="ck" type="checkbox" id="ck'+i+'" data-ck="'+i+'"'+(r.confirmed?" checked":"")+' aria-label="Confirm '+esc(label)+'">'+
-        '<div><div class="row" style="justify-content:space-between"><label for="ck'+i+'" style="font-weight:600;cursor:pointer">'+esc(label)+
-        (fresh?' <span class="badge st-watch"><span class="dot"></span>New metric</span>':'')+'</label>'+
-        '<button class="btn sm warn" data-rm="'+i+'">Remove</button></div>'+
-        (fresh?'<div class="hint">Not in the catalogue. It will be recorded and tracked, and appears under <b>Also on your reports</b> \u2014 add it to your standard panel in Settings if you want a missing one flagged. '+
-          'If this came off a photograph, check the spelling: reading a photo gets names wrong more often than numbers, and a misread name makes a metric you did not mean. Remove it if it is nonsense.</div>'+
-          '<div class="cg" style="margin-top:var(--s2)">'+
-          '<div><label class="fl" for="nn'+i+'">Name it</label><input class="inp" id="nn'+i+'" data-f="newName" data-i="'+i+'" value="'+esc(r.newName)+'"></div>'+
-          '<div><label class="fl" for="nu'+i+'">Unit</label><input class="inp" id="nu'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'" placeholder="as printed"></div>'+
-          '</div>':'')+
-        (r.src?'<div class="cap mono" style="margin-top:2px">'+esc(r.src.slice(0,80))+'</div>':'')+
-        '<div class="cg">'+
-          '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
-          (fresh?'':'<div><label class="fl" for="u'+i+'">Unit</label><select class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'">'+
-            units.map(u=>'<option value="'+esc(u[0])+'"'+(u[0]===r.unit?" selected":"")+'>'+esc(u[0])+'</option>').join("")+'</select></div>')+
-          '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
-          '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
-        '</div></div></div>';
-    }).join("");
-    h+='</div>';
-    if(shownPage) h+='<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">The sheet</div>'+
-      '<img class="shot" src="'+shownPage.url+'" alt="'+esc(shownPage.name)+'" data-zoom="'+draft.files.indexOf(shownPage)+'" style="cursor:zoom-in">'+
-      (draft.files.length>1?'<div class="cap" style="margin-top:var(--s2)">'+draft.files.length+' pages attached \u2014 tap to enlarge, or see them all in step 2.</div>':'')+
-      '</div>';
-    h+='</div></div>';
-    h+='<div class="row" style="margin-top:var(--s4)">'+
-      '<button class="btn pri big" id="saveDraft"'+(ready?"":" disabled")+' style="max-width:320px">Save '+draft.rows.length+' value'+(draft.rows.length===1?"":"s")+'</button>'+
-      '<button class="btn" id="killDraft">Discard</button>'+
-      (!docReady?'<span class="cap">Tick the pages above first.</span>':'')+'</div>';
-  }
+  h += reviewBlock();
   return h;
 }
 
@@ -1798,6 +1842,138 @@ async function ocrImage(file, onProgress){
   return (r && r.data && r.data.text) || "";
 }
 
+
+/* ==================================== the extraction-integrity layer
+   From CLAUDE.md hard rule 6 as amended 2026-09-16 and §5 Firewall 2:
+
+     "Treat this screen as a liability shield, not an accuracy control — a
+      fluently wrong value looks just as plausible as a correct one and will
+      get rubber-stamped."
+
+   Ticking twenty plausible-looking rows catches nothing and costs everything.
+   What the spec prescribes instead, and what this implements:
+
+     double-read disagreement flag  read the page twice, differently, and
+                                    flag any value the two reads disagree on
+     row-count reconciliation       say how many result lines the page seems
+                                    to have against how many were read
+     per-value legibility marking   carry the reader's own confidence through
+     crop-to-number review          show the disagreeing value as a crop of
+                                    that line, not a list beside a whole page
+
+   A value both reads agree on is accepted. Only the disagreements are put in
+   front of a person. That is the machine declining to decide where it is
+   uncertain, which is what the rule was protecting, rather than asking a
+   human to rubber-stamp twenty numbers they cannot check at a glance. */
+
+function imgFromFile(file){
+  return new Promise((res, rej) => {
+    const url = URL.createObjectURL(file);
+    const i = new Image();
+    i.onload = () => { res({img:i, url:url}); };
+    i.onerror = () => { try{ URL.revokeObjectURL(url); }catch(e){} rej(new Error("not a readable image")); };
+    i.src = url;
+  });
+}
+function prepCanvas(img, maxPx, lo, hi){
+  const scale = Math.min(1, maxPx / Math.max(img.width, img.height));
+  const w = Math.round(img.width*scale), h = Math.round(img.height*scale);
+  const c = document.createElement("canvas"); c.width=w; c.height=h;
+  const ctx = c.getContext("2d");
+  ctx.drawImage(img, 0, 0, w, h);
+  const d = ctx.getImageData(0,0,w,h), a = d.data, span = Math.max(1, hi-lo);
+  for(let i=0;i<a.length;i+=4){
+    const g = 0.299*a[i] + 0.587*a[i+1] + 0.114*a[i+2];
+    const v = g<lo ? 0 : g>hi ? 255 : Math.round((g-lo)*(255/span));
+    a[i]=a[i+1]=a[i+2]=v;
+  }
+  ctx.putImageData(d,0,0);
+  return {canvas:c, scale:scale};
+}
+function cropFromImage(img, box, pad){
+  /* box is in the coordinates of the pass-A canvas; scale back to the original */
+  const s = box._scale || 1;
+  const x = Math.max(0, box.x0/s - pad), y = Math.max(0, box.y0/s - pad*0.6);
+  const w = Math.min(img.width - x, (box.x1-box.x0)/s + pad*2);
+  const h = Math.min(img.height - y, (box.y1-box.y0)/s + pad*1.2);
+  if(!(w>4 && h>4)) return "";
+  const c = document.createElement("canvas");
+  const k = Math.min(3, Math.max(1, 520/w));
+  c.width = Math.round(w*k); c.height = Math.round(h*k);
+  c.getContext("2d").drawImage(img, x, y, w, h, 0, 0, c.width, c.height);
+  try{ return c.toDataURL("image/png"); }catch(e){ return ""; }
+}
+
+/* how many lines on this page look like a result row: a name, then a number */
+function looksLikeResultLines(text){
+  return String(text||"").split(/\r?\n/).filter(l => {
+    const t = l.trim();
+    return t.length > 5 && /[A-Za-zÀ-ỹ]{3}/.test(t) && /\d/.test(t);
+  }).length;
+}
+
+async function readImageTwice(file, onProgress){
+  const T = await ensureTesseract();
+  const {img, url} = await imgFromFile(file);
+  try{
+    const A = prepCanvas(img, 2000, 110, 175);
+    const B = prepCanvas(img, 1400,  95, 195);
+    onProgress && onProgress(0, "first read");
+    const ra = await T.recognize(A.canvas, "vie+eng", {
+      logger: m => { if(m.status==="recognizing text" && onProgress) onProgress(Math.round((m.progress||0)*50), "first read"); }
+    });
+    onProgress && onProgress(50, "second read");
+    const rb = await T.recognize(B.canvas, "vie+eng", {
+      logger: m => { if(m.status==="recognizing text" && onProgress) onProgress(50+Math.round((m.progress||0)*50), "second read"); }
+    });
+    const linesA = ((ra.data && ra.data.lines) || []).map(l => ({
+      text: l.text, conf: l.confidence,
+      box: {x0:l.bbox.x0, y0:l.bbox.y0, x1:l.bbox.x1, y1:l.bbox.y1, _scale:A.scale}
+    }));
+    return {
+      textA: (ra.data && ra.data.text) || "",
+      textB: (rb.data && rb.data.text) || "",
+      linesA: linesA,
+      img: img,
+      release: () => { try{ URL.revokeObjectURL(url); }catch(e){} }
+    };
+  }catch(e){
+    try{ URL.revokeObjectURL(url); }catch(_){}
+    throw e;
+  }
+}
+
+/* Compare the two reads row by row. Same code and same value means both reads
+   saw the same thing, which is the closest thing to a check available without
+   a second pair of eyes. */
+function reconcile(rowsA, rowsB){
+  const byCode = new Map();
+  rowsB.forEach(r => { if(!byCode.has(r.code)) byCode.set(r.code, []); byCode.get(r.code).push(r); });
+  const near = (x, y) => {
+    const a = parseFloat(x), b = parseFloat(y);
+    if(!isFinite(a) || !isFinite(b)) return false;
+    return Math.abs(a-b) < Math.max(1e-9, Math.abs(a) * 0.001);
+  };
+  return rowsA.map(r => {
+    const mates = byCode.get(r.code) || [];
+    const same = mates.find(m => near(m.value, r.value));
+    if(same){
+      const rangeSame = String(same.refLow||"") === String(r.refLow||"")
+                     && String(same.refHigh||"") === String(r.refHigh||"");
+      return Object.assign({}, r, {
+        agreed: true,
+        rangeDoubt: !rangeSame,
+        alt: rangeSame ? null : (same.refLow||"") + "–" + (same.refHigh||"")
+      });
+    }
+    return Object.assign({}, r, {
+      agreed: false,
+      alt: mates.length ? mates[0].value : null,
+      why: mates.length ? "the two reads disagree on this number" : "only one of the two reads found this"
+    });
+  });
+}
+
 /* ============================================ many files, one report
    A visit produces several pages, and people drop the lot at once. Every file
    is kept, every one is read if it can be, and the rows they yield all land in
@@ -1830,34 +2006,48 @@ async function addOneFile(f){
   return {entry:entry, file:f, kind:kind, name:f.name};
 }
 
-/* Read each file in turn, reporting as it goes: OCR on a phone photo takes
-   real seconds and a page that looks frozen gets closed. */
+/* Read each file, reconcile the two reads, accept what agrees. */
 async function readQueue(pending){
   for(let i = 0; i < pending.length; i++){
     const p = pending[i];
     if(!p.entry) continue;
     const where = " (" + (i+1) + " of " + pending.length + ")";
     try{
-      let txt = "";
       if(p.kind === "pdf"){
         draft.busy = "Reading " + p.name + where + "…"; render();
-        txt = await extractPdfText(p.file);
+        const txt = await extractPdfText(p.file);
+        const out = parseReport(txt);
+        /* a PDF's text layer is exact, so there is nothing to disagree about */
+        out.rows.forEach(r => { r.agreed = true; r.confirmed = true; r.from = p.name; });
+        draft.rows = draft.rows.concat(out.rows);
+        p.entry.rows = out.rows.length;
+        p.entry.seen = looksLikeResultLines(txt);
+        p.entry.note = out.rows.length ? out.rows.length + " value" + (out.rows.length===1?"":"s") + " read"
+                                       : "no text in this PDF — it may be a scan";
       } else {
-        draft.busy = "Reading " + p.name + where + " — this can take a moment…"; render();
-        txt = await ocrImage(p.file, (pct, status) => {
-          draft.busy = pct === null
-            ? "Preparing the reader" + where + "… (first time only, it downloads once)"
-            : "Reading " + p.name + where + " — " + pct + "%";
-          const el = document.getElementById("busyline");
-          if(el) el.textContent = draft.busy;
+        const res = await readImageTwice(p.file, (pct, phase) => {
+          draft.busy = "Reading " + p.name + where + " — " + phase + ", " + pct + "%";
+          const el = document.getElementById("busyline"); if(el) el.textContent = draft.busy;
         });
+        const A = parseReport(res.textA), B = parseReport(res.textB);
+        const merged = reconcile(A.rows, B.rows);
+        merged.forEach(r => {
+          r.from = p.name;
+          r.confirmed = !!r.agreed;
+          if(!r.agreed || r.rangeDoubt){
+            const ln = res.linesA.find(l => (l.text||"").indexOf(String(r.value)) >= 0);
+            if(ln) r.crop = cropFromImage(res.img, ln.box, 14);
+          }
+        });
+        draft.rows = draft.rows.concat(merged);
+        p.entry.rows = merged.length;
+        p.entry.seen = looksLikeResultLines(res.textA);
+        const doubt = merged.filter(r => !r.agreed || r.rangeDoubt).length;
+        p.entry.note = merged.length
+          ? merged.length + " value" + (merged.length===1?"":"s") + " read" + (doubt ? ", " + doubt + " to check" : ", both reads agree")
+          : "nothing readable found";
+        res.release();
       }
-      const out = parseReport(txt);
-      draft.rows = draft.rows.concat(out.rows);
-      p.entry.rows = out.rows.length;
-      p.entry.note = out.rows.length
-        ? out.rows.length + " value" + (out.rows.length===1?"":"s") + " read"
-        : (p.kind === "pdf" ? "no text in this PDF — it may be a scan" : "nothing readable found");
     }catch(e){
       p.entry.note = IS_ARTIFACT
         ? "cannot be read in this copy — open ttrng3.github.io/famrec"
@@ -1965,7 +2155,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1980,6 +2170,7 @@ document.addEventListener("click", async e=>{
     const txt=document.getElementById("paste").value;
     if(!txt.trim()) return;
     const {rows,skipped}=parseReport(txt);
+    rows.forEach(r=>{ r.confirmed=true; r.agreed=true; r.from='pasted in'; });
     if(!rows.length){ alert("Nothing recognisable in that.\n\nEach line needs a test name then a number, e.g.\n  Glucose  5.4  mmol/L  3.9 - 6.4"); return; }
     draft.rows=draft.rows.concat(rows); draft.skipped=skipped; render();
     return;
@@ -1989,6 +2180,9 @@ document.addEventListener("click", async e=>{
     try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
     applyText(); render(); return; }
   if(t.id==="pickFile" || t.id==="pickFile2"){ document.getElementById("globalPick").click(); return; }
+  if(t.dataset.keep!==undefined){ const r=draft.rows[+t.dataset.keep]; if(r){ r.confirmed=!r.confirmed; render(); } return; }
+  if(t.dataset.usealt!==undefined){ const r=draft.rows[+t.dataset.usealt];
+    if(r && r.alt!==null && r.alt!==undefined){ r.value=String(r.alt); r.confirmed=true; render(); } return; }
   if(t.dataset.docok!==undefined){ const f=draft.files[+t.dataset.docok]; if(f){ f.ok=!f.ok; render(); } return; }
   if(t.dataset.docrm!==undefined){
     const i=+t.dataset.docrm, f=draft.files[i]; if(!f) return;
@@ -2006,7 +2200,7 @@ document.addEventListener("click", async e=>{
       '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
       '</div>'; return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
-    draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:""}); render(); return; }
+    draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
   if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
   if(t.id==="killDraft"){ if((draft.rows.length||draft.files.length)&&!confirm("Discard this report and everything attached to it?")) return;
     for(const f of draft.files){ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } await delFile(f.id); }
@@ -2015,7 +2209,7 @@ document.addEventListener("click", async e=>{
     const rid=uid();
     draft.files.forEach(f=>S.reports.push({id:uid(),reportId:rid,memberId:draft.memberId,
       date:draft.date,source:draft.source,fileId:f.id,fileName:f.name}));
-    draft.rows.forEach(r=>{
+    draft.rows.filter(r=>r.confirmed && isFinite(parseFloat(r.value))).forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
       }
@@ -2032,7 +2226,9 @@ document.addEventListener("click", async e=>{
     });
     save();
     draft.files.forEach(f=>{ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } });
-    who=draft.memberId; draft=null; tab="record"; render(); window.scrollTo(0,0); return;
+    const landed=who; who=draft.memberId; draft=null;
+    tab = obsOf(who).some(o=>series(who,o.code).length>1) ? "trends" : "record";
+    render(); window.scrollTo(0,0); return;
   }
 
   if(t.id==="aAdd"){ const el=document.getElementById("aT"), title=el.value.trim();
@@ -2062,7 +2258,7 @@ document.addEventListener("click", async e=>{
     if(!draft) draft=newDraft();
     draft.memberId=who;
     if(!draft.rows.some(r=>r.code===c))
-      draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:"",newName:""});
+      draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"});
     tab="add"; render(); window.scrollTo(0,0); return; }
   if(t.dataset.unpanel){
     const c=t.dataset.unpanel;
@@ -2204,10 +2400,7 @@ document.addEventListener("input", e=>{
     if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
       r.refLabel=(r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:(r.refHigh!==""?"≤ "+r.refHigh+" "+r.unit:(r.refLow!==""?"≥ "+r.refLow+" "+r.unit:""));
     }
-    if(r.confirmed){ r.confirmed=false;
-      const row=el.closest(".crow"), ck=row&&row.querySelector("[data-ck]");
-      if(ck) ck.checked=false; if(row) row.classList.remove("ok");
-      const b=document.getElementById("saveDraft"); if(b) b.disabled=true; }
+    r.confirmed = true;  /* a value you just typed is one you have looked at */
     return;
   }
   if(el.dataset && el.dataset.mf){ const m=person(el.dataset.mid); if(!m) return;
