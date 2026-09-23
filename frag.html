@@ -162,6 +162,20 @@ dl.kv dd{margin:0; color:var(--ink); word-break:break-word}
 #dropveil div{background:var(--card); border:2px dashed var(--blue); border-radius:var(--r-card);
   padding:var(--s6) var(--s7); font-size:18px; font-weight:600; color:var(--blue-ink); text-align:center}
 #dropveil small{display:block; font-size:13px; font-weight:400; color:var(--ink-muted); margin-top:var(--s2)}
+body[data-text="large"]{font-size:17px}
+body[data-text="large"] .cap,
+body[data-text="large"] .hint,
+body[data-text="large"] .obs .ft,
+body[data-text="large"] .badge{font-size:14px}
+body[data-text="large"] .btn{font-size:16px; padding:11px 18px}
+body[data-text="large"] .inp{font-size:17px; padding:11px 12px}
+body[data-text="large"] .tab{font-size:16px; padding:15px 16px 13px}
+body[data-text="large"] .obs .nm{font-size:15px}
+body[data-text="large"] .obs .vl{font-size:27px}
+body[data-text="large"] table{font-size:16px}
+body[data-text="large"] h1{font-size:30px}
+body[data-text="large"] h2{font-size:22px}
+body[data-text="large"] h3{font-size:18px}
 footer.fix{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--card); border-top:1px solid var(--line); padding:10px var(--s4); padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); font-size:12px; color:var(--ink-muted); text-align:center}
 footer.fix b{color:var(--ink)}
 @media (max-width:560px){
@@ -357,7 +371,8 @@ const BMI_STD = {
 };
 const ST = {in_range:"In range", watch:"Near the limit", discuss:"Outside the range", act:"Flagged by hand", unknown:"No range on file"};
 const RANK = {act:0, discuss:1, watch:2, unknown:3, in_range:4};
-const BUCKET = {do_first:"Do first", lever:"Lever", quick_win:"Quick win", monitor:"Monitor"};
+const BUCKET = {do_first:"Ask about this first", lever:"Affects several results",
+                quick_win:"Quick to do", monitor:"Just keep an eye on it"};
 /* A lab reports something this catalogue has never heard of. It is still a
    number on your sheet, so it becomes a metric of its own rather than being
    dropped. The id is derived from the name, so two devices reading the same
@@ -583,8 +598,11 @@ let warned=false;
 function save(){
   try{ if(typeof queueSync==="function") queueSync(); }catch(e){}
   try{ localStorage.setItem(LS, JSON.stringify(S)); }
-  catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Hand-off and copy the backup out now."); } }
+  catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Settings and copy the backup out now."); } }
 }
+const TEXT_KEY="famrec-text";
+function bigText(){ try{ return localStorage.getItem(TEXT_KEY)==="large"; }catch(e){ return false; } }
+function applyText(){ try{ document.body.setAttribute("data-text", bigText()?"large":"normal"); }catch(e){} }
 function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actions||[]).some(a=>a.sample); }
 
 /* --------------------------------------------------- attachments */
@@ -822,13 +840,7 @@ function vRecord(){
   let h = hasSamples()?sampleNote():"";
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<span class="row">'+
-      '<button class="btn pri" data-tab="add">Add a report</button>'+
-      '<button class="dropz" id="pickFile" title="Drop a file anywhere on this page, or click to choose one">'+
-        '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 11V2.5M4.6 5.9 8 2.5l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 10.6v1.8a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'+
-        'or drop a file'+
-      '</button>'+
-    '</span></div>';
+    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>';
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
 
@@ -999,7 +1011,8 @@ function vAdd(){
   const nOK=draft.rows.filter(r=>r.confirmed).length;
   const docReady=!draft.fileName||draft.fileOK;
   const ready=draft.rows.length>0&&nOK===draft.rows.length&&docReady;
-  let h='<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
+  let h='<button class="btn" data-tab="record" style="margin-bottom:var(--s3)">&larr; Back to results</button>'+
+    '<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
 
   h+='<div class="card"><div class="grid g180">'+
     '<div><label class="fl" for="dWho">Whose report</label><select class="inp" id="dWho">'+
@@ -1023,7 +1036,7 @@ function vAdd(){
       'A photograph cannot be read here — attach it and type from it, or use your phone camera\'s own text selection and paste below.</div>'+
     (draft.pdfNote?'<div class="callout c-'+(/could not|does not work|carried no|Nothing in/i.test(draft.pdfNote)?'amber':'blue')+'" style="margin-bottom:var(--s4)">'+
       '<div class="kick">From the file</div><p>'+esc(draft.pdfNote)+'</p></div>':'')+
-    '<label class="fl" for="paste" style="margin-top:var(--s3)">Paste the report text</label>'+
+    '<details><summary>Or paste the text of a report</summary><div>'+
     '<textarea class="inp" id="paste" rows="6" placeholder="Glucose        5.4    mmol/L    3.9 - 6.4&#10;Cholesterol toàn phần   5.6   mmol/L   &lt; 5.2&#10;Creatinin      84     µmol/L    62 - 106"></textarea>'+
     '<div class="row" style="margin-top:var(--s2)"><button class="btn pri" id="doParse">Read this and fill the rows</button>'+
     '<button class="btn" id="clearPaste">Clear</button></div>'+
@@ -1031,6 +1044,7 @@ function vAdd(){
     'On a phone: photograph the sheet, then use the camera&rsquo;s own text selection to copy the table and paste it here — that reads a Vietnamese lab sheet far better than anything this page could run itself.</div>'+
     (draft.skipped.length?'<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">'+draft.skipped.length+' line(s) had no usable name and number</div>'+
       '<p>'+esc(draft.skipped.slice(0,8).join(" · "))+'. Anything that looked like a test was added, including metrics the catalogue has never seen. Add the rest with the picker below.</p></div>':'')+
+    '</div></details>'+
     '<details><summary>Or add one test at a time</summary><div>'+
       '<div class="row"><select class="inp" id="addCode" style="width:auto;min-width:220px">'+codeOpts(null)+'</select>'+
       '<button class="btn" id="addRow">Add row</button></div></div></details>'+
@@ -1086,12 +1100,12 @@ function vActions(){
   const sev=a=>Math.min.apply(null,(a.codes||[]).map(c=>{const o=L.find(x=>x.code===c);return o?RANK[statusOf(o)]:9;}).concat([9]));
   const open=mine.filter(a=>!a.done).sort((x,y)=>sev(x)-sev(y)||(y.codes||[]).length-(x.codes||[]).length);
   const done=mine.filter(a=>a.done);
-  let h='<h2 style="margin-bottom:var(--s3)">'+esc(m.name)+' — your follow-ups</h2>';
+  let h='<h2 style="margin-bottom:var(--s3)">Questions for the doctor</h2>';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">You write these, not the app</div>'+
     '<p>Vitals had a &ldquo;suggest next step&rdquo; feature and it was deliberately cut — it was the one thing that turned a record into a recommendation. '+
     'The list and its ordering survive; the medical judgement stays with you and your doctor. Ordered by the worst status among the tests each item touches.</p></div>';
   h+='<div class="card"><div class="row">'+
-    '<input class="inp" id="aT" placeholder="Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
+    '<input class="inp" id="aT" placeholder="e.g. Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
     '<select class="inp" id="aB" style="width:auto">'+Object.keys(BUCKET).map(b=>'<option value="'+b+'">'+esc(BUCKET[b])+'</option>').join("")+'</select>'+
     '<button class="btn pri" id="aAdd">Add</button></div>'+
     '<label class="fl" for="aC" style="margin-top:var(--s3)">Tests it touches (optional)</label>'+
@@ -1237,7 +1251,7 @@ function vHandoff(){
 
 /* -------------------------------------------------------- settings */
 function vSettings(){
-  let h='<h2 style="margin-bottom:var(--s3)">People</h2>';
+  let h=vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
     '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
     '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
@@ -1248,9 +1262,13 @@ function vSettings(){
       Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
     (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
     '</div>').join("");
-  h+='<button class="btn" id="addP">Add a person</button>';
+  h+='<button class="btn" id="addP">Add a person</button></div>';
 
-  h+='<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
+  h+='<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">Display</h2><div class="card">'+
+    '<div class="row" style="justify-content:space-between"><div><b>Larger text</b>'+
+    '<div class="hint" style="margin-top:2px">Bigger type and bigger buttons throughout. Kept on this device.</div></div>'+
+    '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div></div>'+
+    '<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
     '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
     '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
     'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
@@ -1785,12 +1803,19 @@ window.addEventListener("paste", async e => {
 });
 
 /* =============================================================== app */
-const TABS=[["overview","Overview"],["record","Record"],["trends","Trends"],["actions","Next Steps"],
-            ["add","Add report"],["handoff","Hand-off"],["settings","Settings"]];
+/* Four tabs, five only when the book holds more than one person. "Add a
+   report" was both a tab and a button on the same screen, which is one way of
+   doing a thing too many; it is a screen you enter and leave, not a place. */
+function tabList(){
+  const t=[];
+  if((S.members||[]).length>1) t.push(["overview","Family"]);
+  t.push(["record","Results"],["trends","Trends"],["actions","Questions"],["settings","Settings"]);
+  return t;
+}
 function paintTabs(){
   const m=person(who);
-  const c={record:latest(m.id).length, actions:S.actions.filter(a=>a.memberId===m.id&&!a.done).length};
-  document.getElementById("tabs").innerHTML=TABS.map(t=>
+  const c={actions:S.actions.filter(a=>a.memberId===m.id&&!a.done).length};
+  document.getElementById("tabs").innerHTML=tabList().map(t=>
     '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+esc(t[1])+
     (c[t[0]]?'<span class="c">'+c[t[0]]+'</span>':'')+'</button>').join("");
 }
@@ -1825,7 +1850,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#pickFile,#pickFile2,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1845,6 +1870,9 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="textSize"){
+    try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
+    applyText(); render(); return; }
   if(t.id==="pickFile" || t.id==="pickFile2"){ document.getElementById("globalPick").click(); return; }
   if(t.id==="docConfirm"){ draft.fileOK=true; render(); return; }
   if(t.id==="docUnconfirm"){ draft.fileOK=false; render(); return; }
@@ -2113,6 +2141,7 @@ function start(){
   S.tomb=S.tomb||{o:[],a:[],m:[]}; S.tomb.p=S.tomb.p||[];
   S.customCodes=S.customCodes||{};
   if(!Array.isArray(S.panel)) S.panel=DEFAULT_PANEL.slice();
+  applyText();
   loadAuth();
   if(AUTH) dropExamples();
   ensurePerson();
