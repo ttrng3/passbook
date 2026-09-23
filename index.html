@@ -516,7 +516,7 @@ async function getFile(id){ try{ const d=await idb(); return await new Promise((
   }catch(e){ return null; } }
 
 /* --------------------------------------------------- computation */
-function person(id){ return S.members.find(m=>m.id===id) || S.members[0]; }
+function person(id){ return (S.members||[]).find(m=>m.id===id) || (S.members||[])[0] || {id:"none",name:"\u2014",sex:"",dob:"",population:"asian_pacific"}; }
 function ageOf(m){ if(!m||!m.dob) return null; const d=new Date(m.dob); if(isNaN(d)) return null;
   const t=new Date(); let a=t.getFullYear()-d.getFullYear(); const k=t.getMonth()-d.getMonth();
   if(k<0||(k===0&&t.getDate()<d.getDate())) a--; return a>=0&&a<130?a:null; }
@@ -1183,18 +1183,44 @@ async function consumeSignInLink(){
   return true;
 }
 
+function realRecordsFor(id){
+  return (S.observations||[]).some(o=>o.memberId===id && !isSample(o))
+      || (S.actions||[]).some(a=>a.memberId===id && !isSample(a));
+}
+function dedupePeople(){
+  const key = m => [(m.name||"").trim().toLowerCase(), m.dob||"", m.sex||""].join("|");
+  const keep = new Map(), remap = {};
+  for(const m of (S.members||[])){
+    const k = key(m), prev = keep.get(k);
+    if(!prev){ keep.set(k,m); continue; }
+    const prevReal = realRecordsFor(prev.id), thisReal = realRecordsFor(m.id);
+    if(prevReal && thisReal){ keep.set(k+"|"+m.id, m); continue; }  /* both real: leave alone */
+    if(!prevReal && thisReal){ remap[prev.id] = m.id; keep.set(k, m); }
+    else { remap[m.id] = prev.id; }
+  }
+  const survivors = [...keep.values()];
+  if(survivors.length === (S.members||[]).length) return false;
+  (S.observations||[]).forEach(o=>{ if(remap[o.memberId]) o.memberId = remap[o.memberId]; });
+  (S.actions||[]).forEach(a=>{ if(remap[a.memberId]) a.memberId = remap[a.memberId]; });
+  Object.keys(remap).forEach(id=>tombstone("m", id));
+  S.members = survivors;
+  if(!S.members.some(m=>m.id===who) && S.members.length) who = S.members[0].id;
+  save();
+  return true;
+}
+function ensurePerson(){
+  if((S.members||[]).length) return;
+  S.members = [{id:"m-"+String((AUTH&&AUTH.uid)||"local").replace(/-/g,"").slice(0,10),
+    name:"Me", sex:"female", dob:"", population:"asian_pacific", country:"", mtime:Date.now()}];
+  who = S.members[0].id;
+}
 function dropExamples(){
   const had=(S.observations||[]).some(isSample)||(S.actions||[]).some(isSample)||(S.members||[]).some(isSample);
   if(!had) return false;
   S.observations=(S.observations||[]).filter(o=>!isSample(o));
   S.actions=(S.actions||[]).filter(a=>!isSample(a));
   S.members=(S.members||[]).filter(m=>!isSample(m));
-  if(!S.members.length){
-    const stableId = "m-"+String((AUTH&&AUTH.uid)||"local").replace(/-/g,"").slice(0,10);
-    const nm = (AUTH&&AUTH.email) ? AUTH.email.split("@")[0] : "Me";
-    S.members=[{id:stableId,name:nm,sex:"female",dob:"",population:"asian_pacific",country:"",mtime:Date.now()}];
-  }
-  if(!S.members.some(m=>m.id===who)) who=S.members[0].id;
+  if(S.members.length && !S.members.some(m=>m.id===who)) who=S.members[0].id;
   save(); return true;
 }
 
@@ -1251,7 +1277,9 @@ async function syncNow(quiet){
     S.actions = merged.actions;
     S.reports = merged.reports;
     S.tomb = merged.tomb;
-    if(!S.members.some(m=>m.id===who)) who = S.members[0].id;
+    if(S.members.length && !S.members.some(m=>m.id===who)) who = S.members[0].id;
+    if(dedupePeople()) changed = true;
+    ensurePerson();
     save();
     const keptMembers = S.members.filter(m=>!isSample(m));
     const up = await supa("/rest/v1/famrec_state", {method:"POST",
@@ -1549,8 +1577,10 @@ m.addEventListener?m.addEventListener("change",h):m.addListener(h);}})();
 function start(){
   S=load(); S.reports=S.reports||[]; S.actions=S.actions||[];
   S.tomb=S.tomb||{o:[],a:[],m:[]};
-  who=S.members[0].id;
   loadAuth();
+  if(AUTH) dropExamples();
+  ensurePerson();
+  who=S.members[0].id;
   const d=document.createElement("div"); d.id="dHost"; document.body.appendChild(d);
   render();
   if(IS_ARTIFACT) return;
