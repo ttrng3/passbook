@@ -1763,7 +1763,10 @@ async function extractViaVitals(file, say){
                 "Content-Type": mime, "x-upsert": "true"},
       body: file });
   }
-  if(!up.ok) throw new Error("the page could not be uploaded (HTTP " + up.status + ")");
+  if(!up.ok){
+    let why = ""; try{ const j = await up.json(); why = j.message || j.error || ""; }catch(e){}
+    throw new Error("the page could not be uploaded (HTTP " + up.status + (why ? ": " + why : "") + ")");
+  }
 
   say && say("Registering it");
   const ins = await supa("/rest/v1/documents", {method: "POST",
@@ -1878,7 +1881,10 @@ async function readQueue(pending){
       const d = rows.map(r=>r.collectedAt).find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x||""));
       if(d && draft.date === today()) draft.date = d;
     }catch(e){
-      p.entry.note = "could not be read \u2014 " + (e.message || e);
+      const m = String((e && e.message) || e);
+      p.entry.note = /Failed to fetch|NetworkError|Load failed/i.test(m)
+        ? "could not reach the extractor \u2014 either this device is offline, or the Supabase project has paused (the free plan pauses after seven days idle; one click in the dashboard resumes it). The page is still attached."
+        : "could not be read \u2014 " + m;
     }
     render();
   }
