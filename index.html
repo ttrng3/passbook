@@ -169,6 +169,16 @@ dl.kv dd{margin:0; color:var(--ink); word-break:break-word}
 /* chart */
 .chart svg{display:block; width:100%; height:auto; overflow:visible}
 .tip{position:absolute; pointer-events:none; background:var(--ink); color:#fff; border-radius:var(--r-inner); padding:7px 9px; font-size:12px; line-height:1.4; z-index:5; white-space:nowrap}
+.dropz{display:inline-flex; align-items:center; gap:var(--s2); border:1.5px dashed var(--line);
+  border-radius:var(--r-card); padding:9px 14px; background:var(--sunk); cursor:pointer;
+  font-size:13px; color:var(--ink-muted); font-weight:500}
+.dropz:hover{border-color:var(--blue); color:var(--blue-ink); background:var(--blue-bg)}
+.dropz.big{padding:26px; justify-content:center; text-align:center; font-size:15px}
+#dropveil{position:fixed; inset:0; z-index:60; background:rgba(0,122,255,.10);
+  display:grid; place-items:center; pointer-events:none}
+#dropveil div{background:var(--card); border:2px dashed var(--blue); border-radius:var(--r-card);
+  padding:var(--s6) var(--s7); font-size:18px; font-weight:600; color:var(--blue-ink); text-align:center}
+#dropveil small{display:block; font-size:13px; font-weight:400; color:var(--ink-muted); margin-top:var(--s2)}
 footer.fix{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--card); border-top:1px solid var(--line); padding:10px var(--s4); padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); font-size:12px; color:var(--ink-muted); text-align:center}
 footer.fix b{color:var(--ink)}
 @media (max-width:560px){
@@ -196,6 +206,8 @@ footer.fix b{color:var(--ink)}
   </div>
 </header>
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
+<div id="dropveil" hidden><div>Drop the report here<small>A PDF has its values read out of it. A photo is attached to check against.</small></div></div>
+<input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" hidden>
 <footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
 
 <script>
@@ -827,7 +839,14 @@ function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
-    '<h2>'+esc(m.name)+'</h2><button class="btn pri" data-tab="add">Add a report</button></div>';
+    '<h2>'+esc(m.name)+'</h2>'+
+    '<span class="row">'+
+      '<button class="btn pri" data-tab="add">Add a report</button>'+
+      '<button class="dropz" id="pickFile" title="Drop a file anywhere on this page, or click to choose one">'+
+        '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true"><path d="M8 11V2.5M4.6 5.9 8 2.5l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 10.6v1.8a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>'+
+        'or drop a file'+
+      '</button>'+
+    '</span></div>';
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
 
@@ -1012,7 +1031,16 @@ function vAdd(){
     '<div class="hint">Collection date, not the date printed on the letter. Fasting changes how glucose and lipids read, so it is worth a second to record.</div>'+
     '</div>';
 
-  h+='<div class="card"><h3>1 · Get the text in</h3>'+
+  h+='<div class="card"><h3>1 · Get the report in</h3>'+
+    '<button class="dropz big" id="pickFile2" style="width:100%;margin-top:var(--s3)">'+
+      '<svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" style="margin-right:var(--s2)"><path d="M8 11V2.5M4.6 5.9 8 2.5l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 10.6v1.8a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'+
+      'Drop a PDF, photo or CSV here, or click to choose'+
+    '</button>'+
+    '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
+      '<span class="mono">⌘V</span>. A PDF from a lab portal has its values read straight out of it. '+
+      'A photograph cannot be read here — attach it and type from it, or use your phone camera\'s own text selection and paste below.</div>'+
+    (draft.pdfNote?'<div class="callout c-'+(/could not|does not work|carried no|Nothing in/i.test(draft.pdfNote)?'amber':'blue')+'" style="margin-bottom:var(--s4)">'+
+      '<div class="kick">From the file</div><p>'+esc(draft.pdfNote)+'</p></div>':'')+
     '<label class="fl" for="paste" style="margin-top:var(--s3)">Paste the report text</label>'+
     '<textarea class="inp" id="paste" rows="6" placeholder="Glucose        5.4    mmol/L    3.9 - 6.4&#10;Cholesterol toàn phần   5.6   mmol/L   &lt; 5.2&#10;Creatinin      84     µmol/L    62 - 106"></textarea>'+
     '<div class="row" style="margin-top:var(--s2)"><button class="btn pri" id="doParse">Read this and fill the rows</button>'+
@@ -1596,6 +1624,184 @@ async function syncNow(quiet){
   if(!quiet || changed) render();
 }
 
+
+/* ================================================== dropping a report in
+   A website's natural gesture is to drag the file onto the page, so the page
+   takes a drop anywhere, a paste from the clipboard, and a click on the target.
+
+   What arrives decides what happens:
+     .txt / .csv      read and parsed, nothing attached — it IS the text
+     .pdf             attached, and its text pulled out and parsed
+     image            attached as the document to check values against
+   A PDF from a lab portal carries real text, so dropping one fills the rows
+   with no typing at all. A photograph cannot: that still needs the phone's own
+   text selection, or typing. */
+
+const PDFJS_VER = "3.11.174";
+let _pdfjs = null;
+function ensurePdfJs(){
+  if(_pdfjs) return _pdfjs;
+  _pdfjs = new Promise((res, rej) => {
+    if(window.pdfjsLib) return res(window.pdfjsLib);
+    const el = document.createElement("script");
+    el.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/"+PDFJS_VER+"/pdf.min.js";
+    el.onload = () => window.pdfjsLib ? res(window.pdfjsLib) : rej(new Error("the PDF reader did not load"));
+    el.onerror = () => rej(new Error("the PDF reader could not be fetched"));
+    document.head.appendChild(el);
+  });
+  return _pdfjs;
+}
+async function pdfWorkerReady(lib){
+  if(lib.GlobalWorkerOptions.workerSrc) return;
+  /* A worker cannot be loaded straight from another origin, so fetch it and
+     hand it over as a blob. Inside the claude.ai viewer that fetch is blocked
+     outright, which is why this says so rather than hanging. */
+  const url = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/"+PDFJS_VER+"/pdf.worker.min.js";
+  const r = await fetch(url);
+  if(!r.ok) throw new Error("HTTP "+r.status);
+  lib.GlobalWorkerOptions.workerSrc = URL.createObjectURL(await r.blob());
+}
+async function extractPdfText(file){
+  const lib = await ensurePdfJs();
+  await pdfWorkerReady(lib);
+  const buf = await file.arrayBuffer();
+  const doc = await lib.getDocument({data: buf}).promise;
+  const pages = Math.min(doc.numPages, 15);
+  const out = [];
+  for(let p = 1; p <= pages; p++){
+    const page = await doc.getPage(p);
+    const tc = await page.getTextContent();
+    /* Rebuild lines: a lab table is only parseable if a row's name, value,
+       unit and range stay on one line, and PDF text arrives as loose pieces. */
+    const lines = new Map();
+    for(const it of tc.items){
+      if(!it.str || !it.str.trim()) continue;
+      const y = Math.round(it.transform[5] / 3);
+      const x = it.transform[4];
+      if(!lines.has(y)) lines.set(y, []);
+      lines.get(y).push({x, s: it.str});
+    }
+    [...lines.keys()].sort((a,b) => b-a).forEach(y => {
+      const parts = lines.get(y).sort((a,b) => a.x - b.x);
+      let line = "", lastX = null;
+      for(const part of parts){
+        if(lastX !== null && part.x - lastX > 6) line += "  ";
+        line += part.s;
+        lastX = part.x + part.s.length * 5;
+      }
+      if(line.trim()) out.push(line.trim());
+    });
+  }
+  return out.join("\n");
+}
+
+function isTextFile(f){
+  const t = (f.type||"").toLowerCase(), n = (f.name||"").toLowerCase();
+  return t.indexOf("text/") === 0 || /\.(txt|csv|tsv)$/.test(n);
+}
+function isPdf(f){
+  return (f.type||"").toLowerCase() === "application/pdf" || /\.pdf$/i.test(f.name||"");
+}
+
+async function handleIncomingFile(f){
+  if(!f) return;
+  if(!draft) draft = newDraft();
+  if(!draft.memberId) draft.memberId = who;
+  draft.note = "";
+
+  if(isTextFile(f)){
+    let txt = "";
+    try{ txt = await f.text(); }catch(e){ alert("That file could not be read."); return; }
+    const out = parseReport(txt);
+    draft.rows = draft.rows.concat(out.rows);
+    draft.skipped = out.skipped;
+    draft.pdfNote = out.rows.length
+      ? out.rows.length + " row" + (out.rows.length===1?"":"s") + " read from " + f.name + ". Check each against the original."
+      : "Nothing in " + f.name + " looked like a test row.";
+    tab = "add"; render(); window.scrollTo(0,0);
+    return;
+  }
+
+  if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
+  if(draft.fileId) await delFile(draft.fileId);
+  const id = uid(), stored = await putFile(id, f);
+  draft.fileId = stored ? id : null;
+  draft.fileName = f.name; draft.fileType = f.type || "";
+  draft.fileSize = f.size || 0; draft.fileOK = false;
+  draft.fileURL = (f.type||"").indexOf("image/") === 0 ? URL.createObjectURL(f) : null;
+  draft.pdfNote = "";
+  tab = "add"; render(); window.scrollTo(0,0);
+
+  if(isPdf(f)){
+    draft.pdfNote = "Reading the text out of this PDF…";
+    render();
+    try{
+      const txt = await extractPdfText(f);
+      const out = parseReport(txt);
+      draft.rows = draft.rows.concat(out.rows);
+      draft.skipped = out.skipped;
+      draft.pdfNote = out.rows.length
+        ? out.rows.length + " row" + (out.rows.length===1?"":"s") + " came straight out of the PDF. Every one is unconfirmed — check them against the page above."
+        : "The PDF's text carried no recognisable test rows. It may be a scan rather than text. The file is attached; type the values from it.";
+    }catch(e){
+      draft.pdfNote = IS_ARTIFACT
+        ? "Reading text out of a PDF does not work in this copy — the claude.ai viewer blocks the reader from loading. Open the same book at ttrng3.github.io/famrec and drop it there. The file is attached either way."
+        : "Could not read text from this PDF (" + (e.message || e) + "). It is attached; type the values from it.";
+    }
+    render();
+  }
+}
+
+/* drag anywhere on the page */
+let dragDepth = 0;
+function dropOverlay(on){
+  const el = document.getElementById("dropveil");
+  if(el) el.hidden = !on;
+}
+window.addEventListener("dragenter", e => {
+  if(!e.dataTransfer || (e.dataTransfer.types||[]).indexOf("Files") < 0) return;
+  e.preventDefault(); dragDepth++; dropOverlay(true);
+});
+window.addEventListener("dragover", e => {
+  if(!e.dataTransfer || (e.dataTransfer.types||[]).indexOf("Files") < 0) return;
+  e.preventDefault(); e.dataTransfer.dropEffect = "copy";
+});
+window.addEventListener("dragleave", e => {
+  if(--dragDepth <= 0){ dragDepth = 0; dropOverlay(false); }
+});
+window.addEventListener("drop", async e => {
+  if(!e.dataTransfer) return;
+  const f = e.dataTransfer.files && e.dataTransfer.files[0];
+  if(!f) return;
+  e.preventDefault(); dragDepth = 0; dropOverlay(false);
+  await handleIncomingFile(f);
+});
+
+/* paste a screenshot or a block of report text straight in */
+window.addEventListener("paste", async e => {
+  if(tab === "add" && document.activeElement &&
+     /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return;
+  const cd = e.clipboardData; if(!cd) return;
+  const item = [...(cd.items||[])].find(i => i.kind === "file");
+  if(item){
+    const f = item.getAsFile();
+    if(f){ e.preventDefault(); await handleIncomingFile(f); return; }
+  }
+  const txt = cd.getData("text/plain");
+  if(txt && txt.split(/\r?\n/).length >= 2){
+    const out = parseReport(txt);
+    if(out.rows.length){
+      e.preventDefault();
+      if(!draft) draft = newDraft();
+      if(!draft.memberId) draft.memberId = who;
+      draft.rows = draft.rows.concat(out.rows);
+      draft.skipped = out.skipped;
+      draft.pdfNote = out.rows.length + " row" + (out.rows.length===1?"":"s") + " read from what you pasted.";
+      tab = "add"; render(); window.scrollTo(0,0);
+    }
+  }
+});
+
 /* =============================================================== app */
 const TABS=[["overview","Overview"],["record","Record"],["trends","Trends"],["actions","Next Steps"],
             ["add","Add report"],["handoff","Hand-off"],["settings","Settings"]];
@@ -1637,7 +1843,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#pickFile,#pickFile2,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1657,6 +1863,7 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="pickFile" || t.id==="pickFile2"){ document.getElementById("globalPick").click(); return; }
   if(t.id==="docConfirm"){ draft.fileOK=true; render(); return; }
   if(t.id==="docUnconfirm"){ draft.fileOK=false; render(); return; }
   if(t.id==="docRemove"){
@@ -1899,6 +2106,7 @@ document.addEventListener("change", async e=>{
   if(el.id==="trendSel"){ trendCode=el.value; render(); return; }
   if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
     try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
+  if(el.id==="globalPick"){ const f=el.files&&el.files[0]; el.value=""; if(f) await handleIncomingFile(f); return; }
   if(el.id==="dFile" && draft){ const f=el.files&&el.files[0]; if(!f) return;
     if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
     if(draft.fileId) await delFile(draft.fileId);
