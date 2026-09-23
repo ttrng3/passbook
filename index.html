@@ -367,6 +367,57 @@ const C = {
  body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
  visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
  waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
+ /* An InBody sheet: body water and its two compartments, protein and mineral
+    mass, fat and lean mass whole-body and per limb. Worth storing as series
+    because skeletal muscle falling while fat mass rises, at an unchanged
+    total weight, is the one thing this kind of sheet exists to show.
+
+    "Protein" is NOT a synonym here -- it already means a serum total protein
+    and a urine protein. The section heading is what tells them apart, and
+    that lives in the alias table, not in this list. */
+ total_body_water:{n:"Total body water",u:"L",g:"Body composition",syn:["total body water","tbw","tong luong nuoc co the"]},
+ intracellular_water:{n:"Water inside cells",u:"L",g:"Body composition",syn:["intracellular water","icw"]},
+ extracellular_water:{n:"Water outside cells",u:"L",g:"Body composition",syn:["extracellular water","ecw"]},
+ ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body composition",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
+ protein_mass:{n:"Protein mass",u:"kg",g:"Body composition",syn:["protein mass"]},
+ mineral_mass:{n:"Minerals",u:"kg",g:"Body composition",syn:["minerals","mineral","chat khoang"]},
+ body_fat_mass:{n:"Fat mass",u:"kg",g:"Body composition",syn:["body fat mass","bfm","khoi luong mo"]},
+ soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body composition",syn:["soft lean mass","slm"]},
+ fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body composition",syn:["fat free mass","fat-free mass","ffm"]},
+ skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body composition",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
+ body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body composition",syn:["body cell mass","bcm"]},
+ smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body composition",syn:["smi","skeletal muscle index"]},
+ bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body composition",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
+ waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body composition",syn:["waist-hip ratio","whr","ty le eo hong"]},
+ phase_angle:{n:"Phase angle",u:"°",g:"Body composition",syn:["phase angle","whole body phase angle"]},
+ inbody_score:{n:"InBody score",u:"points",g:"Body composition",syn:["inbody score","inbody points"]},
+ /* One name, three measurements: an arm has a lean mass, a fat mass and an
+    ECW ratio, all printed as "Right Arm" on the same page. */
+ lean_right_arm:{n:"Lean mass, right arm",u:"kg",g:"Segmental",syn:["lean right arm"]},
+ lean_pct_right_arm:{n:"Lean, right arm (of ideal)",u:"%",g:"Segmental",syn:[]},
+ fat_right_arm:{n:"Fat mass, right arm",u:"kg",g:"Segmental",syn:["fat right arm"]},
+ fat_pct_right_arm:{n:"Fat, right arm (of ideal)",u:"%",g:"Segmental",syn:[]},
+ ecw_right_arm:{n:"ECW ratio, right arm",u:"ratio",g:"Segmental",syn:["ecw ratio right arm"]},
+ lean_left_arm:{n:"Lean mass, left arm",u:"kg",g:"Segmental",syn:["lean left arm"]},
+ lean_pct_left_arm:{n:"Lean, left arm (of ideal)",u:"%",g:"Segmental",syn:[]},
+ fat_left_arm:{n:"Fat mass, left arm",u:"kg",g:"Segmental",syn:["fat left arm"]},
+ fat_pct_left_arm:{n:"Fat, left arm (of ideal)",u:"%",g:"Segmental",syn:[]},
+ ecw_left_arm:{n:"ECW ratio, left arm",u:"ratio",g:"Segmental",syn:["ecw ratio left arm"]},
+ lean_trunk:{n:"Lean mass, trunk",u:"kg",g:"Segmental",syn:["lean trunk"]},
+ lean_pct_trunk:{n:"Lean, trunk (of ideal)",u:"%",g:"Segmental",syn:[]},
+ fat_trunk:{n:"Fat mass, trunk",u:"kg",g:"Segmental",syn:["fat trunk"]},
+ fat_pct_trunk:{n:"Fat, trunk (of ideal)",u:"%",g:"Segmental",syn:[]},
+ ecw_trunk:{n:"ECW ratio, trunk",u:"ratio",g:"Segmental",syn:["ecw ratio trunk"]},
+ lean_right_leg:{n:"Lean mass, right leg",u:"kg",g:"Segmental",syn:["lean right leg"]},
+ lean_pct_right_leg:{n:"Lean, right leg (of ideal)",u:"%",g:"Segmental",syn:[]},
+ fat_right_leg:{n:"Fat mass, right leg",u:"kg",g:"Segmental",syn:["fat right leg"]},
+ fat_pct_right_leg:{n:"Fat, right leg (of ideal)",u:"%",g:"Segmental",syn:[]},
+ ecw_right_leg:{n:"ECW ratio, right leg",u:"ratio",g:"Segmental",syn:["ecw ratio right leg"]},
+ lean_left_leg:{n:"Lean mass, left leg",u:"kg",g:"Segmental",syn:["lean left leg"]},
+ lean_pct_left_leg:{n:"Lean, left leg (of ideal)",u:"%",g:"Segmental",syn:[]},
+ fat_left_leg:{n:"Fat mass, left leg",u:"kg",g:"Segmental",syn:["fat left leg"]},
+ fat_pct_left_leg:{n:"Fat, left leg (of ideal)",u:"%",g:"Segmental",syn:[]},
+ ecw_left_leg:{n:"ECW ratio, left leg",u:"ratio",g:"Segmental",syn:["ecw ratio left leg"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
@@ -389,7 +440,9 @@ const DEFAULT_PANEL = [
   /* every remaining line a Kusumi CBC and an SGH assessment print */
   "neutrophils_abs","lymphocytes_abs","monocytes_abs","eosinophils_abs","basophils_abs",
   "mpv","plateletcrit","pdw","ca72_4",
-  "ecg_finding","visual_acuity_right","visual_acuity_left"
+  "ecg_finding","visual_acuity_right","visual_acuity_left",
+  "skeletal_muscle_mass","body_fat_mass","total_body_water","bmr",
+  "waist_hip_ratio","ecw_tbw_ratio","smi","phase_angle"
 ];
 /* Two pairs read as one measurement on a report and are shown as one card,
    while staying two rows in the data — the contract never pre-joins codes. */
@@ -431,7 +484,7 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Urine","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
+const GROUPS = ["Body","Body composition","Segmental","Vitals","Metabolic","Lipids","Liver","Kidney","Urine","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
@@ -583,7 +636,7 @@ const UNIT_MAP = {
   "mg/l":"mg/L","u/ml":"U/mL","%":"%","fl":"fL","pg":"pg","l/l":"L/L","mm/h":"mm/h","mmhg":"mmHg",
   "bpm":"bpm","lan/phut":"bpm","kg":"kg","cm":"cm","in":"in","lb":"lb","ms":"ms","ratio":"ratio",
   "t/l":"×10¹²/L","g/t":"×10⁹/L","k/ul":"×10⁹/L","10^9/l":"×10⁹/L","x10^9/l":"×10⁹/L",
-  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)","ph":"pH"
+  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)","ph":"pH","l":"L","kcal":"kcal","points":"points"
 };
 function normUnit(raw){
   if(!raw) return "";
