@@ -2081,7 +2081,12 @@ async function extractViaVitals(file, say){
   });
   let out = null; try{ out = await r.json(); }catch(e){}
   if(!r.ok) throw new Error((out && out.error) || ("the extractor refused it (HTTP " + r.status + ")"));
-  return {rows: (out && out.rows) || [], documentId: documentId, path: path};
+  /* notice is set when the page held more rows than one read could return.
+     It is carried through and shown, because a page that quietly gave up
+     two thirds of its results is the silent failure this book exists to
+     avoid -- better a visible "photograph it in two halves". */
+  return {rows: (out && out.rows) || [], documentId: documentId, path: path,
+          notice: (out && out.notice) || ""};
 }
 
 /* Model rows -> the shape this book stores. The range comes back as a pair
@@ -2189,6 +2194,8 @@ async function readQueue(pending){
       p.entry.note = rows.length
         ? rows.length + " value" + (rows.length===1?"":"s") + " read" + (flagged ? ", " + flagged + " to check" : "")
         : "no test results found on this page";
+      if(res.notice) p.entry.note += " \u2014 " + res.notice;
+      p.entry.partial = !!res.notice;
       const d = rows.map(r=>r.collectedAt).find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x||""));
       if(d && draft.date === today()) draft.date = d;
     }catch(e){
