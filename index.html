@@ -603,6 +603,12 @@ function idb(){ if(_db) return _db;
 async function putFile(id,blob){ try{ const d=await idb(); await new Promise((res,rej)=>{
     const t=d.transaction("f","readwrite"); t.objectStore("f").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); });
   return true; }catch(e){ return false; } }
+async function delFile(id){
+  if(!id) return;
+  try{ const d=await idb(); await new Promise((res,rej)=>{
+    const t=d.transaction("f","readwrite"); t.objectStore("f").delete(id);
+    t.oncomplete=res; t.onerror=()=>rej(t.error); }); }catch(e){}
+}
 async function getFile(id){ try{ const d=await idb(); return await new Promise((res,rej)=>{
     const r=d.transaction("f","readonly").objectStore("f").get(id); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
   }catch(e){ return null; } }
@@ -954,7 +960,8 @@ function line(pts,M){
 
 /* ------------------------------------------------------- add report */
 function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
-  rows:[],fileId:null,fileName:"",fileURL:null,skipped:[]}; }
+  rows:[],fileId:null,fileName:"",fileType:"",fileSize:0,fileURL:null,fileOK:false,skipped:[]}; }
+function kb(n){ return n>=1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
 function codeOpts(sel){
   const G={};
   for(const c in C){ (G[C[c].g]=G[C[c].g]||[]).push(c); }
@@ -963,9 +970,34 @@ function codeOpts(sel){
     G[g].sort((a,b)=>meta(a).n.localeCompare(meta(b).n))
       .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(meta(c).n)+'</option>').join("")+'</optgroup>').join("");
 }
+/* A photographed sheet is easy to get wrong: the previous visit, the second
+   page, somebody else's. Confirm the document before its values are trusted. */
+function docCheck(){
+  const ok = draft.fileOK;
+  let h = '<div class="card"><div class="row" style="justify-content:space-between">'+
+    '<h3>2 \u00b7 Is this the right document?</h3>'+
+    (ok?'<span class="badge st-in_range"><span class="dot"></span>Confirmed</span>'
+       :'<span class="badge st-watch"><span class="dot"></span>Not checked yet</span>')+'</div>';
+  h += '<div class="cap" style="margin-top:var(--s2)">'+esc(draft.fileName)+
+       (draft.fileSize?' \u00b7 '+kb(draft.fileSize):'')+'</div>';
+  if(draft.fileURL){
+    h += '<img class="shot" style="margin-top:var(--s3);max-height:420px;object-fit:contain" src="'+draft.fileURL+'" alt="The attached report">';
+  } else {
+    h += '<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">No preview</div>'+
+      '<p>Only photographs preview here. Check the file name above is the report you meant, or remove it and attach another.</p></div>';
+  }
+  h += '<div class="row" style="margin-top:var(--s3)">'+
+    (ok?'<button class="btn" id="docUnconfirm">Look again</button>'
+       :'<button class="btn pri" id="docConfirm">Yes, this is the right report</button>')+
+    '<button class="btn warn" id="docRemove">Remove it</button></div>'+
+    '<div class="hint">Removing deletes it from this browser. Nothing else in the report is affected.</div></div>';
+  return h;
+}
 function vAdd(){
   if(!draft) draft=newDraft();
-  const nOK=draft.rows.filter(r=>r.confirmed).length, ready=draft.rows.length>0&&nOK===draft.rows.length;
+  const nOK=draft.rows.filter(r=>r.confirmed).length;
+  const docReady=!draft.fileName||draft.fileOK;
+  const ready=draft.rows.length>0&&nOK===draft.rows.length&&docReady;
   let h='<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
 
   h+='<div class="card"><div class="grid g180">'+
@@ -992,14 +1024,15 @@ function vAdd(){
     '<details><summary>Or add one test at a time</summary><div>'+
       '<div class="row"><select class="inp" id="addCode" style="width:auto;min-width:220px">'+codeOpts(null)+'</select>'+
       '<button class="btn" id="addRow">Add row</button></div></div></details>'+
-    '<details><summary>Attach the report itself</summary><div>'+
+    '<details'+(draft.fileName?' open':'')+'><summary>Attach the report itself</summary><div>'+
       '<input class="inp" id="dFile" type="file" accept="image/*,application/pdf" capture="environment">'+
-      '<div class="hint">On a phone this opens the camera. The image sits beside the rows while you check them, and is kept in this browser only — it is never uploaded.</div>'+
-      (draft.fileName?'<div class="cap" style="margin-top:var(--s2)">Attached: '+esc(draft.fileName)+'</div>':'')+
+      '<div class="hint">On a phone this opens the camera. It stays in this browser, is never uploaded, and does not travel with a sync.</div>'+
     '</div></details></div>';
 
+  if(draft.fileName) h += docCheck();
+
   if(draft.rows.length){
-    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>2 · Check every value against the sheet</h3>'+
+    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>'+(draft.fileName?"3":"2")+' · Check every value against the sheet</h3>'+
       '<span class="badge '+(ready?"st-in_range":"st-watch")+'"><span class="dot"></span>'+nOK+' of '+draft.rows.length+' checked</span></div>'+
       '<div class="hint" style="margin-bottom:var(--s3)">There is no check-all. Reading each number back against the paper is the one step that keeps a typo out of your record — and editing a value un-checks it.</div>';
     h+='<div style="display:grid;grid-template-columns:'+(draft.fileURL?"minmax(0,1fr) 240px":"1fr")+';gap:var(--s4)"><div>';
@@ -1031,7 +1064,8 @@ function vAdd(){
     h+='</div></div>';
     h+='<div class="row" style="margin-top:var(--s4)">'+
       '<button class="btn pri big" id="saveDraft"'+(ready?"":" disabled")+' style="max-width:320px">Save '+draft.rows.length+' value'+(draft.rows.length===1?"":"s")+'</button>'+
-      '<button class="btn" id="killDraft">Discard</button></div>';
+      '<button class="btn" id="killDraft">Discard</button>'+
+      (!docReady?'<span class="cap">Confirm the document above first.</span>':'')+'</div>';
   }
   return h;
 }
@@ -1603,7 +1637,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#docConfirm,#docUnconfirm,#docRemove,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1623,11 +1657,22 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="docConfirm"){ draft.fileOK=true; render(); return; }
+  if(t.id==="docUnconfirm"){ draft.fileOK=false; render(); return; }
+  if(t.id==="docRemove"){
+    if(!confirm("Remove "+(draft.fileName||"this document")+" from this browser?")) return;
+    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
+    await delFile(draft.fileId);
+    draft.fileId=null; draft.fileName=""; draft.fileType=""; draft.fileSize=0;
+    draft.fileURL=null; draft.fileOK=false;
+    render(); return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
     draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:""}); render(); return; }
   if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
-  if(t.id==="killDraft"){ if(draft.rows.length&&!confirm("Discard this report?")) return;
-    if(draft.fileURL) URL.revokeObjectURL(draft.fileURL); draft=null; tab="record"; render(); return; }
+  if(t.id==="killDraft"){ if((draft.rows.length||draft.fileName)&&!confirm("Discard this report?")) return;
+    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
+    await delFile(draft.fileId);
+    draft=null; tab="record"; render(); return; }
   if(t.id==="saveDraft"){
     const rid=uid();
     if(draft.fileId) S.reports.push({id:rid,memberId:draft.memberId,date:draft.date,source:draft.source,fileId:draft.fileId,fileName:draft.fileName});
@@ -1855,10 +1900,13 @@ document.addEventListener("change", async e=>{
   if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
     try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
   if(el.id==="dFile" && draft){ const f=el.files&&el.files[0]; if(!f) return;
-    if(draft.fileURL) URL.revokeObjectURL(draft.fileURL);
+    if(draft.fileURL){ try{ URL.revokeObjectURL(draft.fileURL); }catch(e){} }
+    if(draft.fileId) await delFile(draft.fileId);
     const id=uid(), stored=await putFile(id,f);
-    draft.fileId=stored?id:null; draft.fileName=f.name;
+    draft.fileId=stored?id:null; draft.fileName=f.name; draft.fileType=f.type||"";
+    draft.fileSize=f.size||0; draft.fileOK=false;
     draft.fileURL=f.type.indexOf("image/")===0?URL.createObjectURL(f):null;
+    if(!stored) alert("The file could not be stored in this browser, but you can still read it from your own device while you check the values.");
     render(); return; }
 });
 document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&detail){ detail=null; drawer(); } });
