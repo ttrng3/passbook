@@ -1808,37 +1808,44 @@ async function extractViaVitals(file, say){
 /* Model rows -> the shape this book stores. The range comes back as a pair
    plus an operator, because a report prints "< 5.2" as often as "3.9 - 6.4". */
 function rowsFromVitals(vrows, fileName){
+  /* The function returns camelCase and has already parsed the range bounds to
+     numbers. Read what it actually sends, not what the model's raw JSON used. */
   const out = [];
   for(const v of (vrows||[])){
-    if(v.value_raw === null || v.value_raw === undefined || String(v.value_raw).trim() === "") continue;
-    const known = !!v.canonical_code;
-    const code = known ? v.canonical_code : slug(v.source_test_name || "unknown");
-    const unit = normUnit(v.unit_raw || "") || meta(code).u || (v.unit_raw || "");
-    const op = v.ref_operator;
-    let lo = v.ref_low, hi = v.ref_high, label = "";
-    if(op === "<" || op === "<="){ hi = (hi !== null && hi !== undefined) ? hi : lo; lo = ""; label = (op==="<"?"< ":"≤ ") + hi; }
-    else if(op === ">" || op === ">="){ lo = (lo !== null && lo !== undefined) ? lo : hi; hi = ""; label = (op===">"?"> ":"≥ ") + lo; }
-    else if(lo !== null && lo !== undefined && hi !== null && hi !== undefined) label = lo + "–" + hi;
+    if(v.valueRaw === null || v.valueRaw === undefined || String(v.valueRaw).trim() === "") continue;
+    const known = !!v.canonicalCode;
+    const name  = v.sourceTestName || "";
+    const code  = known ? v.canonicalCode : slug(name || "unknown");
+    const unit  = normUnit(v.unitRaw || "") || (known ? meta(code).u : (v.unitRaw || ""));
+    const op    = v.refOperator;
+    let lo = v.refLow, hi = v.refHigh, label = "";
+    const has = x => x !== null && x !== undefined && isFinite(x);
+    if(op === "<" || op === "<="){ if(!has(hi) && has(lo)){ hi = lo; } lo = null;
+      if(has(hi)) label = (op === "<" ? "< " : "\u2264 ") + hi; }
+    else if(op === ">" || op === ">="){ if(!has(lo) && has(hi)){ lo = hi; } hi = null;
+      if(has(lo)) label = (op === ">" ? "> " : "\u2265 ") + lo; }
+    else if(has(lo) && has(hi)) label = lo + "\u2013" + hi;
     const conf = (v.confidence === null || v.confidence === undefined) ? 1 : Number(v.confidence);
 
     out.push({
       code: code,
-      value: String(v.value_raw).trim(),
+      value: String(v.valueRaw).trim(),
       unit: unit,
-      refLow: (lo === null || lo === undefined) ? "" : String(lo),
-      refHigh: (hi === null || hi === undefined) ? "" : String(hi),
+      refLow:  has(lo) ? String(lo) : "",
+      refHigh: has(hi) ? String(hi) : "",
       refLabel: label ? label + (unit ? " " + unit : "") : "",
-      newName: known ? "" : (v.source_test_name || ""),
-      src: (v.source_test_name || "") + (v.unit_raw ? "  " + v.unit_raw : ""),
+      newName: known ? "" : name,
+      src: name + (v.unitRaw ? "  " + v.unitRaw : ""),
       from: fileName,
       confidence: conf,
-      collectedAt: v.collected_at || "",
-      /* accepted when the alias table recognised the test and the reader was
-         not at the very bottom of its own scale; flagged otherwise */
+      collectedAt: v.collectedAt || "",
+      /* accepted when the alias table recognised the test; anything it could
+         not name is put in front of a person rather than guessed at */
       agreed: known && conf >= 0.4,
       confirmed: known && conf >= 0.4,
-      why: !known ? "this test is not in the alias table, so it has not been matched to anything"
-                  : (conf < 0.4 ? "the reader was unsure of this row" : "")
+      why: !known
+        ? "your alias table has no name for \u201c" + name + "\u201d"
+        : (conf < 0.4 ? "the reader was unsure of this row" : "")
     });
   }
   return out;
