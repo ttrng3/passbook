@@ -896,7 +896,7 @@ function vHandoff(){
       S.members.map(m=>'<option value="'+esc(m.id)+'">Just '+esc(m.name)+'</option>').join("")+'</select>'+
     '<button class="btn pri" id="expGo">Show it</button><button class="btn" id="expCopy">Copy</button>'+
     '<button class="btn" id="expFile">Download a file</button></div>'+
-    '<div class="hint">The download button works on your own site (ttrng3.github.io) but is inert inside claude.ai, which blocks a page from saving files. Copy works in both.</div>'+
+    '<div class="hint">A file is the easier thing to AirDrop or attach. Inside claude.ai the viewer will ask you to confirm the save; on your own site it just saves.</div>'+
     '<textarea class="inp" id="expBox" rows="5" style="margin-top:var(--s3)" placeholder="Choose what to send, then press Show it."></textarea>'+
     '<div class="hint">Attached report images are <b>not</b> in this text — they stay on the device that took the photo. The numbers, ranges, labs and dates all travel.</div></div>';
 
@@ -1124,13 +1124,8 @@ document.addEventListener("click", async e=>{
     t.textContent=ok?"Copied":"Select it and copy"; setTimeout(()=>{t.textContent="Copy";},2200); return; }
   if(t.id==="expFile"){
     const data=JSON.stringify(exportPayload(document.getElementById("expWho").value||null));
-    try{
-      const b=new Blob([data],{type:"application/json"});
-      const u=URL.createObjectURL(b), a=document.createElement("a");
-      a.href=u; a.download="famrec-"+today()+".json";
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} },1000);
-    }catch(e){ alert("This viewer blocks downloads. Use Copy instead."); }
+    const ok=await saveFile("famrec-"+today()+".json", data);
+    if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
@@ -1139,6 +1134,21 @@ document.addEventListener("click", async e=>{
     S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
 });
 
+async function saveFile(filename, data){
+  try{
+    if(window.claude && typeof window.claude.use==="function"){
+      const d = await window.claude.use("downloads");
+      if(d && typeof d.save==="function"){ await d.save({filename, data}); return true; }
+    }
+  }catch(e){ /* declined or unavailable — fall through to the plain path */ }
+  try{
+    const b=new Blob([data],{type:"application/json"});
+    const u=URL.createObjectURL(b), a=document.createElement("a");
+    a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(u); }catch(e){} },1000);
+    return true;
+  }catch(e){ return false; }
+}
 function doImport(raw){
   const msg=document.getElementById("impMsg");
   const label=(document.getElementById("impFrom").value||"").trim();
