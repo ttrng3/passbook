@@ -495,6 +495,7 @@ function migrate(p){
 }
 let warned=false;
 function save(){
+  try{ if(typeof queueSync==="function") queueSync(); }catch(e){}
   try{ localStorage.setItem(LS, JSON.stringify(S)); }
   catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Hand-off and copy the backup out now."); } }
 }
@@ -920,7 +921,10 @@ function syncCard(){
         'Use it if the two devices disagree about what exists. Nothing on this device is deleted.</div>'+
         '<button class="btn warn sm" id="syncReset" style="margin-top:var(--s3)">Reset the cloud copy from this device</button>'+
       '</div></details>'+
-      '<div class="hint">Signed in with the same address on your phone and your laptop, the two converge. Merging is per record, so edits made on both sides between syncs both survive, and a delete stays deleted.</div>';
+      '<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">The records belong to this account</div>'+
+      '<p>Not to this device. Sign in as <b>'+esc(AUTH.email||"this account")+'</b> on a Mac, a phone or an iPad and all three read and write the same set \u2014 '+
+      'one row in the database, readable only by this account. Changes upload a couple of seconds after you make them, and every device picks them up when it opens. '+
+      'A count that differs between devices means one of them has not synced yet, never that they hold different books.</p></div>';
   } else {
     h+='<div class="hint" style="margin-top:var(--s3)">Sign in by email. No password to set, lose, or type on a phone. Use the same address on every device you want to converge.</div>'+
       '<div class="row" style="margin-top:var(--s3)">'+
@@ -1168,7 +1172,10 @@ async function consumeSignInLink(){
   const me = await supa("/auth/v1/user");
   if(me.ok && me.body && me.body.id){
     AUTH.uid = me.body.id; AUTH.email = me.body.email || null; saveAuth();
-    syncMsg = {t:"green", k:"Signed in", x:"This device is now connected as "+(AUTH.email||"you")+"."};
+    const cleared = dropExamples();
+    syncMsg = {t:"green", k:"Signed in",
+      x:"This device now shows whatever "+(AUTH.email||"this account")+" holds."+
+        (cleared?" The example records were cleared \u2014 you have an account now, so the account is the record.":"")};
     return true;
   }
   AUTH = null; saveAuth();
@@ -1176,7 +1183,30 @@ async function consumeSignInLink(){
   return true;
 }
 
-async function syncNow(){
+function dropExamples(){
+  const had=(S.observations||[]).some(isSample)||(S.actions||[]).some(isSample)||(S.members||[]).some(isSample);
+  if(!had) return false;
+  S.observations=(S.observations||[]).filter(o=>!isSample(o));
+  S.actions=(S.actions||[]).filter(a=>!isSample(a));
+  S.members=(S.members||[]).filter(m=>!isSample(m));
+  if(!S.members.length){
+    const stableId = "m-"+String((AUTH&&AUTH.uid)||"local").replace(/-/g,"").slice(0,10);
+    const nm = (AUTH&&AUTH.email) ? AUTH.email.split("@")[0] : "Me";
+    S.members=[{id:stableId,name:nm,sex:"female",dob:"",population:"asian_pacific",country:"",mtime:Date.now()}];
+  }
+  if(!S.members.some(m=>m.id===who)) who=S.members[0].id;
+  save(); return true;
+}
+
+/* Keep the account copy current without anyone pressing a button. */
+let syncTimer=null;
+function queueSync(){
+  if(!AUTH || IS_ARTIFACT || syncing) return;
+  clearTimeout(syncTimer);
+  syncTimer=setTimeout(function(){ if(!syncing) syncNow(true); }, 2500);
+}
+
+async function syncNow(quiet){
   if(syncing) return;
   if(IS_ARTIFACT){
     syncMsg = {t:"amber", k:"Sync does not run in this copy",
@@ -1192,9 +1222,9 @@ async function syncNow(){
     render(); return;
   }
   syncing = true;
-  syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."};
-  render();
+  if(!quiet){ syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."}; render(); }
   const q = "/rest/v1/famrec_state?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
+  let changed = false;
   try{
     let r = await supa(q);
     if(r.status===401){
@@ -1235,15 +1265,17 @@ async function syncNow(){
       ||("The database refused the write (HTTP "+up.status+")."));
     const after = real(S.observations);
     const gained = after - before;
+    changed = gained !== 0;
     const samples = (S.observations||[]).length - after;
     S.lastSync = new Date().toISOString();
     save();
-    syncMsg = {t:"green", k:"Synced",
+    if(!quiet) syncMsg = {t:"green", k:"Synced",
       x:(gained>0 ? gained+" reading"+(gained===1?"":"s")+" arrived from your other device. "
                   : "Everything already matched. ")
         +"Your devices share "+after+" reading"+(after===1?"":"s")+"."
         +(samples? " The "+samples+" example records are local scaffolding and deliberately do not sync — clear them when you are done looking.":"")};
   }catch(e){
+    changed = true;
     const offline = e && /Failed to fetch|NetworkError|Load failed/i.test(e.message||"");
     syncMsg = {t:"red",
       k: offline ? "Could not reach the database" : "Sync did not complete",
@@ -1252,7 +1284,9 @@ async function syncNow(){
         : (e.message || String(e))};
   }
   syncing = false;
-  render();
+  /* A background sync that found nothing must not repaint the page: a repaint
+     mid-keystroke costs the caret and whatever was half-typed. */
+  if(!quiet || changed) render();
 }
 
 /* =============================================================== app */
@@ -1410,7 +1444,7 @@ document.addEventListener("click", async e=>{
   if(t.id==="verifyCode"){
     const c=(document.getElementById("syCode").value||"").trim();
     if(!c) return;
-    try{ await verifyCode(pendingEmail,c); codeSent=false; syncMsg=null; render(); await syncNow(); }
+    try{ await verifyCode(pendingEmail,c); codeSent=false; dropExamples(); syncMsg=null; render(); await syncNow(); }
     catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
