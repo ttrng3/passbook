@@ -1,0 +1,12 @@
+# Records NEVER belong in this repository. The page keeps everything in the
+# browser; a backup you export is a file you keep yourself, not a commit.
+*.backup.json
+backup*.json
+records/
+reports/
+*.jpg
+*.jpeg
+*.png
+*.pdf
+.DS_Store
+node_modules/
