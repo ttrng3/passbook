@@ -864,12 +864,40 @@ function mergeIn(p, label){
   (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; S.actions.push(a); haveA.add(a.id); addedA++; } });
   return {addedM, addedO, addedA, dupO};
 }
+let pendingEmail="", codeSent=false;
+function syncCard(){
+  if(IS_ARTIFACT)
+    return '<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Sync runs on your own site, not here</div>'+
+      '<p>The claude.ai viewer blocks a page from reaching an outside server, so this copy cannot sync &mdash; a platform rule, not a choice. '+
+      'Open the same book at <b>ttrng3.github.io/famrec</b> and it will. Everything else works identically in both.</p></div>';
+  let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between"><h3>Sync</h3>'+
+    (S.lastSync?'<span class="cap">Last synced '+esc(new Date(S.lastSync).toLocaleString())+'</span>':'<span class="cap">Never synced</span>')+'</div>';
+  if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-top:var(--s3)"><div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
+  if(AUTH){
+    h+='<div class="row" style="margin-top:var(--s3)">'+
+      '<button class="btn pri" id="syncBtn"'+(syncing?" disabled":"")+'>'+(syncing?"Syncing":"Sync now")+'</button>'+
+      '<button class="btn" id="signOut">Sign out</button>'+
+      '<span class="cap">'+esc(AUTH.email||"")+'</span></div>'+
+      '<div class="hint">Signed in with the same address on your phone and your laptop, the two converge. Merging is per record, so edits made on both sides between syncs both survive, and a delete stays deleted.</div>';
+  } else {
+    h+='<div class="hint" style="margin-top:var(--s3)">Sign in with a one-time code. There is no password to set, lose or type on a phone. Use the same address on every device you want to converge.</div>'+
+      '<div class="row" style="margin-top:var(--s3)">'+
+      '<input class="inp" id="syEmail" type="email" autocomplete="email" placeholder="you@example.com" style="flex:1;min-width:200px" value="'+esc(pendingEmail)+'">'+
+      '<button class="btn" id="sendCode">Email me a code</button></div>'+
+      (codeSent?'<div class="row" style="margin-top:var(--s3)">'+
+        '<input class="inp num" id="syCode" inputmode="numeric" autocomplete="one-time-code" placeholder="6-digit code" style="max-width:170px">'+
+        '<button class="btn pri" id="verifyCode">Sign in</button></div>':'');
+  }
+  h+='<div class="hint" style="margin-top:var(--s3)"><b>What syncs:</b> readings, people, ranges, follow-ups. '+
+     '<b>What does not:</b> attached report photos &mdash; they stay on the device that took them, being the largest and most identifying thing in the book.</div>';
+  return h+'</div>';
+}
 function vHandoff(){
-  let h='<h2 style="margin-bottom:var(--s3)">Hand-off</h2>';
-  h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Read this once</div>'+
-    '<p>Your phone and your laptop are two separate books. They look identical and share nothing — a browser keeps this data per device, and there is no server in the middle to sync them. '+
-    'That is deliberate: a server holding medical records is exactly what got shut down this morning. So moving records between devices, or receiving a relative&rsquo;s, is a file you carry across by hand. '+
-    'Bringing one in <b>merges</b>, it never overwrites — anything already here is kept and duplicates are skipped.</p></div>';
+  let h='<h2 style="margin-bottom:var(--s3)">Sync and hand-off</h2>'+syncCard();
+  h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Two ways across, and they do different jobs</div>'+
+    '<p><b>Sync</b> is for your own devices: one account, your rows only, converging automatically. '+
+    '<b>Hand-off</b> is for everyone else &mdash; a file a relative chooses to send you, which you merge in knowingly. '+
+    'Both merge rather than overwrite, so you can import the same file twice safely.</p></div>';
 
   h+='<div class="card"><h3>Send a copy out</h3>'+
     '<div class="hint" style="margin-bottom:var(--s3)">Copy the text, then put it wherever you like — AirDrop a note to yourself, message it, email it. Paste it into <b>Bring a copy in</b> on the other device.</div>'+
@@ -986,6 +1014,158 @@ function drawer(){
     '</div></aside>';
 }
 
+
+/* ===================================================================== SYNC
+   Local-first. The browser holds the authoritative copy; the database is a
+   convergence mirror. If sync is unavailable the book works exactly as it does
+   offline, and it says so loudly rather than failing quietly — a silent
+   failure is the one outcome this estate has learned to fear.
+
+   This only runs on the real site. The claude.ai artifact viewer blocks
+   cross-origin requests, so there the panel explains that instead. */
+const SUPA = {url:"https://uoncyxguauemrqupqxto.supabase.co", key:"sb_publishable_DOg4mmkTXCZP5cb2COAG5g_GBnsWU6K"};
+const AUTH_KEY = "famrec-auth";
+const IS_ARTIFACT = !!(window.claude && typeof window.claude.use === "function");
+let AUTH = null, syncMsg = null, syncing = false;
+
+function loadAuth(){ try{ const r=localStorage.getItem(AUTH_KEY); if(r) AUTH=JSON.parse(r); }catch(e){} }
+function saveAuth(){ try{ AUTH?localStorage.setItem(AUTH_KEY,JSON.stringify(AUTH)):localStorage.removeItem(AUTH_KEY); }catch(e){} }
+function syncConfigured(){ return SUPA.url.indexOf("http")===0 && SUPA.key.length>10; }
+
+async function supa(path, opts){
+  opts = opts || {};
+  const h = Object.assign({"apikey":SUPA.key,"Content-Type":"application/json"}, opts.headers||{});
+  if(AUTH && AUTH.tok && !opts.noAuth) h["Authorization"] = "Bearer " + AUTH.tok;
+  const r = await fetch(SUPA.url+path, {method:opts.method||"GET", headers:h,
+    body:opts.body?JSON.stringify(opts.body):undefined});
+  let body=null; try{ body = await r.json(); }catch(e){}
+  return {ok:r.ok, status:r.status, body};
+}
+async function renewSession(){
+  if(!AUTH || !AUTH.ref) return false;
+  const r = await supa("/auth/v1/token?grant_type=refresh_token",
+    {method:"POST", noAuth:true, body:{refresh_token:AUTH.ref}});
+  if(r.ok && r.body && r.body.access_token){
+    AUTH = {tok:r.body.access_token, ref:r.body.refresh_token,
+            uid:(r.body.user&&r.body.user.id)||AUTH.uid, email:AUTH.email};
+    saveAuth(); return true;
+  }
+  return false;
+}
+async function sendCode(email){
+  const r = await supa("/auth/v1/otp", {method:"POST", noAuth:true, body:{email, create_user:true}});
+  if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
+    || ("Could not send the code (HTTP "+r.status+")."));
+  return true;
+}
+async function verifyCode(email, code){
+  const r = await supa("/auth/v1/verify", {method:"POST", noAuth:true,
+    body:{email, token:code, type:"email"}});
+  if(!r.ok || !r.body || !r.body.access_token)
+    throw new Error((r.body&&(r.body.msg||r.body.error_description))||"That code was not accepted.");
+  AUTH = {tok:r.body.access_token, ref:r.body.refresh_token,
+          uid:r.body.user&&r.body.user.id, email:email};
+  saveAuth(); return true;
+}
+
+/* Merge two documents. Records are identified by id; on an edit the newer
+   mtime wins; anything in either side's tombstone list stays deleted. */
+function uniq(a){ return [...new Set(a||[])]; }
+function pickById(A, B, tombs){
+  const m = new Map(), dead = new Set(tombs||[]);
+  for(const x of (A||[]).concat(B||[])){
+    if(!x || !x.id || dead.has(x.id)) continue;
+    const prev = m.get(x.id);
+    if(!prev || (x.mtime||0) > (prev.mtime||0)) m.set(x.id, x);
+  }
+  return [...m.values()];
+}
+function syncMerge(a, b){
+  a=a||{}; b=b||{};
+  const ta=a.tomb||{}, tb=b.tomb||{};
+  const tomb = {o:uniq((ta.o||[]).concat(tb.o||[])),
+                a:uniq((ta.a||[]).concat(tb.a||[])),
+                m:uniq((ta.m||[]).concat(tb.m||[]))};
+  return {v:2,
+    members:      pickById(a.members,      b.members,      tomb.m),
+    observations: pickById(a.observations, b.observations, tomb.o),
+    actions:      pickById(a.actions,      b.actions,      tomb.a),
+    reports:      pickById(a.reports,      b.reports,      []),
+    tomb:tomb};
+}
+function tombstone(kind, id){
+  S.tomb = S.tomb || {o:[],a:[],m:[]};
+  if(S.tomb[kind].indexOf(id)<0) S.tomb[kind].push(id);
+}
+function touch(rec){ if(rec) rec.mtime = Date.now(); return rec; }
+
+async function syncNow(){
+  if(syncing) return;
+  if(IS_ARTIFACT){
+    syncMsg = {t:"amber", k:"Sync does not run in this copy",
+      x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/famrec to sync."};
+    render(); return;
+  }
+  if(!syncConfigured()){
+    syncMsg = {t:"amber", k:"Sync is not wired up", x:"No database address was built into this copy of the page."};
+    render(); return;
+  }
+  if(!AUTH){
+    syncMsg = {t:"amber", k:"Not signed in", x:"Sign in below, then sync will run."};
+    render(); return;
+  }
+  syncing = true;
+  syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."};
+  render();
+  const q = "/rest/v1/famrec_state?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
+  try{
+    let r = await supa(q);
+    if(r.status===401){
+      if(await renewSession()) r = await supa(q);
+      else { AUTH=null; saveAuth(); throw new Error("Your sign-in expired. Sign in again."); }
+    }
+    if(!r.ok){
+      const code = r.body && r.body.code;
+      if(code==="PGRST205" || (r.body && /famrec_state/.test(r.body.message||"")))
+        throw new Error("The sync table does not exist yet. Run 0010_famrec_sync.sql in the Supabase SQL editor, then try again.");
+      throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
+    }
+    const remote = (r.body && r.body[0] && r.body[0].doc) || null;
+    const before = (S.observations||[]).length;
+    const merged = syncMerge(S, remote);
+    if(merged.members.length) S.members = merged.members;
+    S.observations = merged.observations;
+    S.actions = merged.actions;
+    S.reports = merged.reports;
+    S.tomb = merged.tomb;
+    if(!S.members.some(m=>m.id===who)) who = S.members[0].id;
+    save();
+    const up = await supa("/rest/v1/famrec_state", {method:"POST",
+      headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+      body:[{user_id:AUTH.uid, device:(navigator.platform||"device"),
+             doc:{v:2, members:S.members, observations:S.observations,
+                  actions:S.actions, reports:S.reports, tomb:S.tomb}}]});
+    if(!up.ok) throw new Error((up.body&&(up.body.message||up.body.hint))
+      ||("The database refused the write (HTTP "+up.status+")."));
+    const gained = (S.observations||[]).length - before;
+    S.lastSync = new Date().toISOString();
+    save();
+    syncMsg = {t:"green", k:"Synced",
+      x:(gained>0 ? gained+" reading"+(gained===1?"":"s")+" arrived from your other device. "
+                  : "Everything already matched. ")
+        +"Both devices now hold the same "+(S.observations||[]).length+" readings."};
+  }catch(e){
+    const offline = e && /Failed to fetch|NetworkError|Load failed/i.test(e.message||"");
+    syncMsg = {t:"red",
+      k: offline ? "Could not reach the database" : "Sync did not complete",
+      x: offline
+        ? "No answer from the server. Either this device is offline, or the Supabase project has paused — the free plan pauses a project after seven days without traffic and it takes one click in the dashboard to resume. Nothing is lost: this device still holds every record."
+        : (e.message || String(e))};
+  }
+  syncing = false;
+  render();
+}
+
 /* =============================================================== app */
 const TABS=[["overview","Overview"],["record","Record"],["trends","Trends"],["actions","Next Steps"],
             ["add","Add report"],["handoff","Hand-off"],["settings","Settings"]];
@@ -1027,7 +1207,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#sendCode,#verifyCode,#signOut,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1063,7 +1243,7 @@ document.addEventListener("click", async e=>{
         refHigh:r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
         refLabel:r.refLabel||((r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
-        note:"",manualStatus:null,origin:"",reportId:draft.fileId?rid:null,sample:false});
+        note:"",manualStatus:null,origin:"",reportId:draft.fileId?rid:null,sample:false,mtime:Date.now()});
     });
     save(); if(draft.fileURL) URL.revokeObjectURL(draft.fileURL);
     who=draft.memberId; draft=null; tab="record"; render(); window.scrollTo(0,0); return;
@@ -1072,16 +1252,18 @@ document.addEventListener("click", async e=>{
   if(t.id==="aAdd"){ const el=document.getElementById("aT"), title=el.value.trim();
     if(!title){ el.focus(); return; }
     S.actions.push({id:uid(),memberId:who,title,bucket:document.getElementById("aB").value,
-      codes:[...document.getElementById("aC").selectedOptions].map(o=>o.value),done:false,sample:false});
+      codes:[...document.getElementById("aC").selectedOptions].map(o=>o.value),done:false,sample:false,mtime:Date.now()});
     save(); render(); return; }
-  if(t.dataset.dela){ S.actions=S.actions.filter(a=>a.id!==t.dataset.dela); save(); render(); return; }
+  if(t.dataset.dela){ tombstone("a",t.dataset.dela);
+    S.actions=S.actions.filter(a=>a.id!==t.dataset.dela); save(); render(); return; }
 
   if(t.dataset.delo){ if(!confirm("Delete this reading?")) return;
+    tombstone("o",t.dataset.delo);
     S.observations=S.observations.filter(o=>o.id!==t.dataset.delo); detail=null; save(); render(); return; }
   if(t.dataset.fix){ const o=S.observations.find(x=>x.id===t.dataset.fix); if(!o) return;
     const nv=prompt("Corrected value for "+meta(o.code).n+" ("+o.unit+"):",o.valueRaw); if(nv===null) return;
     const n=parseFloat(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
-    o.valueRaw=String(nv); o.value=toCanonical(n,o.code,o.unit);
+    o.valueRaw=String(nv); o.value=toCanonical(n,o.code,o.unit); touch(o);
     o.note=prompt("What does the sheet actually say? (kept as a note)",o.note||"")||o.note;
     save(); render(); return; }
   if(t.dataset.flag){ const o=S.observations.find(x=>x.id===t.dataset.flag); if(!o) return;
@@ -1090,10 +1272,13 @@ document.addEventListener("click", async e=>{
     save(); render(); return; }
 
   if(t.id==="addP"){ const n=prompt("Name for this person:"); if(!n) return;
-    const id=uid(); S.members.push({id,name:n.trim(),sex:"female",dob:"",population:"asian_pacific",country:""});
+    const id=uid(); S.members.push({id,name:n.trim(),sex:"female",dob:"",population:"asian_pacific",country:"",mtime:Date.now()});
     who=id; save(); render(); return; }
   if(t.dataset.delm){ const m=person(t.dataset.delm);
     if(!confirm("Remove "+m.name+" and every reading and follow-up on file for them?")) return;
+    tombstone("m",m.id);
+    S.observations.filter(o=>o.memberId===m.id).forEach(o=>tombstone("o",o.id));
+    S.actions.filter(a=>a.memberId===m.id).forEach(a=>tombstone("a",a.id));
     S.members=S.members.filter(x=>x.id!==m.id);
     S.observations=S.observations.filter(o=>o.memberId!==m.id);
     S.actions=S.actions.filter(a=>a.memberId!==m.id);
@@ -1108,6 +1293,24 @@ document.addEventListener("click", async e=>{
     const data=JSON.stringify(exportPayload(document.getElementById("expWho").value||null));
     const ok=await saveFile("famrec-"+today()+".json", data);
     if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
+    return; }
+  if(t.id==="syncBtn"){ await syncNow(); return; }
+  if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
+    syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
+    render(); return; }
+  if(t.id==="sendCode"){
+    const em=(document.getElementById("syEmail").value||"").trim();
+    if(!em){ document.getElementById("syEmail").focus(); return; }
+    pendingEmail=em; syncMsg={t:"blue",k:"Sending",x:"Emailing a code to "+em+"."}; render();
+    try{ await sendCode(em); codeSent=true;
+      syncMsg={t:"green",k:"Code sent",x:"Check "+em+". It is good for a few minutes."}; }
+    catch(err){ syncMsg={t:"red",k:"Could not send the code",x:err.message||String(err)}; }
+    render(); return; }
+  if(t.id==="verifyCode"){
+    const c=(document.getElementById("syCode").value||"").trim();
+    if(!c) return;
+    try{ await verifyCode(pendingEmail,c); codeSent=false; syncMsg=null; render(); await syncNow(); }
+    catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
@@ -1163,7 +1366,7 @@ document.addEventListener("input", e=>{
     return;
   }
   if(el.dataset && el.dataset.mf){ const m=person(el.dataset.mid); if(!m) return;
-    m[el.dataset.mf]=el.value; save(); paintPeople(); return; }
+    m[el.dataset.mf]=el.value; touch(m); save(); paintPeople(); return; }
   if(draft){
     if(el.id==="dWho") draft.memberId=el.value;
     else if(el.id==="dDate") draft.date=el.value;
@@ -1188,7 +1391,7 @@ document.addEventListener("change", async e=>{
     return;
   }
   if(el.dataset && el.dataset.act){ const a=S.actions.find(x=>x.id===el.dataset.act); if(!a) return;
-    a.done=el.checked; save(); render(); return; }
+    a.done=el.checked; touch(a); save(); render(); return; }
   if(el.id==="trendSel"){ trendCode=el.value; render(); return; }
   if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
     try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
@@ -1210,9 +1413,12 @@ m.addEventListener?m.addEventListener("change",h):m.addListener(h);}})();
 
 function start(){
   S=load(); S.reports=S.reports||[]; S.actions=S.actions||[];
+  S.tomb=S.tomb||{o:[],a:[],m:[]};
   who=S.members[0].id;
+  loadAuth();
   const d=document.createElement("div"); d.id="dHost"; document.body.appendChild(d);
   render();
+  if(AUTH && !IS_ARTIFACT) setTimeout(()=>{ syncNow(); }, 400);
 }
 start();
 </script>
