@@ -98,6 +98,8 @@ textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
 /* observation row */
 .obs{display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:var(--s4); cursor:pointer}
 .obs:hover{border-color:var(--blue-line)}
+.obs.ghost{background:var(--sunk);border-style:dashed}
+.obs.ghost:hover{background:var(--card)}
 .obs .nm{font-size:13px; color:var(--ink-muted); margin-bottom:2px}
 .obs .vl{font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--ink); line-height:1.15}
 .obs .vl span{font-size:14px; font-weight:400; color:var(--ink-muted); margin-left:3px}
@@ -289,15 +291,53 @@ const C = {
    It is a checklist, not a recommendation about which tests you need -- that is
    a conversation with a doctor. Edit it freely in Settings. */
 const DEFAULT_PANEL = [
-  "weight_kg","height_cm","bmi","waist_cm",
   "bp_systolic","bp_diastolic","heart_rate_resting",
   "glucose_fasting","hba1c_dcct",
+  "bmi","body_fat_pct","visceral_fat_cm2",
   "cholesterol_total","ldl_c","hdl_c","triglycerides",
-  "alt","ast","ggt","bilirubin_total","albumin",
-  "creatinine","egfr","uric_acid","bun",
-  "haemoglobin","wbc","platelets","hematocrit",
-  "tsh","vit_d_25oh","vit_b12","ferritin","hscrp"
+  "alt","ast","egfr","vit_d_25oh","tsh","sleep_hours",
+  "hrv_avg","apob","lpa","hscrp","waist_cm"
 ];
+/* Two pairs read as one measurement on a report and are shown as one card,
+   while staying two rows in the data — the contract never pre-joins codes. */
+const PAIRS = {bp_systolic:{mate:"bp_diastolic", label:"Blood pressure", sep:"/"},
+               alt:{mate:"ast", label:"ALT / AST", sep:" · "}};
+const ICON = {
+  pulse:'<path d="M1 8h3l2-5 3 10 2-5h4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  heart:'<path d="M8 13.5S1.8 9.9 1.8 5.9A3.1 3.1 0 0 1 8 4.4a3.1 3.1 0 0 1 6.2 1.5c0 4-6.2 7.6-6.2 7.6Z" fill="currentColor"/>',
+  drop:'<path d="M8 1.5s4.3 5 4.3 7.8a4.3 4.3 0 1 1-8.6 0C3.7 6.5 8 1.5 8 1.5Z" fill="currentColor"/>',
+  trend:'<path d="M1.5 11.5 6 7l3 3 5.5-5.5M10.5 4.5h4v4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  person:'<circle cx="8" cy="3" r="1.9" fill="currentColor"/><path d="M8 5.6c-2 0-3.3 1-3.3 2.3 0 .8.7 1.2 1.5 1.3L5.6 14h1.6l.5-3.2h.6L8.8 14h1.6l-.6-4.8c.8-.1 1.5-.5 1.5-1.3 0-1.3-1.3-2.3-3.3-2.3Z" fill="currentColor"/>',
+  ring:'<circle cx="8" cy="8" r="5.6" fill="none" stroke="currentColor" stroke-width="1.6"/>',
+  flask:'<path d="M6.2 1.8v4L2.6 12a1.4 1.4 0 0 0 1.2 2.1h8.4A1.4 1.4 0 0 0 13.4 12L9.8 5.8v-4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M5.4 1.8h5.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  beaker:'<path d="M3.6 2.2h8.8v9.9a2 2 0 0 1-2 2H5.6a2 2 0 0 1-2-2Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M3.6 8.6h8.8" stroke="currentColor" stroke-width="1.5"/>',
+  filter:'<path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
+  sun:'<circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M8 .9v1.8M8 13.3v1.8M.9 8h1.8M13.3 8h1.8M3 3l1.3 1.3M11.7 11.7 13 13M13 3l-1.3 1.3M4.3 11.7 3 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+  star:'<path d="M8 1.6v12.8M2.5 4.4l11 7.2M13.5 4.4l-11 7.2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>',
+  moon:'<path d="M13.2 9.6A5.8 5.8 0 0 1 6.4 2.8a5.8 5.8 0 1 0 6.8 6.8Z" fill="currentColor"/>',
+  ecg:'<path d="M.8 8h2.6l1.4-3.4L7.2 12l1.7-5.2 1.2 2.4h4.3" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
+  thermo:'<path d="M9.4 9V3.1a1.6 1.6 0 1 0-3.2 0V9a3 3 0 1 0 3.2 0Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="7.8" cy="11.6" r="1.5" fill="currentColor"/>',
+  arrows:'<path d="M2.4 13.6 13.6 2.4M9.4 2.4h4.2v4.2M6.6 13.6H2.4V9.4" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>'
+};
+const CODE_ICON = {
+  bp_systolic:"pulse", bp_diastolic:"pulse", heart_rate_resting:"heart", hrv_avg:"ecg",
+  glucose_fasting:"drop", hba1c_dcct:"trend", hba1c_ifcc:"trend", insulin_fasting:"drop",
+  bmi:"person", weight_kg:"person", height_cm:"person", body_fat_pct:"heart",
+  visceral_fat_cm2:"ring", waist_cm:"arrows",
+  cholesterol_total:"drop", ldl_c:"flask", hdl_c:"flask", non_hdl_c:"flask",
+  triglycerides:"beaker", apob:"trend", lpa:"trend",
+  alt:"beaker", ast:"beaker", ggt:"beaker", alp:"beaker", bilirubin_total:"beaker", albumin:"beaker",
+  egfr:"filter", creatinine:"filter", uric_acid:"filter", bun:"filter",
+  vit_d_25oh:"sun", vit_b12:"sun", ferritin:"sun", folate:"sun",
+  tsh:"star", free_t4:"star", free_t3:"star",
+  sleep_hours:"moon", steps_daily:"arrows",
+  hscrp:"thermo", crp:"thermo", esr:"thermo",
+  haemoglobin:"drop", wbc:"ring", platelets:"ring", rbc:"drop", hematocrit:"ring"
+};
+function icon(code){
+  const g = ICON[CODE_ICON[code] || "ring"];
+  return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
+}
 const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
@@ -659,7 +699,7 @@ function obsCard(o){
   const M=meta(o.code), st=statusOf(o);
   const alt = o.unit!==M.u ? fmt(o.value)+" "+M.u : "";
   return '<button class="obs" data-obs="'+esc(o.id)+'">'+
-    '<div class="nm">'+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
+    '<div class="nm">'+icon(o.code)+' '+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
     '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
     '<div style="margin-top:var(--s2)">'+badge(st)+'</div>'+
@@ -724,21 +764,83 @@ function vOverview(){
   return h;
 }
 
+function ghostCard(code){
+  const M = meta(code);
+  return '<button class="obs ghost" data-addcode="'+esc(code)+'">'+
+    '<div class="nm">'+icon(code)+' '+esc(M.n)+'</div>'+
+    '<div class="vl" style="color:var(--line)">&mdash;</div>'+
+    (M.u?'<div class="cap">'+esc(M.u)+'</div>':'')+
+    '<div style="margin-top:var(--s2)"><span class="badge st-unknown"><span class="dot"></span>Not yet measured</span></div>'+
+    '</button>';
+}
+function pairCard(ca, cb, label, L){
+  const a = L.find(o=>o.code===ca), b = L.find(o=>o.code===cb);
+  if(!a && !b){
+    return '<button class="obs ghost" data-addcode="'+esc(ca)+'">'+
+      '<div class="nm">'+icon(ca)+' '+esc(label)+'</div>'+
+      '<div class="vl" style="color:var(--line)">&mdash;</div>'+
+      '<div style="margin-top:var(--s2)"><span class="badge st-unknown"><span class="dot"></span>Not yet measured</span></div></button>';
+  }
+  const sep = (PAIRS[ca]&&PAIRS[ca].sep) || " / ";
+  /* judge only what was actually measured: a missing half is a gap, not a
+     verdict, and "no range on file" beside a value that has one reads wrong */
+  const present = [];
+  if(a) present.push(statusOf(a));
+  if(b) present.push(statusOf(b));
+  present.sort((x,y)=>RANK[x]-RANK[y]);
+  const worst = present[0] || "unknown";
+  const half = (a?0:1) + (b?0:1);
+  const shown = (a?esc(a.valueRaw||fmt(a.value)):"\u2014") + sep + (b?esc(b.valueRaw||fmt(b.value)):"\u2014");
+  const src = (a||b);
+  return '<button class="obs" data-obs="'+esc((a||b).id)+'">'+
+    '<div class="nm">'+icon(ca)+' '+esc(label)+'</div>'+
+    '<div class="vl">'+shown+'<span>'+esc((a||b).unit||meta(ca).u)+'</span></div>'+
+    '<div style="margin-top:var(--s2)">'+badge(worst)+
+      (half?' <span class="badge st-unknown"><span class="dot"></span>'+esc(a?meta(cb).n:meta(ca).n)+' not measured</span>':'')+'</div>'+
+    '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt||"no date")+'</div></button>';
+}
 function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
-  h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)">'+
+  h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2><button class="btn pri" data-tab="add">Add a report</button></div>';
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
-  if(!L.length) return h+'<div class="empty"><b>No readings yet</b>Add a report — paste the text and it fills the rows for you.</div>';
-  const G={}; L.forEach(o=>{ const g=meta(o.code).g; (G[g]=G[g]||[]).push(o); });
-  const order=GROUPS.filter(g=>G[g]).concat(Object.keys(G).filter(g=>GROUPS.indexOf(g)<0));
-  for(const g of order){
-    const items=G[g].sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]||meta(a.code).n.localeCompare(meta(b.code).n));
-    h+='<div class="sec"><h2>'+esc(g)+'</h2><div class="grid g240">'+items.map(obsCard).join("")+'</div></div>';
+
+  const panel = (S.panel||[]).slice();
+  const have = new Set(L.map(o=>o.code));
+  const onFile = panel.filter(c=>have.has(c)).length;
+
+  h += '<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s2)">'+
+    '<h3>Latest values &amp; flags</h3>'+
+    '<span class="cap"><span class="num">'+onFile+'</span> of <span class="num">'+panel.length+'</span> measured</span></div>'+
+    '<div class="cap" style="margin-bottom:var(--s3)">Newest reading for each metric, against the range printed on its own report.</div>'+
+    '<div class="row" style="margin-bottom:var(--s4)">'+
+      badge("in_range")+badge("watch")+badge("discuss")+badge("unknown")+'</div>';
+
+  const consumed = new Set();
+  const cards = [];
+  for(const code of panel){
+    if(consumed.has(code)) continue;
+    const pair = PAIRS[code];
+    if(pair && panel.indexOf(pair.mate)>=0){
+      consumed.add(code); consumed.add(pair.mate);
+      cards.push(pairCard(code, pair.mate, pair.label, L));
+      continue;
+    }
+    const o = L.find(x=>x.code===code);
+    cards.push(o ? obsCard(o) : ghostCard(code));
   }
-  h += panelGaps(L);
+  h += '<div class="grid g240">'+cards.join("")+'</div>';
+
+  const extra = L.filter(o=>panel.indexOf(o.code)<0);
+  if(extra.length){
+    h += '<div class="sec" style="margin-top:var(--s6)"><h2>Also on your reports</h2>'+
+      '<div class="cap" style="margin-bottom:var(--s3)">Recorded, but not on your standard panel. Add any of them to the panel in Settings so a missing one shows up as a gap.</div>'+
+      '<div class="grid g240">'+extra.sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]).map(obsCard).join("")+'</div></div>';
+  }
+  if(!panel.length && !L.length)
+    h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel in Settings, or add a report.</div>';
   return h;
 }
 
@@ -991,6 +1093,12 @@ function syncCard(){
       'Every row in the database is locked to the account that wrote it by a database rule, not by anything this page does, '+
       'and new accounts are switched off entirely. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
       'If that is a shared machine, use <i>Sign out and erase this device</i> below.</p></div>'+
+      '<details><summary>Set or change your password</summary><div>'+
+        '<div class="hint">A password signs you in without waiting for an email, which matters because this project allows one auth email a minute. Make it long and used nowhere else &mdash; it opens a medical record.</div>'+
+        '<div class="row" style="margin-top:var(--s3)">'+
+        '<input class="inp" id="newPass" type="password" autocomplete="new-password" placeholder="new password" style="flex:1;min-width:190px">'+
+        '<button class="btn" id="pwSet">Save password</button></div>'+
+      '</div></details>'+
       '<details><summary>Leaving a shared or borrowed device</summary><div>'+
         '<div class="hint">Signs out and removes every record, attachment and setting from this browser. The account copy is untouched &mdash; sign in again anywhere and it all comes back.</div>'+
         '<button class="btn warn sm" id="signOutWipe" style="margin-top:var(--s3)">Sign out and erase this device</button>'+
@@ -1005,10 +1113,13 @@ function syncCard(){
       'one row in the database, readable only by this account. Changes upload a couple of seconds after you make them, and every device picks them up when it opens. '+
       'A count that differs between devices means one of them has not synced yet, never that they hold different books.</p></div>';
   } else {
-    h+='<div class="hint" style="margin-top:var(--s3)">Sign in by email. No password to set, lose, or type on a phone. Use the same address on every device you want to converge.</div>'+
+    h+='<div class="hint" style="margin-top:var(--s3)">Use the same address on every device you want to converge. A password is the quickest way in; the emailed link works too, and is how you get back in if the password goes.</div>'+
       '<div class="row" style="margin-top:var(--s3)">'+
-      '<input class="inp" id="syEmail" type="email" autocomplete="email" placeholder="you@example.com" style="flex:1;min-width:200px" value="'+esc(pendingEmail)+'">'+
-      '<button class="btn pri" id="sendCode">Email me a sign-in link</button></div>'+
+      '<input class="inp" id="syEmail" type="email" autocomplete="email" placeholder="you@example.com" style="flex:1;min-width:190px" value="'+esc(pendingEmail)+'">'+
+      '<input class="inp" id="syPass" type="password" autocomplete="current-password" placeholder="password" style="flex:1;min-width:150px">'+
+      '<button class="btn pri" id="pwSignIn">Sign in</button></div>'+
+      '<div class="row" style="margin-top:var(--s2)">'+
+      '<button class="btn" id="sendCode">Email me a sign-in link instead</button></div>'+
       (codeSent?'<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">Check your email</div>'+
         '<p><b>Open the link on this device.</b> It brings you straight back here, signed in. '+
         'If you open it on a different device, that is the device that gets signed in \u2014 which is fine, just do the same again here.</p></div>':'')+
@@ -1196,6 +1307,25 @@ async function renewSession(){
   return false;
 }
 function returnTo(){ return location.origin + location.pathname; }
+async function signInPassword(email, password){
+  const r = await supa("/auth/v1/token?grant_type=password",
+    {method:"POST", noAuth:true, body:{email, password}});
+  if(!r.ok || !r.body || !r.body.access_token){
+    const msg = (r.body&&(r.body.msg||r.body.error_description||r.body.message))||"";
+    if(/invalid login credentials/i.test(msg))
+      throw new Error("That email and password did not match. If you have never set a password, use the sign-in link below and set one afterwards.");
+    throw new Error(msg||("Sign-in failed (HTTP "+r.status+")."));
+  }
+  AUTH = {tok:r.body.access_token, ref:r.body.refresh_token,
+          uid:r.body.user&&r.body.user.id, email:email};
+  saveAuth(); return true;
+}
+async function setPassword(password){
+  const r = await supa("/auth/v1/user", {method:"PUT", body:{password}});
+  if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
+    ||("Could not set the password (HTTP "+r.status+")."));
+  return true;
+}
 async function sendCode(email){
   const r = await supa("/auth/v1/otp?redirect_to="+encodeURIComponent(returnTo()),
     {method:"POST", noAuth:true, body:{email, create_user:true}});
@@ -1455,7 +1585,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1523,6 +1653,13 @@ document.addEventListener("click", async e=>{
     else { o.manualStatus="act"; o.note=prompt("Why are you flagging this? (kept with the reading)",o.note||"")||o.note; }
     save(); render(); return; }
 
+  if(t.dataset.addcode){
+    const c=t.dataset.addcode;
+    if(!draft) draft=newDraft();
+    draft.memberId=who;
+    if(!draft.rows.some(r=>r.code===c))
+      draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:"",newName:""});
+    tab="add"; render(); window.scrollTo(0,0); return; }
   if(t.dataset.unpanel){
     const c=t.dataset.unpanel;
     S.panel=(S.panel||[]).filter(x=>x!==c);
@@ -1583,6 +1720,23 @@ document.addEventListener("click", async e=>{
     render(); return; }
   if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
     syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
+    render(); return; }
+  if(t.id==="pwSignIn"){
+    const em=(document.getElementById("syEmail").value||"").trim();
+    const pw=document.getElementById("syPass").value||"";
+    if(!em){ document.getElementById("syEmail").focus(); return; }
+    if(!pw){ document.getElementById("syPass").focus(); return; }
+    pendingEmail=em;
+    syncMsg={t:"blue",k:"Signing in",x:"Checking with the database."}; render();
+    try{ await signInPassword(em,pw); dropExamples(); syncMsg=null; render(); await syncNow(); }
+    catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
+    return; }
+  if(t.id==="pwSet"){
+    const pw=document.getElementById("newPass").value||"";
+    if(pw.length<10){ alert("Use at least 10 characters. This opens a medical record, and the database will accept 6 \u2014 that is not a reason to use 6."); return; }
+    try{ await setPassword(pw);
+      syncMsg={t:"green",k:"Password saved",x:"You can sign in with "+(AUTH&&AUTH.email?AUTH.email:"your email")+" and this password on any device now."}; }
+    catch(err){ syncMsg={t:"red",k:"Could not save the password",x:err.message||String(err)}; }
     render(); return; }
   if(t.id==="sendCode"){
     const em=(document.getElementById("syEmail").value||"").trim();
