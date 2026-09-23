@@ -1,0 +1,1216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#F2F2F7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vitals">
+<meta name="robots" content="noindex,nofollow">
+<meta name="description" content="A local-only personal and family medical record book. No server, no account.">
+<style>
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+</style>
+<title>Vitals Journal</title>
+<style>
+:root{
+  --bg:#F2F2F7; --card:#FFFFFF; --sunk:#F2F2F7; --line:#E5E5EA; --line-soft:#EFEFF2;
+  --ink:#1C1C1E; --ink-body:#3C3C43; --ink-muted:#8E8E93;
+  --blue:#007AFF;  --blue-bg:#E8F1FE;  --blue-ink:#0060DF;  --blue-line:#CFE3FD;
+  --green:#34C759; --green-bg:#E6F7EB; --green-ink:#1E7F3C; --green-line:#BFE9CC;
+  --amber:#FF9500; --amber-bg:#FFF4E5; --amber-ink:#8A5200; --amber-line:#F6DFBC;
+  --red:#FF3B30;   --red-bg:#FFEBE9;   --red-ink:#C4271D;   --red-line:#F7D2CE;
+  --r-card:12px; --r-inner:8px; --r-pill:12px;
+  --s1:4px; --s2:8px; --s3:12px; --s4:16px; --s5:24px; --s6:32px; --s7:48px;
+  --sans:-apple-system,BlinkMacSystemFont,"San Francisco","Helvetica Neue",Helvetica,Ubuntu,Roboto,sans-serif;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+body{background:var(--bg); color:var(--ink-body); font-family:var(--sans); font-size:14px; line-height:1.5; margin:0; -webkit-text-size-adjust:100%}
+h1,h2,h3{margin:0; color:var(--ink); text-wrap:balance}
+h1{font-size:28px; font-weight:600; letter-spacing:-.021em}
+h2{font-size:20px; font-weight:500; letter-spacing:-.012em}
+h3{font-size:16px; font-weight:600}
+p{margin:0}
+button{font:inherit; color:inherit}
+input,select,textarea{font:inherit; color:var(--ink)}
+:focus-visible{outline:2px solid var(--blue); outline-offset:2px; border-radius:4px}
+.num{font-variant-numeric:tabular-nums}
+.mono{font-family:var(--mono)}
+.muted{color:var(--ink-muted)}
+.cap{font-size:12px; color:var(--ink-muted)}
+.kick{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase}
+
+/* shell */
+.wrap{max-width:1080px; margin:0 auto; padding-inline:var(--s4); padding-block:0 96px}
+header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:var(--bg); border-bottom:1px solid var(--line)}
+.top-in{max-width:1080px; margin:0 auto; padding:var(--s3) var(--s4); display:flex; gap:var(--s3); align-items:center; flex-wrap:wrap}
+.top-in h1{font-size:19px; margin-right:auto}
+.people{display:flex; gap:var(--s1); flex-wrap:wrap}
+.pbtn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-pill); padding:5px 10px; cursor:pointer; font-size:13px; display:inline-flex; align-items:center; gap:6px}
+.pbtn[aria-pressed="true"]{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue-ink); font-weight:600}
+.pbtn .dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
+nav.tabs{display:flex; gap:var(--s1); overflow-x:auto; border-bottom:1px solid var(--line); margin-bottom:var(--s5); scrollbar-width:none}
+nav.tabs::-webkit-scrollbar{display:none}
+.tab{border:0; background:none; padding:var(--s3) var(--s3) 10px; cursor:pointer; white-space:nowrap; font-size:14px; color:var(--ink-muted); border-bottom:2px solid transparent; margin-bottom:-1px}
+.tab[aria-selected="true"]{color:var(--blue-ink); border-bottom-color:var(--blue); font-weight:600}
+.tab .c{font-size:12px; margin-left:5px; opacity:.75}
+
+/* blocks */
+.card{background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:var(--s5)}
+.card+.card{margin-top:var(--s4)}
+.sec{margin-bottom:var(--s6)}
+.sec>h2{margin-bottom:var(--s3)}
+.grid{display:grid; gap:var(--s4)}
+.g180{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.g240{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.g300{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
+.row{display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center}
+.btn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-inner); padding:8px 14px; cursor:pointer; font-size:14px; font-weight:500; color:var(--ink)}
+.btn:hover{background:var(--sunk)}
+.btn.pri{background:var(--blue); border-color:var(--blue); color:#fff}
+.btn.pri:hover{background:var(--blue-ink)}
+.btn.warn{color:var(--red-ink); border-color:var(--red-line)}
+.btn.warn:hover{background:var(--red-bg)}
+.btn:disabled{opacity:.4; cursor:not-allowed}
+.btn.sm{padding:4px 10px; font-size:13px}
+.btn.big{padding:14px 18px; font-size:16px; width:100%; justify-content:center}
+label.fl{display:block; font-size:12px; font-weight:600; color:var(--ink-muted); margin-bottom:var(--s1)}
+.inp{width:100%; border:1px solid var(--line); border-radius:var(--r-inner); padding:9px 10px; background:var(--card); font-size:15px}
+.inp:focus{border-color:var(--blue); outline:none}
+textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
+.hint{font-size:12px; color:var(--ink-muted); margin-top:var(--s1); line-height:1.45}
+.empty{border:1px dashed var(--line); border-radius:var(--r-card); padding:var(--s5); text-align:center; color:var(--ink-muted); background:var(--card)}
+.empty b{display:block; color:var(--ink); font-size:16px; font-weight:600; margin-bottom:var(--s1)}
+
+/* callout */
+.callout{border-radius:var(--r-card); padding:var(--s4); border:1px solid}
+.callout .kick{margin-bottom:var(--s1)}
+.callout p{color:var(--ink)}
+.c-blue{background:var(--blue-bg); border-color:var(--blue-line)} .c-blue .kick{color:var(--blue-ink)}
+.c-amber{background:var(--amber-bg); border-color:var(--amber-line)} .c-amber .kick{color:var(--amber-ink)}
+.c-red{background:var(--red-bg); border-color:var(--red-line)} .c-red .kick{color:var(--red-ink)}
+.c-green{background:var(--green-bg); border-color:var(--green-line)} .c-green .kick{color:var(--green-ink)}
+
+/* badge */
+.badge{display:inline-flex; align-items:center; gap:6px; border-radius:var(--r-pill); padding:2px 8px; font-size:12px; font-weight:600; white-space:nowrap}
+.badge .dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
+.st-in_range{background:var(--green-bg); color:var(--green-ink)}
+.st-watch{background:var(--amber-bg); color:var(--amber-ink)}
+.st-discuss{background:var(--red-bg); color:var(--red-ink)}
+.st-act{background:var(--red-bg); color:var(--red-ink)}
+.st-unknown{background:var(--sunk); color:var(--ink-muted)}
+
+/* stat tile */
+.tile{background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:var(--s4)}
+.tile .lab{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-muted)}
+.tile .fig{font-size:30px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--ink); line-height:1.15; margin-top:var(--s1)}
+.tile .fig span{font-size:16px; color:var(--ink-muted); font-weight:400; margin-left:2px}
+.tile .foot{font-size:12px; color:var(--ink-muted); margin-top:var(--s1)}
+
+/* observation row */
+.obs{display:block; width:100%; text-align:left; background:var(--card); border:1px solid var(--line); border-radius:var(--r-card); padding:var(--s4); cursor:pointer}
+.obs:hover{border-color:var(--blue-line)}
+.obs .nm{font-size:13px; color:var(--ink-muted); margin-bottom:2px}
+.obs .vl{font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--ink); line-height:1.15}
+.obs .vl span{font-size:14px; font-weight:400; color:var(--ink-muted); margin-left:3px}
+.obs .ft{font-size:12px; color:var(--ink-muted); margin-top:var(--s2); line-height:1.45}
+
+/* band */
+.band{margin:var(--s3) 0 var(--s1)}
+.band .tr{position:relative; height:14px; border-radius:7px; background:var(--sunk); overflow:hidden; border:1px solid var(--line)}
+.band .tr i{position:absolute; top:0; bottom:0}
+.zlo{background:var(--amber-bg)} .zok{background:var(--green-bg)} .zhi{background:var(--red-bg)}
+.band .mk{position:absolute; top:-4px; bottom:-4px; width:3px; border-radius:2px; background:var(--ink); box-shadow:0 0 0 2px var(--card)}
+.band .tk{position:relative; height:16px; margin-top:var(--s1)}
+.band .tk span{position:absolute; transform:translateX(-50%); font-size:11px; color:var(--ink-muted); white-space:nowrap; font-variant-numeric:tabular-nums}
+.band .ed{display:flex; justify-content:space-between; font-size:11px; color:var(--ink-muted); margin-bottom:3px; font-variant-numeric:tabular-nums}
+
+/* table */
+.tw{overflow-x:auto}
+table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px}
+th{text-align:left; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-muted); padding:var(--s2) var(--s3); border-bottom:1px solid var(--line); white-space:nowrap}
+td{padding:var(--s3); border-bottom:1px solid var(--line-soft); vertical-align:top}
+tbody tr:last-child td{border-bottom:0}
+td.n,th.n{text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap}
+
+/* details */
+details{border-top:1px solid var(--line-soft); padding-top:var(--s3); margin-top:var(--s3)}
+details>summary{cursor:pointer; font-size:14px; font-weight:600; color:var(--blue-ink); list-style:none; display:flex; align-items:center; gap:var(--s2)}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:""; width:0; height:0; border-left:5px solid currentColor; border-top:4px solid transparent; border-bottom:4px solid transparent; transition:transform .15s}
+details[open]>summary::before{transform:rotate(90deg)}
+details>div{margin-top:var(--s3)}
+
+/* drawer */
+.scrim{position:fixed; inset:0; background:rgba(0,0,0,.28); z-index:40}
+.drawer{position:fixed; z-index:41; right:0; top:0; bottom:0; width:min(560px,100%); background:var(--card); border-left:1px solid var(--line); overflow-y:auto}
+.dh{position:sticky; top:0; background:var(--card); border-bottom:1px solid var(--line); padding:var(--s4); display:flex; gap:var(--s3); align-items:flex-start; z-index:2}
+.db{padding:var(--s5) var(--s4) var(--s7)}
+.big{font-size:40px; font-weight:600; font-variant-numeric:tabular-nums; color:var(--ink); line-height:1; letter-spacing:-.02em}
+dl.kv{display:grid; grid-template-columns:minmax(104px,auto) 1fr; gap:var(--s2) var(--s4); font-size:13px; margin:var(--s4) 0}
+dl.kv dt{color:var(--ink-muted); font-weight:500}
+dl.kv dd{margin:0; color:var(--ink); word-break:break-word}
+
+/* confirm rows */
+.crow{display:grid; grid-template-columns:auto 1fr; gap:var(--s3); padding:var(--s3) 0; border-bottom:1px solid var(--line-soft)}
+.crow:last-child{border-bottom:0}
+.crow.ok{background:var(--green-bg); border-radius:var(--r-inner); padding-inline:var(--s3)}
+.ck{width:22px; height:22px; accent-color:var(--green); margin-top:4px; cursor:pointer; flex:none}
+.cg{display:grid; grid-template-columns:repeat(auto-fit,minmax(96px,1fr)); gap:var(--s2); margin-top:var(--s2)}
+.shot{width:100%; border-radius:var(--r-inner); border:1px solid var(--line); display:block}
+
+/* chart */
+.chart svg{display:block; width:100%; height:auto; overflow:visible}
+.tip{position:absolute; pointer-events:none; background:var(--ink); color:#fff; border-radius:var(--r-inner); padding:7px 9px; font-size:12px; line-height:1.4; z-index:5; white-space:nowrap}
+footer.fix{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--card); border-top:1px solid var(--line); padding:10px var(--s4); padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); font-size:12px; color:var(--ink-muted); text-align:center}
+footer.fix b{color:var(--ink)}
+@media (max-width:560px){
+  h1{font-size:24px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
+  .top-in h1{font-size:17px; width:100%; margin-bottom:var(--s1)}
+}
+@media print{
+  body{background:#FFFFFF; font-size:11pt}
+  :root{--ink-muted:#222; --ink-body:#222; --bg:#FFFFFF; --line:#BBB; --line-soft:#DDD}
+  .card,.tile,.callout{background:#FFFFFF!important; border:1px solid #BBB; break-inside:avoid}
+  .badge{background:#FFFFFF!important; color:#222!important; border:1px solid #777}
+  .dot,[class*="z"],[class*="bar"]{-webkit-print-color-adjust:exact; print-color-adjust:exact}
+  h2,h3{break-after:avoid}
+  header.top,nav.tabs,footer.fix,.btn,.scrim,.drawer{display:none!important}
+  .wrap{padding-block:0}
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <h1>Vitals Journal</h1>
+    <div class="people" id="people"></div>
+    <span class="badge st-in_range" title="No server, no account. Records stay in this browser."><span class="dot"></span>On this device</span>
+  </div>
+</header>
+<div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
+<footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
+
+<script>
+"use strict";
+/* ===========================================================================
+   VITALS JOURNAL v2 — a patient-held record book. No server. No account.
+   Records live in this browser only; attachments in this browser's IndexedDB.
+
+   Safety rules carried over from ~/Projects/vitals-app and NOT negotiable:
+     1. Nothing is stored until a human has confirmed it against the source.
+     2. Reference ranges come from the report. The app ships none of its own
+        for lab tests and says "no range on file" rather than guess.
+     3. The app never generates a medical recommendation.
+   Added at the clinical review, 2026-09-23:
+     4. Units travel with the value. A reading is never compared or plotted
+        against another unit without an explicit, displayed conversion.
+     5. A trend that crosses laboratories is flagged as such.
+     6. Under-18 and pregnancy are flagged as "adult ranges do not apply".
+   =========================================================================== */
+
+const LS = "vitals-journal-v2", LS_OLD = "vitals-journal-v1";
+const uid = () => Math.random().toString(36).slice(2,10);
+const today = () => new Date().toISOString().slice(0,10);
+const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+/* --------------------------------------------------------------- catalog
+   u  = canonical unit · alt = [displayUnit, multiply-by-this-to-reach-canonical]
+   syn = names seen on Vietnamese and English reports, lowercased, accent-free */
+const C = {
+ glucose_fasting:{n:"Glucose (fasting)",u:"mmol/L",g:"Metabolic",alt:[["mg/dL",1/18.016]],syn:["glucose","duong huyet","glucose mau","glu","duong mau","blood glucose","fasting glucose"]},
+ hba1c_dcct:{n:"HbA1c",u:"%",g:"Metabolic",syn:["hba1c","hb a1c","a1c","hemoglobin a1c","huyet sac to a1c"]},
+ hba1c_ifcc:{n:"HbA1c (IFCC)",u:"mmol/mol",g:"Metabolic",syn:["hba1c ifcc"]},
+ insulin_fasting:{n:"Insulin (fasting)",u:"pmol/L",g:"Metabolic",alt:[["µIU/mL",6.945]],syn:["insulin","insulin doi"]},
+ cholesterol_total:{n:"Cholesterol, total",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["cholesterol toan phan","cholesterol total","cholesterol tp","total cholesterol","cholesterol","chol"]},
+ ldl_c:{n:"LDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["ldl","ldl-c","ldl c","ldl cholesterol","ldl - cholesterol"]},
+ hdl_c:{n:"HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["hdl","hdl-c","hdl c","hdl cholesterol","hdl - cholesterol"]},
+ non_hdl_c:{n:"Non-HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["non hdl","non-hdl","non hdl-c"]},
+ triglycerides:{n:"Triglycerides",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/88.57]],syn:["triglycerid","triglyceride","triglycerides","tg","trigly"]},
+ apob:{n:"Apolipoprotein B",u:"g/L",g:"Lipids",syn:["apob","apo b","apolipoprotein b"]},
+ lpa:{n:"Lipoprotein(a)",u:"nmol/L",g:"Lipids",syn:["lp(a)","lpa","lipoprotein a"]},
+ alt:{n:"ALT",u:"U/L",g:"Liver",syn:["alt","sgpt","alt (gpt)","gpt","alt/sgpt","alanin aminotransferase"]},
+ ast:{n:"AST",u:"U/L",g:"Liver",syn:["ast","sgot","ast (got)","got","ast/sgot","aspartat aminotransferase"]},
+ ggt:{n:"GGT",u:"U/L",g:"Liver",syn:["ggt","gamma gt","gamma-gt","g-gt"]},
+ alp:{n:"ALP",u:"U/L",g:"Liver",syn:["alp","phosphatase kiem","alkaline phosphatase","photphatase kiem"]},
+ bilirubin_total:{n:"Bilirubin, total",u:"µmol/L",g:"Liver",alt:[["mg/dL",17.104]],syn:["bilirubin toan phan","bilirubin total","bilirubin tp","total bilirubin","bilirubin"]},
+ direct_bilirubin:{n:"Bilirubin, direct",u:"µmol/L",g:"Liver",alt:[["mg/dL",17.104]],syn:["bilirubin truc tiep","direct bilirubin","bilirubin tt"]},
+ indirect_bilirubin:{n:"Bilirubin, indirect",u:"µmol/L",g:"Liver",alt:[["mg/dL",17.104]],syn:["bilirubin gian tiep","indirect bilirubin","bilirubin gt"]},
+ albumin:{n:"Albumin",u:"g/L",g:"Liver",alt:[["g/dL",10]],syn:["albumin"]},
+ total_protein:{n:"Protein, total",u:"g/L",g:"Liver",alt:[["g/dL",10]],syn:["protein toan phan","total protein","protein tp","protein"]},
+ globulin:{n:"Globulin",u:"g/L",g:"Liver",alt:[["g/dL",10]],syn:["globulin"]},
+ ag_ratio:{n:"A/G ratio",u:"ratio",g:"Liver",syn:["a/g","ty le a/g","ag ratio"]},
+ creatinine:{n:"Creatinine",u:"µmol/L",g:"Kidney",alt:[["mg/dL",88.4]],syn:["creatinin","creatinine","cre","creatinin mau"]},
+ egfr:{n:"eGFR",u:"mL/min/1.73m²",g:"Kidney",syn:["egfr","mlct","gfr","do loc cau than","mlct uoc tinh"]},
+ uric_acid:{n:"Uric acid",u:"µmol/L",g:"Kidney",alt:[["mg/dL",59.48]],syn:["acid uric","axit uric","uric acid","ua"]},
+ bun:{n:"Urea",u:"mmol/L",g:"Kidney",alt:[["mg/dL (BUN)",0.357]],syn:["ure","ure mau","urea","bun","urê"]},
+ urine_protein:{n:"Urine protein",u:"g/L",g:"Kidney",syn:["protein nieu","urine protein","pro (nieu)"]},
+ sodium:{n:"Sodium",u:"mmol/L",g:"Electrolytes",syn:["natri","sodium","na","na+"]},
+ potassium:{n:"Potassium",u:"mmol/L",g:"Electrolytes",syn:["kali","potassium","k","k+"]},
+ chloride:{n:"Chloride",u:"mmol/L",g:"Electrolytes",syn:["clo","chloride","cl","cl-"]},
+ calcium:{n:"Calcium",u:"mmol/L",g:"Electrolytes",alt:[["mg/dL",0.2495]],syn:["canxi","calcium","ca","ca toan phan","calci"]},
+ phosphate:{n:"Phosphate",u:"mmol/L",g:"Electrolytes",syn:["phospho","phosphate","photpho"]},
+ magnesium:{n:"Magnesium",u:"mmol/L",g:"Electrolytes",syn:["magie","magnesium","mg"]},
+ tsh:{n:"TSH",u:"mIU/L",g:"Thyroid",syn:["tsh","tsh sieu nhay"]},
+ free_t4:{n:"Free T4",u:"pmol/L",g:"Thyroid",alt:[["ng/dL",12.87]],syn:["ft4","free t4","t4 tu do"]},
+ free_t3:{n:"Free T3",u:"pmol/L",g:"Thyroid",alt:[["pg/mL",1.536]],syn:["ft3","free t3","t3 tu do"]},
+ haemoglobin:{n:"Haemoglobin",u:"g/L",g:"Blood count",alt:[["g/dL",10]],syn:["hemoglobin","hgb","hb","huyet sac to","haemoglobin"]},
+ platelets:{n:"Platelets",u:"×10⁹/L",g:"Blood count",syn:["tieu cau","plt","platelet","platelets","so luong tieu cau"]},
+ wbc:{n:"White cells",u:"×10⁹/L",g:"Blood count",syn:["bach cau","wbc","so luong bach cau","leukocyte"]},
+ rbc:{n:"Red cells",u:"×10¹²/L",g:"Blood count",syn:["hong cau","rbc","so luong hong cau"]},
+ hematocrit:{n:"Haematocrit",u:"L/L",g:"Blood count",alt:[["%",0.01]],syn:["hematocrit","hct","the tich khoi hong cau"]},
+ mcv:{n:"MCV",u:"fL",g:"Blood count",syn:["mcv"]}, mch:{n:"MCH",u:"pg",g:"Blood count",syn:["mch"]},
+ mchc:{n:"MCHC",u:"g/L",g:"Blood count",alt:[["g/dL",10]],syn:["mchc"]},
+ rdw_cv:{n:"RDW-CV",u:"%",g:"Blood count",syn:["rdw","rdw-cv","rdw cv"]},
+ rdw_sd:{n:"RDW-SD",u:"fL",g:"Blood count",syn:["rdw-sd","rdw sd"]},
+ neutrophils_pct:{n:"Neutrophils",u:"%",g:"Blood count",syn:["neu%","neut%","bach cau trung tinh","neutrophil","neu"]},
+ lymphocytes_pct:{n:"Lymphocytes",u:"%",g:"Blood count",syn:["lym%","lymph%","bach cau lympho","lymphocyte","lym"]},
+ monocytes_pct:{n:"Monocytes",u:"%",g:"Blood count",syn:["mono%","bach cau mono","monocyte","mon"]},
+ eosinophils_pct:{n:"Eosinophils",u:"%",g:"Blood count",syn:["eos%","bach cau ua acid","eosinophil","eo"]},
+ basophils_pct:{n:"Basophils",u:"%",g:"Blood count",syn:["baso%","bach cau ua kiem","basophil","ba"]},
+ crp:{n:"CRP",u:"mg/L",g:"Inflammation",syn:["crp"]},
+ hscrp:{n:"hs-CRP",u:"mg/L",g:"Inflammation",syn:["hs-crp","hscrp","crp sieu nhay","hs crp"]},
+ esr:{n:"ESR",u:"mm/h",g:"Inflammation",syn:["esr","mau lang","toc do mau lang","vss"]},
+ hbsag:{n:"HBsAg",u:"index",g:"Serology",syn:["hbsag","hbs ag"]},
+ anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Serology",syn:["anti-hbs","antihbs","anti hbs"]},
+ anti_hcv:{n:"Anti-HCV",u:"index",g:"Serology",syn:["anti-hcv","anti hcv","hcv ab"]},
+ anti_hav:{n:"Anti-HAV",u:"index",g:"Serology",syn:["anti-hav","anti hav"]},
+ psa:{n:"PSA",u:"ng/mL",g:"Tumour markers",syn:["psa","psa toan phan","total psa"]},
+ cea:{n:"CEA",u:"ng/mL",g:"Tumour markers",syn:["cea"]},
+ ca19_9:{n:"CA 19-9",u:"U/mL",g:"Tumour markers",syn:["ca 19-9","ca19-9","ca19 9"]},
+ afp:{n:"AFP",u:"ng/mL",g:"Tumour markers",syn:["afp"]},
+ cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Tumour markers",syn:["cyfra","cyfra 21-1"]},
+ scc:{n:"SCC",u:"ng/mL",g:"Tumour markers",syn:["scc"]},
+ vit_d_25oh:{n:"Vitamin D (25-OH)",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.496]],syn:["vitamin d","25-oh vitamin d","25 oh vitamin d","vit d","vitamin d toan phan","25(oh)d"]},
+ vit_b12:{n:"Vitamin B12",u:"pmol/L",g:"Vitamins",alt:[["pg/mL",0.738]],syn:["vitamin b12","b12","vit b12"]},
+ ferritin:{n:"Ferritin",u:"µg/L",g:"Vitamins",syn:["ferritin"]},
+ folate:{n:"Folate",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.266]],syn:["folate","acid folic","folic acid"]},
+ bp_systolic:{n:"Blood pressure, systolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam thu","systolic","sbp","huyet ap toi da"]},
+ bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
+ heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vitals",syn:["mach","nhip tim","heart rate","pulse","hr"]},
+ hrv_avg:{n:"HRV",u:"ms",g:"Vitals",syn:["hrv"]},
+ weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
+ height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
+ bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the"]},
+ body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat","mo co the"]},
+ visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
+ waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
+ sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
+ steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
+};
+const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle"];
+const BMI_STD = {
+  general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
+  asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
+};
+const ST = {in_range:"In range", watch:"Near the limit", discuss:"Outside the range", act:"Flagged by hand", unknown:"No range on file"};
+const RANK = {act:0, discuss:1, watch:2, unknown:3, in_range:4};
+const BUCKET = {do_first:"Do first", lever:"Lever", quick_win:"Quick win", monitor:"Monitor"};
+function meta(c){ return C[c] || {n:c,u:"",g:"Other"}; }
+function unitsFor(code){
+  const m = meta(code); return [[m.u,1]].concat(m.alt||[]);
+}
+/* value as stored (canonical) -> display in a chosen unit */
+function toUnit(v, code, unit){
+  const list = unitsFor(code); const hit = list.find(x=>x[0]===unit);
+  return hit ? v/hit[1] : v;
+}
+function toCanonical(v, code, unit){
+  const list = unitsFor(code); const hit = list.find(x=>x[0]===unit);
+  return hit ? v*hit[1] : v;
+}
+
+/* ======================================================= the parser
+   Turns pasted report text into candidate rows. It fills the template;
+   it never decides anything. Every row it produces lands UNCONFIRMED. */
+function deaccent(s){
+  return String(s).normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[đĐ]/g,"d");
+}
+const SYN = (()=>{ const m = new Map();
+  for(const code in C){
+    m.set(deaccent(C[code].n).toLowerCase(), code);
+    (C[code].syn||[]).forEach(s=>{ if(!m.has(s)) m.set(s, code); });
+  }
+  return m;
+})();
+const UNIT_MAP = {
+  "mmol/l":"mmol/L","mg/dl":"mg/dL","umol/l":"µmol/L","µmol/l":"µmol/L","g/l":"g/L","g/dl":"g/dL",
+  "u/l":"U/L","iu/l":"U/L","ui/l":"U/L","ng/ml":"ng/mL","pg/ml":"pg/mL","pmol/l":"pmol/L","nmol/l":"nmol/L",
+  "miu/l":"mIU/L","uiu/ml":"µIU/mL","µiu/ml":"µIU/mL","miu/ml":"mIU/mL","ug/l":"µg/L","µg/l":"µg/L",
+  "mg/l":"mg/L","u/ml":"U/mL","%":"%","fl":"fL","pg":"pg","l/l":"L/L","mm/h":"mm/h","mmhg":"mmHg",
+  "bpm":"bpm","lan/phut":"bpm","kg":"kg","cm":"cm","in":"in","lb":"lb","ms":"ms","ratio":"ratio",
+  "t/l":"×10¹²/L","g/t":"×10⁹/L","k/ul":"×10⁹/L","10^9/l":"×10⁹/L","x10^9/l":"×10⁹/L",
+  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)"
+};
+function normUnit(raw){
+  if(!raw) return "";
+  const k = deaccent(raw).toLowerCase().replace(/\s+/g,"").replace(/µ/g,"u");
+  return UNIT_MAP[k] || UNIT_MAP[k.replace(/u/g,"µ")] || raw.trim();
+}
+function matchCode(nameRaw){
+  let n = deaccent(nameRaw).toLowerCase()
+    .replace(/[()\[\]:*#]/g," ").replace(/^\s*\d+[.)]\s*/,"").replace(/\s+/g," ").trim();
+  if(!n) return null;
+  if(SYN.has(n)) return SYN.get(n);
+  const noSpace = n.replace(/\s|-/g,"");
+  for(const [k,v] of SYN) if(k.replace(/\s|-/g,"")===noSpace) return v;
+  let best = null, bestLen = 0;
+  for(const [k,v] of SYN){
+    if(k.length>=3 && n.indexOf(k)!==-1 && k.length>bestLen){ best = v; bestLen = k.length; }
+  }
+  return best;
+}
+/* Match the LONGEST synonym the line begins with. Splitting on the first
+   digit fails on "1. Glucose" and on names that contain digits themselves
+   ("Vitamin D (25-OH)", "CA 19-9", "Vitamin B12"), so we anchor on the name. */
+function matchAtStart(norm){
+  let best=null,len=0;
+  for(const [k,v] of SYN){
+    if(k.length<2 || k.length<=len) continue;
+    if(norm.lastIndexOf(k,0)===0){
+      const nx=norm.charAt(k.length);
+      if(nx==="" || !/[a-z0-9]/.test(nx)){ best=v; len=k.length; }
+    }
+  }
+  return best?{code:best,len:len}:null;
+}
+function parseReport(text){
+  const rows=[], skipped=[];
+  for(const rawLine of String(text||"").split(/\r?\n/)){
+    const line=rawLine.replace(/\t/g,"  ").trim();
+    if(!line || line.length<3) continue;
+    let D=deaccent(line);
+    if(/^(ten xet nghiem|chi so|ket qua|don vi|tri so|gia tri|test|result|unit|reference|normal|binh thuong|stt|no\.)/i.test(D)) continue;
+    D=D.replace(/^\s*\d{1,3}\s*[.)]\s+/,"");          /* leading row number */
+    D=D.replace(/(\d),(\d{1,2})(?!\d)/g,"$1.$2");      /* Vietnamese decimal comma */
+    const norm=D.toLowerCase();
+    const hit=matchAtStart(norm);
+    if(!hit){ if(/\d/.test(D)) skipped.push(D.slice(0,34).trim()); continue; }
+    const code=hit.code;
+    let rest=D.slice(hit.len);
+    rest=rest.replace(/^\s*\([^)]*\)/,"");              /* "(GOT)", "(25-OH)" */
+    rest=rest.replace(/^[\s:.|\-\u2013\u2014]+/,"");
+    const vm=rest.match(/^-?\d+(?:\.\d+)?/);
+    if(!vm){ continue; }
+    const value=vm[0];
+    let after=rest.slice(value.length);
+    /* a unit token, accepted only if it is a real unit for THIS test */
+    let unit="";
+    const um=after.match(/^\s*([A-Za-z\u00b5%^/0-9.\-]{1,14})/);
+    if(um && !/^[<>\u2264\u2265]/.test(um[1]) && !/^-?\d+(\.\d+)?$/.test(um[1])){
+      const cand=normUnit(um[1]);
+      if(unitsFor(code).some(x=>x[0]===cand)){ unit=cand; after=after.slice(um[0].length); }
+    }
+    if(!unit) unit=meta(code).u;
+    let lo="",hi="",lab="",m;
+    if((m=after.match(/(-?\d+(?:\.\d+)?)\s*[\-\u2013\u2014]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; hi=m[2]; lab=m[1]+"\u2013"+m[2]; }
+    else if((m=after.match(/[<\u2264]\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
+    else if((m=after.match(/[>\u2265]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    rows.push({code,value,unit,refLow:lo,refHigh:hi,refLabel:lab?lab+" "+unit:"",
+      confirmed:false,src:line.slice(0,90)});
+  }
+  return {rows,skipped};
+}
+
+/* ------------------------------------------------------------- state */
+let S=null, who=null, tab="overview", detail=null, draft=null, trendCode=null;
+
+function seed(){
+  const a=uid(), b=uid();
+  const O=(memberId,code,valueRaw,unit,observedAt,source,refLow,refHigh,refLabel,fasting)=>({
+    id:uid(),memberId,code,valueRaw:String(valueRaw),unit,
+    value:toCanonical(parseFloat(valueRaw),code,unit),
+    refLow:refLow===null?null:toCanonical(refLow,code,unit),
+    refHigh:refHigh===null?null:toCanonical(refHigh,code,unit),
+    refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
+    origin:"",sample:true});
+  return {v:2, members:[
+      {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam"},
+      {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam"}],
+    observations:[
+      O(a,"height_cm",171,"cm","2026-07-08","Kusumi",null,null,""),
+      O(a,"weight_kg",83.8,"kg","2026-08-24","Medlatec Cầu Giấy",null,null,""),
+      O(a,"weight_kg",82.1,"kg","2026-05-17","Medlatec Cầu Giấy",null,null,""),
+      O(a,"glucose_fasting",5.4,"mmol/L","2026-08-24","Medlatec Cầu Giấy",4.1,5.9,"4.1–5.9 mmol/L","fasting"),
+      O(a,"glucose_fasting",5.8,"mmol/L","2026-05-17","Medlatec Cầu Giấy",4.1,5.9,"4.1–5.9 mmol/L","fasting"),
+      O(a,"glucose_fasting",92,"mg/dL","2026-07-08","Boone Labs (US)",70,99,"70–99 mg/dL","fasting"),
+      O(a,"ldl_c",3.9,"mmol/L","2026-08-24","Medlatec Cầu Giấy",0,3.4,"< 3.4 mmol/L","fasting"),
+      O(a,"ldl_c",3.6,"mmol/L","2026-05-17","Medlatec Cầu Giấy",0,3.4,"< 3.4 mmol/L","fasting"),
+      O(a,"triglycerides",2.4,"mmol/L","2026-08-24","Medlatec Cầu Giấy",0,1.7,"< 1.7 mmol/L","fasting"),
+      O(a,"cholesterol_total",5.6,"mmol/L","2026-08-24","Medlatec Cầu Giấy",0,5.2,"< 5.2 mmol/L","fasting"),
+      O(a,"alt",41,"U/L","2026-08-24","Medlatec Cầu Giấy",0,41,"≤ 41 U/L",""),
+      O(a,"uric_acid",432,"µmol/L","2026-08-24","Medlatec Cầu Giấy",202,416,"202–416 µmol/L",""),
+      O(a,"haemoglobin",152,"g/L","2026-07-08","Kusumi",130,170,"130–170 g/L",""),
+      O(a,"tsh",2.1,"mIU/L","2026-07-08","Kusumi",0.27,4.2,"0.27–4.20 mIU/L",""),
+      O(a,"vit_d_25oh",48,"nmol/L","2026-07-08","Kusumi",75,250,"75–250 nmol/L",""),
+      O(b,"height_cm",156,"cm","2026-06-02","Tâm Anh",null,null,""),
+      O(b,"weight_kg",58.4,"kg","2026-06-02","Tâm Anh",null,null,""),
+      O(b,"glucose_fasting",6.6,"mmol/L","2026-06-02","Tâm Anh",3.9,6.1,"3.9–6.1 mmol/L","fasting"),
+      O(b,"hba1c_dcct",6.1,"%","2026-06-02","Tâm Anh",4.0,6.0,"4.0–6.0 %",""),
+      O(b,"haemoglobin",121,"g/L","2026-06-02","Tâm Anh",120,155,"120–155 g/L","")],
+    actions:[
+      {id:uid(),memberId:a,title:"Ask which BMI standard the clinic applies",bucket:"quick_win",codes:["bmi"],done:false,sample:true},
+      {id:uid(),memberId:a,title:"Take the Kusumi and Medlatec sheets to the next visit — different labs, different ranges",bucket:"lever",codes:["glucose_fasting","ldl_c"],done:false,sample:true}],
+    reports:[]};
+}
+function load(){
+  try{
+    const raw = localStorage.getItem(LS);
+    if(raw){ const p = JSON.parse(raw); if(p && p.members && p.members.length) return p; }
+    const old = localStorage.getItem(LS_OLD);
+    if(old){ const p = JSON.parse(old); if(p && p.members && p.members.length) return migrate(p); }
+  }catch(e){ console.warn("read failed", e); }
+  return seed();
+}
+function migrate(p){
+  (p.observations||[]).forEach(o=>{
+    if(o.valueRaw===undefined){ o.valueRaw = String(o.value); o.unit = meta(o.code).u; }
+    if(o.fasting===undefined) o.fasting = "";
+  });
+  p.v = 2; return p;
+}
+let warned=false;
+function save(){
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }
+  catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Hand-off and copy the backup out now."); } }
+}
+function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actions||[]).some(a=>a.sample); }
+
+/* --------------------------------------------------- attachments */
+let _db=null;
+function idb(){ if(_db) return _db;
+  _db = new Promise((res,rej)=>{ let r; try{ r = indexedDB.open("vitals-journal-files",1);}catch(e){return rej(e);}
+    r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("f")) r.result.createObjectStore("f"); };
+    r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+  return _db; }
+async function putFile(id,blob){ try{ const d=await idb(); await new Promise((res,rej)=>{
+    const t=d.transaction("f","readwrite"); t.objectStore("f").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); });
+  return true; }catch(e){ return false; } }
+async function getFile(id){ try{ const d=await idb(); return await new Promise((res,rej)=>{
+    const r=d.transaction("f","readonly").objectStore("f").get(id); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
+  }catch(e){ return null; } }
+
+/* --------------------------------------------------- computation */
+function person(id){ return S.members.find(m=>m.id===id) || S.members[0]; }
+function ageOf(m){ if(!m||!m.dob) return null; const d=new Date(m.dob); if(isNaN(d)) return null;
+  const t=new Date(); let a=t.getFullYear()-d.getFullYear(); const k=t.getMonth()-d.getMonth();
+  if(k<0||(k===0&&t.getDate()<d.getDate())) a--; return a>=0&&a<130?a:null; }
+function fmt(v,dp){ if(v==null||v===""||!isFinite(v)) return "—"; const n=Number(v);
+  if(dp!==undefined) return n.toFixed(dp);
+  const a=Math.abs(n); return String(+n.toFixed(a>=100?0:a>=10?1:2)); }
+function derivedBMI(mid){
+  const hs = S.observations.filter(o=>o.memberId===mid&&o.code==="height_cm")
+    .sort((x,y)=>(y.observedAt||"").localeCompare(x.observedAt||""));
+  if(!hs.length) return [];
+  const h = hs[0].value/100; if(!(h>0.5&&h<2.6)) return [];
+  return S.observations.filter(o=>o.memberId===mid&&o.code==="weight_kg").map(w=>{
+    const v = +(w.value/(h*h)).toFixed(1);
+    return {id:"bmi-"+w.id,memberId:mid,code:"bmi",value:v,valueRaw:String(v),unit:"kg/m²",
+      observedAt:w.observedAt,source:w.source,refLow:null,refHigh:null,refLabel:"",fasting:"",
+      specimen:"",note:"",manualStatus:null,derived:true,sample:w.sample};
+  });
+}
+function obsOf(mid){ return S.observations.filter(o=>o.memberId===mid).concat(derivedBMI(mid)); }
+function statusOf(o){
+  if(o.manualStatus) return o.manualStatus;
+  if(o.code==="bmi"){ const std = BMI_STD[person(o.memberId).population]||BMI_STD.general, c=std.cuts;
+    return o.value<c[0]?"discuss": o.value<c[1]?"in_range": o.value<c[2]?"watch":"discuss"; }
+  const lo = o.refLow==null||o.refLow===""?null:Number(o.refLow);
+  const hi = o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
+  if(lo===null&&hi===null) return "unknown";
+  const v=Number(o.value), inLo=lo===null||v>=lo, inHi=hi===null||v<=hi;
+  if(inLo&&inHi) return "in_range";
+  const span=(lo!==null&&hi!==null&&hi>lo)?hi-lo:Math.abs(hi!==null?hi:lo)||1;
+  return ((!inHi?v-hi:lo-v)/span)<=0.10 ? "watch" : "discuss";
+}
+function why(o){
+  const M=meta(o.code);
+  if(o.manualStatus) return "Status set by hand"+(o.note?" — "+o.note:"")+".";
+  if(o.code==="bmi"){ const m=person(o.memberId), std=BMI_STD[m.population]||BMI_STD.general, c=std.cuts, v=o.value;
+    const b = v<c[0]?std.names[0]:v<c[1]?std.names[1]:v<c[2]?std.names[2]:std.names[3];
+    return b+" on "+std.label+". Worked out from height and weight — not measured."; }
+  const lo=o.refLow==null||o.refLow===""?null:Number(o.refLow);
+  const hi=o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
+  if(lo===null&&hi===null) return "No reference range on file. Type the range printed on this report and the status resolves.";
+  const rng = o.refLabel || (lo!==null&&hi!==null?fmt(toUnit(lo,o.code,o.unit))+"–"+fmt(toUnit(hi,o.code,o.unit))+" "+o.unit
+    : hi!==null?"≤ "+fmt(toUnit(hi,o.code,o.unit))+" "+o.unit : "≥ "+fmt(toUnit(lo,o.code,o.unit))+" "+o.unit);
+  const v=Number(o.value);
+  if((lo===null||v>=lo)&&(hi===null||v<=hi)) return "Inside "+rng+", the range printed on this report.";
+  const d = hi!==null&&v>hi ? toUnit(v-hi,o.code,o.unit) : toUnit(lo-v,o.code,o.unit);
+  return fmt(d)+" "+o.unit+(hi!==null&&v>hi?" above":" below")+" the limit printed on this report ("+rng+").";
+}
+function latest(mid){ const m=new Map();
+  for(const o of obsOf(mid)){ const p=m.get(o.code); if(!p||(o.observedAt||"")>(p.observedAt||"")) m.set(o.code,o); }
+  return [...m.values()]; }
+function series(mid,code){ return obsOf(mid).filter(o=>o.code===code&&isFinite(o.value))
+  .sort((a,b)=>(a.observedAt||"").localeCompare(b.observedAt||"")); }
+
+/* ------------------------------------- safety checks (the clinical pass) */
+function checksFor(mid){
+  const out=[], m=person(mid), age=ageOf(m);
+  if(age!==null && age<18) out.push({t:"amber",k:"Adult ranges do not apply",
+    x:"This person is "+age+". Paediatric reference intervals differ by age and often by Tanner stage — a range typed off an adult report will read wrong here. Use the range printed on their own paediatric report and nothing else."});
+  const byCode={}; obsOf(mid).forEach(o=>{ (byCode[o.code]=byCode[o.code]||[]).push(o); });
+  const mixed=[], crossLab=[], dupDay=[];
+  for(const code in byCode){
+    const rows=byCode[code]; if(rows.length<2) continue;
+    const units=[...new Set(rows.map(r=>r.unit))];
+    if(units.length>1) mixed.push(meta(code).n+" ("+units.join(" / ")+")");
+    const labs=[...new Set(rows.map(r=>(r.source||"").trim()).filter(Boolean))];
+    if(labs.length>1) crossLab.push(meta(code).n);
+    const days={}; rows.forEach(r=>{ (days[r.observedAt]=days[r.observedAt]||[]).push(r); });
+    for(const d in days) if(days[d].length>1 && [...new Set(days[d].map(r=>r.source))].length>1) dupDay.push(meta(code).n+" on "+d);
+  }
+  if(mixed.length) out.push({t:"blue",k:"Units converted for comparison",
+    x:"These are on file in more than one unit: "+mixed.join(", ")+". Each reading is shown in the unit its own report used, and converted to a single unit before anything is compared or plotted. Check the conversion looks right before you read anything into the trend."});
+  if(crossLab.length) out.push({t:"amber",k:"Trends cross laboratories",
+    x:crossLab.slice(0,6).join(", ")+(crossLab.length>6?" and "+(crossLab.length-6)+" more":"")+" have readings from more than one lab. Different labs use different analysers and methods, so a step in the line can be the lab rather than the person. Treat a cross-lab change as a question, not a finding."});
+  if(dupDay.length) out.push({t:"blue",k:"Same test, same day, two labs",
+    x:dupDay.slice(0,4).join("; ")+". Both are kept and neither is averaged — the disagreement is the information."});
+  return out;
+}
+
+/* ------------------------------------------------------- components */
+function badge(st){ return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(ST[st]||st)+'</span>'; }
+function bandHTML(o, cuts, names){
+  const M=meta(o.code);
+  let marks=[];
+  if(cuts) marks=cuts.slice();
+  else { if(o.refLow!=null&&o.refLow!=="") marks.push(toUnit(Number(o.refLow),o.code,o.unit));
+         if(o.refHigh!=null&&o.refHigh!=="") marks.push(toUnit(Number(o.refHigh),o.code,o.unit)); }
+  if(!marks.length) return "";
+  const shown = toUnit(Number(o.value),o.code,o.unit);
+  const pts=marks.concat([shown]);
+  let mn=Math.min.apply(null,pts), mx=Math.max.apply(null,pts);
+  const pad=(mx-mn)*0.35||Math.abs(mx||1)*0.2||1; mn-=pad; mx+=pad;
+  const X=v=>Math.max(0,Math.min(100,((v-mn)/(mx-mn))*100));
+  let zones="";
+  const edges=[mn].concat(marks,[mx]);
+  const cls = cuts ? ["zlo","zok","zhi","zhi"] : (marks.length===2?["zlo","zok","zhi"]:(o.refHigh!=null&&o.refHigh!==""?["zok","zhi"]:["zlo","zok"]));
+  for(let i=0;i<edges.length-1;i++){ const a=X(edges[i]), b=X(edges[i+1]);
+    zones+='<i class="'+(cls[i]||"zhi")+'" style="left:'+a+'%;width:'+(b-a)+'%"></i>'; }
+  let ticks="";
+  marks.forEach((v,i)=>{ const nm = names&&names[i+1]?names[i+1]:"";
+    ticks+='<span style="left:'+Math.max(6,Math.min(94,X(v)))+'%">'+fmt(v)+(nm?"<br>"+esc(nm):"")+'</span>'; });
+  return '<div class="band"><div class="ed"><span>'+fmt(mn)+'</span><span>'+esc(o.unit||M.u)+'</span><span>'+fmt(mx)+'</span></div>'+
+    '<div class="tr">'+zones+'<span class="mk" style="left:'+X(shown)+'%"></span></div>'+
+    '<div class="tk" style="height:'+(names?30:16)+'px">'+ticks+'</div></div>';
+}
+function obsCard(o){
+  const M=meta(o.code), st=statusOf(o);
+  const alt = o.unit!==M.u ? fmt(o.value)+" "+M.u : "";
+  return '<button class="obs" data-obs="'+esc(o.id)+'">'+
+    '<div class="nm">'+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
+    '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
+    (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
+    '<div style="margin-top:var(--s2)">'+badge(st)+'</div>'+
+    '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
+      (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
+}
+
+/* ============================================================== views */
+function sampleNote(){
+  return '<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Example records</div>'+
+    '<p>These are not anybody&rsquo;s real results — they show the shape of the book, including one glucose reading in mg/dL so you can see the unit handling. '+
+    '<button class="btn sm" id="clearSample" style="margin-left:var(--s2)">Clear examples</button></p></div>';
+}
+function vOverview(){
+  let h = hasSamples()?sampleNote():"";
+  h += '<div class="sec"><h2>Household</h2><div class="grid g300">';
+  for(const m of S.members){
+    const L=latest(m.id), cnt={act:0,discuss:0,watch:0,in_range:0,unknown:0};
+    L.forEach(o=>cnt[statusOf(o)]++);
+    const dates=L.map(o=>o.observedAt).filter(Boolean).sort();
+    const age=ageOf(m);
+    h += '<div class="card"><div class="row" style="justify-content:space-between">'+
+      '<h3>'+esc(m.name)+'</h3>'+
+      '<button class="btn sm" data-openp="'+esc(m.id)+'">Open</button></div>'+
+      '<div class="cap" style="margin-top:2px">'+(age!==null?age+" · ":"")+esc(m.sex||"")+
+        (m.country?' · '+esc(m.country):'')+'</div>'+
+      '<div class="row" style="margin-top:var(--s3)">'+
+        Object.keys(cnt).filter(k=>cnt[k]>0).sort((a,b)=>RANK[a]-RANK[b])
+          .map(k=>'<span class="badge st-'+k+'"><span class="dot"></span>'+cnt[k]+' '+esc(ST[k])+'</span>').join("")+
+        (L.length?"":'<span class="cap">No readings yet</span>')+'</div>'+
+      '<div class="cap" style="margin-top:var(--s3)">'+(dates.length?"Last report "+esc(dates[dates.length-1]):"—")+
+        ' · '+L.length+' tests on file</div></div>';
+  }
+  h += '</div></div>';
+
+  const flags=[];
+  S.members.forEach(m=>checksFor(m.id).forEach(c=>flags.push({m,c})));
+  if(flags.length){
+    h += '<div class="sec"><h2>Before you read anything into this</h2>';
+    h += flags.map(f=>'<div class="callout c-'+f.c.t+'" style="margin-bottom:var(--s3)">'+
+      '<div class="kick">'+esc(f.m.name)+' — '+esc(f.c.k)+'</div><p>'+esc(f.c.x)+'</p></div>').join("");
+    h += '</div>';
+  }
+
+  const rows=[];
+  S.members.forEach(m=>latest(m.id).forEach(o=>{ const st=statusOf(o); if(st!=="in_range") rows.push({m,o,st}); }));
+  rows.sort((a,b)=>RANK[a.st]-RANK[b.st]||(b.o.observedAt||"").localeCompare(a.o.observedAt||""));
+  h += '<div class="sec"><h2>Outside the printed range</h2>';
+  if(!rows.length) h += '<div class="empty"><b>Nothing outstanding</b>Every test that has a reference range on file is inside it.</div>';
+  else h += '<div class="card"><div class="tw"><table><thead><tr><th>Who</th><th>Test</th><th class="n">Value</th><th>Status</th><th>Why</th><th>Report</th></tr></thead><tbody>'+
+    rows.slice(0,16).map(r=>'<tr><td>'+esc(r.m.name)+'</td><td>'+esc(meta(r.o.code).n)+'</td>'+
+      '<td class="n">'+esc(r.o.valueRaw||fmt(r.o.value))+' '+esc(r.o.unit)+'</td><td>'+badge(r.st)+'</td>'+
+      '<td class="cap">'+esc(why(r.o))+'</td>'+
+      '<td class="cap">'+esc(r.o.source||"—")+'<br>'+esc(r.o.observedAt||"")+'</td></tr>').join("")+
+    '</tbody></table></div></div>';
+  h += '</div>';
+
+  h += '<div class="callout c-red"><div class="kick">If something feels wrong, do not wait for a trend</div>'+
+    '<p>This book has no idea how you feel, and it will never tell you a number is dangerous — it does not hold a critical-value table, '+
+    'because that needs a clinician to sign one off and none has. Chest pain, breathlessness, confusion, a result the lab itself marked urgent, '+
+    'or simply feeling unwell: contact a doctor now and take the original report with you.</p></div>';
+  return h;
+}
+
+function vRecord(){
+  const m=person(who), L=latest(m.id);
+  let h = hasSamples()?sampleNote():"";
+  h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)">'+
+    '<h2>'+esc(m.name)+'</h2><button class="btn pri" data-tab="add">Add a report</button></div>';
+  const chk=checksFor(m.id);
+  if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
+  if(!L.length) return h+'<div class="empty"><b>No readings yet</b>Add a report — paste the text and it fills the rows for you.</div>';
+  const G={}; L.forEach(o=>{ const g=meta(o.code).g; (G[g]=G[g]||[]).push(o); });
+  const order=GROUPS.filter(g=>G[g]).concat(Object.keys(G).filter(g=>GROUPS.indexOf(g)<0));
+  for(const g of order){
+    const items=G[g].sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]||meta(a.code).n.localeCompare(meta(b.code).n));
+    h+='<div class="sec"><h2>'+esc(g)+'</h2><div class="grid g240">'+items.map(obsCard).join("")+'</div></div>';
+  }
+  return h;
+}
+
+function vTrends(){
+  const m=person(who);
+  const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>series(m.id,c).length>1)
+    .sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
+  if(!codes.length) return '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
+  if(!trendCode||codes.indexOf(trendCode)<0) trendCode=codes[0];
+  const pts=series(m.id,trendCode), M=meta(trendCode);
+  const units=[...new Set(pts.map(p=>p.unit))];
+  const labs=[...new Set(pts.map(p=>(p.source||"").trim()).filter(Boolean))];
+  let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
+    '<select class="inp" id="trendSel" style="width:auto;min-width:220px">'+
+    codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+series(m.id,c).length+')</option>').join("")+'</select></div>';
+  if(units.length>1) h+='<div class="callout c-blue" style="margin-bottom:var(--s3)"><div class="kick">Converted to '+esc(M.u)+'</div>'+
+    '<p>These readings were reported in '+esc(units.join(" and "))+'. The line is plotted in '+esc(M.u)+' so the points are comparable; the table below shows each reading in the unit its own report used.</p></div>';
+  if(labs.length>1) h+='<div class="callout c-amber" style="margin-bottom:var(--s3)"><div class="kick">'+labs.length+' different laboratories</div>'+
+    '<p>'+esc(labs.join(" · "))+'. A step between labs can be the analyser rather than the person. The dots are coloured by each reading&rsquo;s status against its own report&rsquo;s range, not against a common one.</p></div>';
+  h+='<div class="card chart" style="position:relative">'+line(pts,M)+'</div>';
+  h+='<div class="sec" style="margin-top:var(--s4)"><h2>The readings behind the line</h2><div class="card"><div class="tw">'+
+    '<table><thead><tr><th>Date</th><th class="n">As reported</th><th class="n">In '+esc(M.u)+'</th><th>Status</th><th>Range on that report</th><th>Lab</th></tr></thead><tbody>'+
+    pts.slice().reverse().map(o=>'<tr><td class="n">'+esc(o.observedAt||"—")+'</td>'+
+      '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit)+'</td>'+
+      '<td class="n">'+fmt(o.value)+'</td><td>'+badge(statusOf(o))+'</td>'+
+      '<td class="cap">'+esc(o.refLabel||"none on file")+'</td><td class="cap">'+esc(o.source||"—")+'</td></tr>').join("")+
+    '</tbody></table></div></div></div>';
+  return h;
+}
+function stColor(st){ return {in_range:"#34C759",watch:"#FF9500",discuss:"#FF3B30",act:"#FF3B30",unknown:"#8E8E93"}[st]||"#8E8E93"; }
+function line(pts,M){
+  const W=760,H=270,L=56,R=18,T=20,B=44;
+  const ys=pts.map(p=>p.value);
+  let mn=Math.min.apply(null,ys), mx=Math.max.apply(null,ys);
+  pts.forEach(p=>{ if(p.refLow!=null&&p.refLow!=="") mn=Math.min(mn,Number(p.refLow));
+                   if(p.refHigh!=null&&p.refHigh!=="") mx=Math.max(mx,Number(p.refHigh)); });
+  const pad=(mx-mn)*0.18||Math.abs(mx||1)*0.15||1; mn-=pad; mx+=pad;
+  const span=mx-mn, dp=span<1?2:span<10?1:0;
+  const X=i=>L+(pts.length===1?(W-L-R)/2:(i/(pts.length-1))*(W-L-R));
+  const Y=v=>T+(1-(v-mn)/(mx-mn))*(H-T-B);
+  const last=pts[pts.length-1];
+  let ref="";
+  if(last.refLow!=null&&last.refLow!==""||last.refHigh!=null&&last.refHigh!==""){
+    const yt=Y(last.refHigh!=null&&last.refHigh!==""?Number(last.refHigh):mx);
+    const yb=Y(last.refLow!=null&&last.refLow!==""?Number(last.refLow):mn);
+    ref='<rect x="'+L+'" y="'+yt.toFixed(1)+'" width="'+(W-L-R)+'" height="'+Math.max(1,yb-yt).toFixed(1)+'" fill="#E6F7EB"></rect>'+
+      '<text x="'+(W-R)+'" y="'+(yt-6).toFixed(1)+'" text-anchor="end" font-size="11" fill="#8E8E93">range on the latest report</text>';
+  }
+  let grid="",ax="";
+  for(let i=0;i<=4;i++){ const v=mn+(i/4)*(mx-mn), y=Y(v);
+    grid+='<line x1="'+L+'" y1="'+y.toFixed(1)+'" x2="'+(W-R)+'" y2="'+y.toFixed(1)+'" stroke="#EFEFF2" stroke-width="1"></line>';
+    ax+='<text x="'+(L-8)+'" y="'+(y+4).toFixed(1)+'" text-anchor="end" font-size="11" fill="#8E8E93">'+fmt(v,dp)+'</text>'; }
+  const d=pts.map((p,i)=>(i?"L":"M")+X(i).toFixed(1)+" "+Y(p.value).toFixed(1)).join(" ");
+  let dots="",xl="";
+  pts.forEach((p,i)=>{ dots+='<circle class="pt" data-i="'+i+'" cx="'+X(i).toFixed(1)+'" cy="'+Y(p.value).toFixed(1)+
+      '" r="5.5" fill="'+stColor(statusOf(p))+'" stroke="#FFFFFF" stroke-width="2" tabindex="0"></circle>';
+    if(i===0||i===pts.length-1||pts.length<=5)
+      xl+='<text x="'+X(i).toFixed(1)+'" y="'+(H-B+22)+'" text-anchor="middle" font-size="11" fill="#8E8E93">'+esc(p.observedAt||"")+'</text>'; });
+  return '<div class="cap" style="margin-bottom:var(--s2)">'+esc(M.n)+' · '+esc(M.u)+'</div>'+
+    '<svg viewBox="0 0 '+W+' '+H+'" role="img" aria-label="'+esc(M.n)+' over time">'+ref+grid+
+    '<line x1="'+L+'" y1="'+T+'" x2="'+L+'" y2="'+(H-B)+'" stroke="#E5E5EA"></line>'+
+    '<line x1="'+L+'" y1="'+(H-B)+'" x2="'+(W-R)+'" y2="'+(H-B)+'" stroke="#E5E5EA"></line>'+ax+
+    '<path d="'+d+'" fill="none" stroke="#007AFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path>'+
+    dots+'<text x="'+X(pts.length-1).toFixed(1)+'" y="'+(Y(last.value)-13).toFixed(1)+'" text-anchor="end" font-size="13" font-weight="600" fill="#1C1C1E">'+fmt(last.value,dp)+'</text>'+
+    xl+'</svg><div class="tip" id="tip" hidden></div>';
+}
+
+/* ------------------------------------------------------- add report */
+function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
+  rows:[],fileId:null,fileName:"",fileURL:null,skipped:[]}; }
+function codeOpts(sel){
+  const G={}; for(const c in C){ (G[C[c].g]=G[C[c].g]||[]).push(c); }
+  return GROUPS.filter(g=>G[g]).map(g=>'<optgroup label="'+esc(g)+'">'+
+    G[g].sort((a,b)=>C[a].n.localeCompare(C[b].n))
+      .map(c=>'<option value="'+esc(c)+'"'+(c===sel?" selected":"")+'>'+esc(C[c].n)+'</option>').join("")+'</optgroup>').join("");
+}
+function vAdd(){
+  if(!draft) draft=newDraft();
+  const nOK=draft.rows.filter(r=>r.confirmed).length, ready=draft.rows.length>0&&nOK===draft.rows.length;
+  let h='<h2 style="margin-bottom:var(--s3)">Add a report</h2>';
+
+  h+='<div class="card"><div class="grid g180">'+
+    '<div><label class="fl" for="dWho">Whose report</label><select class="inp" id="dWho">'+
+      S.members.map(m=>'<option value="'+esc(m.id)+'"'+(m.id===draft.memberId?" selected":"")+'>'+esc(m.name)+'</option>').join("")+'</select></div>'+
+    '<div><label class="fl" for="dDate">Collection date</label><input class="inp" id="dDate" type="date" value="'+esc(draft.date)+'"></div>'+
+    '<div><label class="fl" for="dSrc">Laboratory</label><input class="inp" id="dSrc" placeholder="Medlatec Cầu Giấy" value="'+esc(draft.source)+'"></div>'+
+    '<div><label class="fl" for="dFast">Fasting?</label><select class="inp" id="dFast">'+
+      ["","fasting","non-fasting"].map(v=>'<option value="'+v+'"'+(draft.fasting===v?" selected":"")+'>'+(v||"not recorded")+'</option>').join("")+'</select></div>'+
+    '<div><label class="fl" for="dSpec">Specimen</label><input class="inp" id="dSpec" placeholder="serum / plasma / urine" value="'+esc(draft.specimen)+'"></div>'+
+    '</div>'+
+    '<div class="hint">Collection date, not the date printed on the letter. Fasting changes how glucose and lipids read, so it is worth a second to record.</div>'+
+    '</div>';
+
+  h+='<div class="card"><h3>1 · Get the text in</h3>'+
+    '<label class="fl" for="paste" style="margin-top:var(--s3)">Paste the report text</label>'+
+    '<textarea class="inp" id="paste" rows="6" placeholder="Glucose        5.4    mmol/L    3.9 - 6.4&#10;Cholesterol toàn phần   5.6   mmol/L   &lt; 5.2&#10;Creatinin      84     µmol/L    62 - 106"></textarea>'+
+    '<div class="row" style="margin-top:var(--s2)"><button class="btn pri" id="doParse">Read this and fill the rows</button>'+
+    '<button class="btn" id="clearPaste">Clear</button></div>'+
+    '<div class="hint">It understands Vietnamese and English test names, commas as decimals, and ranges written <span class="mono">3.9 - 6.4</span>, <span class="mono">&lt; 5.2</span> or <span class="mono">&gt; 1.03</span>. '+
+    'On a phone: photograph the sheet, then use the camera&rsquo;s own text selection to copy the table and paste it here — that reads a Vietnamese lab sheet far better than anything this page could run itself.</div>'+
+    (draft.skipped.length?'<div class="callout c-amber" style="margin-top:var(--s3)"><div class="kick">'+draft.skipped.length+' line(s) not recognised</div>'+
+      '<p>'+esc(draft.skipped.slice(0,8).join(" · "))+'. Add those with the picker below if you want them.</p></div>':'')+
+    '<details><summary>Or add one test at a time</summary><div>'+
+      '<div class="row"><select class="inp" id="addCode" style="width:auto;min-width:220px">'+codeOpts(null)+'</select>'+
+      '<button class="btn" id="addRow">Add row</button></div></div></details>'+
+    '<details><summary>Attach the report itself</summary><div>'+
+      '<input class="inp" id="dFile" type="file" accept="image/*,application/pdf" capture="environment">'+
+      '<div class="hint">On a phone this opens the camera. The image sits beside the rows while you check them, and is kept in this browser only — it is never uploaded.</div>'+
+      (draft.fileName?'<div class="cap" style="margin-top:var(--s2)">Attached: '+esc(draft.fileName)+'</div>':'')+
+    '</div></details></div>';
+
+  if(draft.rows.length){
+    h+='<div class="card"><div class="row" style="justify-content:space-between"><h3>2 · Check every value against the sheet</h3>'+
+      '<span class="badge '+(ready?"st-in_range":"st-watch")+'"><span class="dot"></span>'+nOK+' of '+draft.rows.length+' checked</span></div>'+
+      '<div class="hint" style="margin-bottom:var(--s3)">There is no check-all. Reading each number back against the paper is the one step that keeps a typo out of your record — and editing a value un-checks it.</div>';
+    h+='<div style="display:grid;grid-template-columns:'+(draft.fileURL?"minmax(0,1fr) 240px":"1fr")+';gap:var(--s4)"><div>';
+    h+=draft.rows.map((r,i)=>{
+      const M=meta(r.code), units=unitsFor(r.code);
+      return '<div class="crow'+(r.confirmed?" ok":"")+'">'+
+        '<input class="ck" type="checkbox" id="ck'+i+'" data-ck="'+i+'"'+(r.confirmed?" checked":"")+' aria-label="Confirm '+esc(M.n)+'">'+
+        '<div><div class="row" style="justify-content:space-between"><label for="ck'+i+'" style="font-weight:600;cursor:pointer">'+esc(M.n)+'</label>'+
+        '<button class="btn sm warn" data-rm="'+i+'">Remove</button></div>'+
+        (r.src?'<div class="cap mono" style="margin-top:2px">'+esc(r.src.slice(0,80))+'</div>':'')+
+        '<div class="cg">'+
+          '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
+          '<div><label class="fl" for="u'+i+'">Unit</label><select class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'">'+
+            units.map(u=>'<option value="'+esc(u[0])+'"'+(u[0]===r.unit?" selected":"")+'>'+esc(u[0])+'</option>').join("")+'</select></div>'+
+          '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+          '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+        '</div></div></div>';
+    }).join("");
+    h+='</div>';
+    if(draft.fileURL) h+='<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">The sheet</div>'+
+      '<img class="shot" src="'+draft.fileURL+'" alt="The attached report"></div>';
+    h+='</div></div>';
+    h+='<div class="row" style="margin-top:var(--s4)">'+
+      '<button class="btn pri big" id="saveDraft"'+(ready?"":" disabled")+' style="max-width:320px">Save '+draft.rows.length+' value'+(draft.rows.length===1?"":"s")+'</button>'+
+      '<button class="btn" id="killDraft">Discard</button></div>';
+  }
+  return h;
+}
+
+/* ------------------------------------------------------ next steps */
+function vActions(){
+  const m=person(who), L=latest(m.id), mine=S.actions.filter(a=>a.memberId===m.id);
+  const sev=a=>Math.min.apply(null,(a.codes||[]).map(c=>{const o=L.find(x=>x.code===c);return o?RANK[statusOf(o)]:9;}).concat([9]));
+  const open=mine.filter(a=>!a.done).sort((x,y)=>sev(x)-sev(y)||(y.codes||[]).length-(x.codes||[]).length);
+  const done=mine.filter(a=>a.done);
+  let h='<h2 style="margin-bottom:var(--s3)">'+esc(m.name)+' — your follow-ups</h2>';
+  h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">You write these, not the app</div>'+
+    '<p>Vitals had a &ldquo;suggest next step&rdquo; feature and it was deliberately cut — it was the one thing that turned a record into a recommendation. '+
+    'The list and its ordering survive; the medical judgement stays with you and your doctor. Ordered by the worst status among the tests each item touches.</p></div>';
+  h+='<div class="card"><div class="row">'+
+    '<input class="inp" id="aT" placeholder="Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
+    '<select class="inp" id="aB" style="width:auto">'+Object.keys(BUCKET).map(b=>'<option value="'+b+'">'+esc(BUCKET[b])+'</option>').join("")+'</select>'+
+    '<button class="btn pri" id="aAdd">Add</button></div>'+
+    '<label class="fl" for="aC" style="margin-top:var(--s3)">Tests it touches (optional)</label>'+
+    '<select class="inp" id="aC" multiple size="4">'+L.sort((a,b)=>meta(a.code).n.localeCompare(meta(b.code).n))
+      .map(o=>'<option value="'+esc(o.code)+'">'+esc(meta(o.code).n)+' — '+esc(ST[statusOf(o)])+'</option>').join("")+'</select></div>';
+  if(!mine.length) return h+'<div class="empty" style="margin-top:var(--s4)"><b>Nothing written down</b>Add the questions you want to take to the next appointment.</div>';
+  for(const b in BUCKET){
+    const it=open.filter(a=>a.bucket===b); if(!it.length) continue;
+    h+='<div class="sec" style="margin-top:var(--s5)"><h2>'+esc(BUCKET[b])+'</h2>'+it.map(a=>aRow(a,L)).join("")+'</div>';
+  }
+  if(done.length) h+='<div class="sec"><h2>Done</h2>'+done.map(a=>aRow(a,L)).join("")+'</div>';
+  return h;
+}
+function aRow(a,L){
+  const chips=(a.codes||[]).map(c=>{ const o=L.find(x=>x.code===c), st=o?statusOf(o):"unknown";
+    return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(meta(c).n)+'</span>'; }).join("");
+  return '<div class="card" style="margin-bottom:var(--s3);padding:var(--s4)"><div class="row" style="align-items:flex-start;flex-wrap:nowrap">'+
+    '<input type="checkbox" class="ck" data-act="'+esc(a.id)+'"'+(a.done?" checked":"")+' aria-label="Mark done">'+
+    '<div style="flex:1;min-width:0"><div'+(a.done?' class="muted" style="text-decoration:line-through"':'')+'>'+esc(a.title)+'</div>'+
+    (chips?'<div class="row" style="margin-top:var(--s2)">'+chips+'</div>':'')+'</div>'+
+    '<button class="btn sm warn" data-dela="'+esc(a.id)+'">Delete</button></div></div>';
+}
+
+/* -------------------------------------------------------- hand-off */
+function exportPayload(memberId){
+  const mem = memberId ? S.members.filter(m=>m.id===memberId) : S.members;
+  const ids = mem.map(m=>m.id);
+  return {kind:"vitals-journal", v:2, exported:today(),
+    members:mem,
+    observations:S.observations.filter(o=>ids.indexOf(o.memberId)>=0),
+    actions:S.actions.filter(a=>ids.indexOf(a.memberId)>=0)};
+}
+function mergeIn(p, label){
+  if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Vitals Journal file");
+  let addedM=0, addedO=0, addedA=0, dupO=0;
+  const haveM=new Set(S.members.map(m=>m.id));
+  p.members.forEach(m=>{ if(!haveM.has(m.id)){ S.members.push(m); haveM.add(m.id); addedM++; } });
+  const haveO=new Set(S.observations.map(o=>o.id));
+  (p.observations||[]).forEach(o=>{ if(haveO.has(o.id)){ dupO++; return; }
+    o.origin = label || ("imported "+today()); o.sample=false; S.observations.push(o); haveO.add(o.id); addedO++; });
+  const haveA=new Set(S.actions.map(a=>a.id));
+  (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; S.actions.push(a); haveA.add(a.id); addedA++; } });
+  return {addedM, addedO, addedA, dupO};
+}
+function vHandoff(){
+  let h='<h2 style="margin-bottom:var(--s3)">Hand-off</h2>';
+  h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Read this once</div>'+
+    '<p>Your phone and your laptop are two separate books. They look identical and share nothing — a browser keeps this data per device, and there is no server in the middle to sync them. '+
+    'That is deliberate: a server holding medical records is exactly what got shut down this morning. So moving records between devices, or receiving a relative&rsquo;s, is a file you carry across by hand. '+
+    'Bringing one in <b>merges</b>, it never overwrites — anything already here is kept and duplicates are skipped.</p></div>';
+
+  h+='<div class="card"><h3>Send a copy out</h3>'+
+    '<div class="hint" style="margin-bottom:var(--s3)">Copy the text, then put it wherever you like — AirDrop a note to yourself, message it, email it. Paste it into <b>Bring a copy in</b> on the other device.</div>'+
+    '<div class="row"><select class="inp" id="expWho" style="width:auto;min-width:200px">'+
+      '<option value="">Everything in this book</option>'+
+      S.members.map(m=>'<option value="'+esc(m.id)+'">Just '+esc(m.name)+'</option>').join("")+'</select>'+
+    '<button class="btn pri" id="expGo">Show it</button><button class="btn" id="expCopy">Copy</button></div>'+
+    '<textarea class="inp" id="expBox" rows="5" style="margin-top:var(--s3)" placeholder="Choose what to send, then press Show it."></textarea>'+
+    '<div class="hint">Attached report images are <b>not</b> in this text — they stay on the device that took the photo. The numbers, ranges, labs and dates all travel.</div></div>';
+
+  h+='<div class="card"><h3>Bring a copy in</h3>'+
+    '<div class="hint" style="margin-bottom:var(--s3)">Paste what another device or a family member sent you. Say who it came from so the record keeps its provenance.</div>'+
+    '<div class="row" style="margin-bottom:var(--s3)"><input class="inp" id="impFrom" placeholder="From — e.g. my phone, or Chị Lan in Sydney" style="flex:1;min-width:200px"></div>'+
+    '<textarea class="inp" id="impBox" rows="5" placeholder="Paste here"></textarea>'+
+    '<div class="row" style="margin-top:var(--s3)"><button class="btn pri" id="impGo">Merge it in</button>'+
+    '<label class="btn" style="cursor:pointer">Or pick a file<input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden></label></div>'+
+    '<div id="impMsg"></div></div>';
+
+  h+='<div class="card"><h3>Family in other countries</h3>'+
+    '<div class="hint">The workable shape, and it is the only one that does not build the thing that was killed:</div>'+
+    '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
+    '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. Their records never leave their device unless they choose.</li>'+
+    '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
+    '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
+    '</ol>'+
+    '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
+    '<p>A single place everyone uploads to is one person holding a household&rsquo;s medical records on someone else&rsquo;s server, across borders. '+
+    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1. Copies that people choose to send you are a different thing, and they stay on your machine.</p></div></div>';
+  return h;
+}
+
+/* -------------------------------------------------------- settings */
+function vSettings(){
+  let h='<h2 style="margin-bottom:var(--s3)">People</h2>';
+  h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
+    '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
+    '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
+      ["female","male"].map(x=>'<option'+(m.sex===x?" selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
+    '<div><label class="fl" for="d'+m.id+'">Date of birth</label><input class="inp" id="d'+m.id+'" type="date" data-mf="dob" data-mid="'+esc(m.id)+'" value="'+esc(m.dob||"")+'"></div>'+
+    '<div><label class="fl" for="c'+m.id+'">Where they are</label><input class="inp" id="c'+m.id+'" data-mf="country" data-mid="'+esc(m.id)+'" value="'+esc(m.country||"")+'" placeholder="Vietnam"></div>'+
+    '<div><label class="fl" for="p'+m.id+'">BMI standard</label><select class="inp" id="p'+m.id+'" data-mf="population" data-mid="'+esc(m.id)+'">'+
+      Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
+    (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
+    '</div>').join("");
+  h+='<button class="btn" id="addP">Add a person</button>';
+
+  h+='<div class="sec" style="margin-top:var(--s6)"><h2>How this book behaves</h2><div class="card">'+
+    '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
+    '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
+    '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
+    '<p><b>There is no server.</b> No account, no sync, no upload, no AI reading your documents. Nothing crosses a border because nothing leaves the machine.</p>'+
+    '<details><summary>What a clinician would want you to know</summary><div>'+
+    '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body)">'+
+    '<li><b>This is not your medical record.</b> It is a patient-held copy. Hand a clinician the original report — that is the document with the lab&rsquo;s method, its accreditation and its own flags on it.</li>'+
+    '<li><b>Reference ranges are not verdicts.</b> They are the interval covering most of a reference population, so around 1 in 20 healthy results sit outside one. Outside the range is a question, not a diagnosis; inside it is not a clean bill of health.</li>'+
+    '<li><b>A single value means little.</b> Direction and rate of change usually matter more, which is why this book keeps every reading and averages nothing.</li>'+
+    '<li><b>Different labs are not interchangeable.</b> Analyser and method differ, so a change between labs may be the lab. Trends that cross laboratories are flagged.</li>'+
+    '<li><b>Context changes interpretation</b> — fasting state, time of day, acute illness, pregnancy, medicines and supplements. Record what you can; biotin in particular can distort several immunoassays.</li>'+
+    '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
+    '</ul></div></details></div></div>';
+
+  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">There is no cloud copy. Take a hand-off first.</div>'+
+    '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
+  return h;
+}
+
+/* -------------------------------------------------------- detail */
+function drawer(){
+  const host=document.getElementById("dHost");
+  if(!detail){ host.innerHTML=""; return; }
+  const o=obsOf(who).find(x=>x.id===detail)||S.observations.find(x=>x.id===detail);
+  if(!o){ host.innerHTML=""; return; }
+  const M=meta(o.code), st=statusOf(o), m=person(o.memberId), hist=series(o.memberId,o.code);
+  const linked=S.actions.filter(a=>a.memberId===o.memberId&&(a.codes||[]).indexOf(o.code)>=0);
+  let bands="", dis="";
+  if(o.code==="bmi"){
+    const mine=BMI_STD[m.population]||BMI_STD.general, other=m.population==="asian_pacific"?BMI_STD.general:BMI_STD.asian_pacific;
+    const cat=(s,v)=>v<s.cuts[0]?s.names[0]:v<s.cuts[1]?s.names[1]:v<s.cuts[2]?s.names[2]:s.names[3];
+    bands='<div class="kick muted" style="margin-top:var(--s4)">'+esc(mine.label)+' — in force here</div>'+bandHTML(o,mine.cuts,mine.names)+
+      '<div class="kick muted" style="margin-top:var(--s4)">'+esc(other.label)+'</div>'+bandHTML(o,other.cuts,other.names);
+    const A=cat(mine,o.value), B=cat(other,o.value);
+    if(A!==B) dis='<div class="callout c-amber" style="margin-top:var(--s4)"><div class="kick">The two standards disagree here</div>'+
+      '<p>'+esc(mine.label)+' calls this <b>'+esc(A)+'</b>. '+esc(other.label)+' calls it <b>'+esc(B)+'</b>. Same body, same day, different word — worth asking which one your clinic uses.</p></div>';
+  } else bands=bandHTML(o,null,null);
+  host.innerHTML='<div class="scrim" data-x="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="'+esc(M.n)+'">'+
+    '<div class="dh"><div style="flex:1;min-width:0"><div class="cap">'+esc(M.g)+' · '+esc(m.name)+'</div><h3>'+esc(M.n)+'</h3></div>'+
+    '<button class="btn sm" data-x="1">Close</button></div><div class="db">'+
+    '<div class="row" style="align-items:baseline"><span class="big">'+esc(o.valueRaw||fmt(o.value))+'</span>'+
+      '<span class="muted" style="font-size:15px">'+esc(o.unit||M.u)+'</span></div>'+
+    (o.unit!==M.u?'<div class="cap num" style="margin-top:var(--s1)">= '+fmt(o.value)+' '+esc(M.u)+' after conversion</div>':'')+
+    '<div style="margin:var(--s3) 0">'+badge(st)+'</div>'+
+    '<div class="callout c-blue"><p>'+esc(why(o))+'</p></div>'+bands+dis+
+    '<dl class="kv">'+
+      '<dt>Laboratory</dt><dd>'+esc(o.source||"not recorded")+'</dd>'+
+      '<dt>Collected</dt><dd>'+esc(o.observedAt||"not recorded")+'</dd>'+
+      '<dt>Range used</dt><dd>'+esc(o.refLabel||(o.code==="bmi"?(BMI_STD[m.population]||BMI_STD.general).label:"none on file"))+'</dd>'+
+      (o.fasting?'<dt>Fasting</dt><dd>'+esc(o.fasting)+'</dd>':'')+
+      (o.specimen?'<dt>Specimen</dt><dd>'+esc(o.specimen)+'</dd>':'')+
+      (o.origin?'<dt>Came from</dt><dd>'+esc(o.origin)+'</dd>':'')+
+      (o.note?'<dt>Note</dt><dd>'+esc(o.note)+'</dd>':'')+'</dl>'+
+    (hist.length>1?'<h3 style="margin-top:var(--s5)">Every reading on file</h3><div class="tw" style="margin-top:var(--s2)">'+
+      '<table><thead><tr><th>Date</th><th class="n">Value</th><th>Status</th><th>Lab</th></tr></thead><tbody>'+
+      hist.slice().reverse().map(x=>'<tr><td class="n">'+esc(x.observedAt||"—")+'</td><td class="n">'+esc(x.valueRaw||fmt(x.value))+' '+esc(x.unit)+'</td>'+
+        '<td>'+badge(statusOf(x))+'</td><td class="cap">'+esc(x.source||"—")+'</td></tr>').join("")+'</tbody></table></div>'
+      :'<p class="cap" style="margin-top:var(--s4)">Only one reading on file — a trend needs two.</p>')+
+    (linked.length?'<h3 style="margin-top:var(--s5)">Your follow-ups on this</h3>'+linked.map(a=>'<div class="cap" style="margin-top:var(--s2)">'+(a.done?"✓ ":"• ")+esc(a.title)+'</div>').join(""):'')+
+    '<div class="callout c-blue" style="margin-top:var(--s5)"><div class="kick">The only thing this book ever says</div><p><b>Mang kết quả này đi khám.</b></p></div>'+
+    '<p class="cap" style="margin-top:var(--s2)">That line does not change with the value. This book records and compares. It does not interpret.</p>'+
+    (o.derived?'':'<div class="row" style="margin-top:var(--s5)"><button class="btn sm" data-fix="'+esc(o.id)+'">Correct the value</button>'+
+      '<button class="btn sm" data-flag="'+esc(o.id)+'">Flag by hand</button>'+
+      '<button class="btn sm warn" data-delo="'+esc(o.id)+'">Delete</button></div>')+
+    '</div></aside>';
+}
+
+/* =============================================================== app */
+const TABS=[["overview","Overview"],["record","Record"],["trends","Trends"],["actions","Next Steps"],
+            ["add","Add report"],["handoff","Hand-off"],["settings","Settings"]];
+function paintTabs(){
+  const m=person(who);
+  const c={record:latest(m.id).length, actions:S.actions.filter(a=>a.memberId===m.id&&!a.done).length};
+  document.getElementById("tabs").innerHTML=TABS.map(t=>
+    '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+esc(t[1])+
+    (c[t[0]]?'<span class="c">'+c[t[0]]+'</span>':'')+'</button>').join("");
+}
+function paintPeople(){
+  document.getElementById("people").innerHTML=S.members.map(m=>
+    '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'">'+
+    (m.id===who?'<span class="dot"></span>':'')+esc(m.name)+'</button>').join("");
+}
+function render(){
+  paintPeople(); paintTabs();
+  document.getElementById("view").innerHTML =
+    tab==="overview"?vOverview(): tab==="record"?vRecord(): tab==="trends"?vTrends():
+    tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings();
+  drawer();
+  if(tab==="trends") wireChart();
+}
+function wireChart(){
+  const ch=document.querySelector(".chart"); if(!ch) return;
+  const tip=document.getElementById("tip"), m=person(who), pts=series(m.id,trendCode), M=meta(trendCode);
+  ch.querySelectorAll(".pt").forEach(c=>{
+    const show=()=>{ const p=pts[+c.dataset.i]; if(!p) return;
+      const r=ch.getBoundingClientRect(), cr=c.getBoundingClientRect();
+      tip.innerHTML='<b>'+esc(p.observedAt||"no date")+'</b><br>'+esc(p.valueRaw||fmt(p.value))+' '+esc(p.unit)+
+        (p.unit!==M.u?' ('+fmt(p.value)+' '+esc(M.u)+')':'')+'<br>'+esc(ST[statusOf(p)])+'<br>'+esc(p.source||"lab not recorded");
+      tip.hidden=false;
+      tip.style.left=Math.max(4,Math.min(cr.left-r.left+cr.width/2-tip.offsetWidth/2,r.width-tip.offsetWidth-4))+"px";
+      tip.style.top=Math.max(4,cr.top-r.top-tip.offsetHeight-10)+"px"; };
+    const hide=()=>{ tip.hidden=true; };
+    c.addEventListener("mouseenter",show); c.addEventListener("focus",show);
+    c.addEventListener("mouseleave",hide); c.addEventListener("blur",hide);
+  });
+}
+
+document.addEventListener("click", async e=>{
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#impGo,#wipe");
+  if(!t) return;
+  if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
+  if(t.dataset.openp){ who=t.dataset.openp; tab="record"; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.obs){ detail=t.dataset.obs; drawer(); return; }
+  if(t.dataset.x!==undefined){ detail=null; drawer(); return; }
+
+  if(t.id==="clearSample"){ if(!confirm("Remove the example records? Anything you added is kept.")) return;
+    S.observations=S.observations.filter(o=>!o.sample); S.actions=S.actions.filter(a=>!a.sample); save(); render(); return; }
+
+  if(t.id==="doParse"){
+    const txt=document.getElementById("paste").value;
+    if(!txt.trim()) return;
+    const {rows,skipped}=parseReport(txt);
+    if(!rows.length){ alert("Nothing recognisable in that.\n\nEach line needs a test name then a number, e.g.\n  Glucose  5.4  mmol/L  3.9 - 6.4"); return; }
+    draft.rows=draft.rows.concat(rows); draft.skipped=skipped; render();
+    return;
+  }
+  if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
+    draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:false,src:""}); render(); return; }
+  if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
+  if(t.id==="killDraft"){ if(draft.rows.length&&!confirm("Discard this report?")) return;
+    if(draft.fileURL) URL.revokeObjectURL(draft.fileURL); draft=null; tab="record"; render(); return; }
+  if(t.id==="saveDraft"){
+    const rid=uid();
+    if(draft.fileId) S.reports.push({id:rid,memberId:draft.memberId,date:draft.date,source:draft.source,fileId:draft.fileId,fileName:draft.fileName});
+    draft.rows.forEach(r=>{
+      const v=parseFloat(r.value);
+      S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:r.unit,
+        value:toCanonical(v,r.code,r.unit),
+        refLow:r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
+        refHigh:r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
+        refLabel:r.refLabel||((r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
+        observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
+        note:"",manualStatus:null,origin:"",reportId:draft.fileId?rid:null,sample:false});
+    });
+    save(); if(draft.fileURL) URL.revokeObjectURL(draft.fileURL);
+    who=draft.memberId; draft=null; tab="record"; render(); window.scrollTo(0,0); return;
+  }
+
+  if(t.id==="aAdd"){ const el=document.getElementById("aT"), title=el.value.trim();
+    if(!title){ el.focus(); return; }
+    S.actions.push({id:uid(),memberId:who,title,bucket:document.getElementById("aB").value,
+      codes:[...document.getElementById("aC").selectedOptions].map(o=>o.value),done:false,sample:false});
+    save(); render(); return; }
+  if(t.dataset.dela){ S.actions=S.actions.filter(a=>a.id!==t.dataset.dela); save(); render(); return; }
+
+  if(t.dataset.delo){ if(!confirm("Delete this reading?")) return;
+    S.observations=S.observations.filter(o=>o.id!==t.dataset.delo); detail=null; save(); render(); return; }
+  if(t.dataset.fix){ const o=S.observations.find(x=>x.id===t.dataset.fix); if(!o) return;
+    const nv=prompt("Corrected value for "+meta(o.code).n+" ("+o.unit+"):",o.valueRaw); if(nv===null) return;
+    const n=parseFloat(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
+    o.valueRaw=String(nv); o.value=toCanonical(n,o.code,o.unit);
+    o.note=prompt("What does the sheet actually say? (kept as a note)",o.note||"")||o.note;
+    save(); render(); return; }
+  if(t.dataset.flag){ const o=S.observations.find(x=>x.id===t.dataset.flag); if(!o) return;
+    if(o.manualStatus){ o.manualStatus=null; }
+    else { o.manualStatus="act"; o.note=prompt("Why are you flagging this? (kept with the reading)",o.note||"")||o.note; }
+    save(); render(); return; }
+
+  if(t.id==="addP"){ const n=prompt("Name for this person:"); if(!n) return;
+    const id=uid(); S.members.push({id,name:n.trim(),sex:"female",dob:"",population:"asian_pacific",country:""});
+    who=id; save(); render(); return; }
+  if(t.dataset.delm){ const m=person(t.dataset.delm);
+    if(!confirm("Remove "+m.name+" and every reading and follow-up on file for them?")) return;
+    S.members=S.members.filter(x=>x.id!==m.id);
+    S.observations=S.observations.filter(o=>o.memberId!==m.id);
+    S.actions=S.actions.filter(a=>a.memberId!==m.id);
+    if(who===m.id) who=S.members[0].id; save(); render(); return; }
+
+  if(t.id==="expGo"){ document.getElementById("expBox").value=JSON.stringify(exportPayload(document.getElementById("expWho").value||null)); return; }
+  if(t.id==="expCopy"){ const b=document.getElementById("expBox");
+    b.value=JSON.stringify(exportPayload(document.getElementById("expWho").value||null)); b.select();
+    let ok=false; try{ await navigator.clipboard.writeText(b.value); ok=true; }catch(err){ try{ ok=document.execCommand("copy"); }catch(e2){} }
+    t.textContent=ok?"Copied":"Select it and copy"; setTimeout(()=>{t.textContent="Copy";},2200); return; }
+  if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
+  if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
+    if(!confirm("Last check — there is no cloud copy and this cannot be undone.")) return;
+    try{ localStorage.removeItem(LS); }catch(e){}
+    S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
+});
+
+function doImport(raw){
+  const msg=document.getElementById("impMsg");
+  const label=(document.getElementById("impFrom").value||"").trim();
+  if(!raw||!raw.trim()){ return; }
+  let p; try{ p=JSON.parse(raw); }catch(e){
+    msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Could not read that</div><p>It is not a Vitals Journal hand-off. Copy the whole block, from the first <span class="mono">{</span> to the last <span class="mono">}</span>.</p></div>'; return; }
+  let r; try{ r=mergeIn(p,label?("from "+label+", "+today()):""); }
+  catch(e){ msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Not a hand-off file</div><p>'+esc(e.message)+'</p></div>'; return; }
+  save();
+  msg.innerHTML='<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Merged</div><p>'+
+    r.addedO+' reading'+(r.addedO===1?'':'s')+' added'+(r.dupO?', '+r.dupO+' already here and skipped':'')+
+    (r.addedM?', '+r.addedM+' new person'+(r.addedM===1?'':'s'):'')+
+    (r.addedA?', '+r.addedA+' follow-up'+(r.addedA===1?'':'s'):'')+'. Nothing was overwritten.</p></div>';
+  document.getElementById("impBox").value="";
+  paintPeople(); paintTabs();
+}
+
+document.addEventListener("input", e=>{
+  const el=e.target;
+  if(draft && el.dataset && el.dataset.f!==undefined){
+    const r=draft.rows[+el.dataset.i]; if(!r) return;
+    r[el.dataset.f]=el.value;
+    if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
+      r.refLabel=(r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:(r.refHigh!==""?"≤ "+r.refHigh+" "+r.unit:(r.refLow!==""?"≥ "+r.refLow+" "+r.unit:""));
+    }
+    if(r.confirmed){ r.confirmed=false;
+      const row=el.closest(".crow"), ck=row&&row.querySelector("[data-ck]");
+      if(ck) ck.checked=false; if(row) row.classList.remove("ok");
+      const b=document.getElementById("saveDraft"); if(b) b.disabled=true; }
+    return;
+  }
+  if(el.dataset && el.dataset.mf){ const m=person(el.dataset.mid); if(!m) return;
+    m[el.dataset.mf]=el.value; save(); paintPeople(); return; }
+  if(draft){
+    if(el.id==="dWho") draft.memberId=el.value;
+    else if(el.id==="dDate") draft.date=el.value;
+    else if(el.id==="dSrc") draft.source=el.value;
+    else if(el.id==="dFast") draft.fasting=el.value;
+    else if(el.id==="dSpec") draft.specimen=el.value;
+  }
+});
+
+document.addEventListener("change", async e=>{
+  const el=e.target;
+  if(draft && el.dataset && el.dataset.ck!==undefined){
+    const r=draft.rows[+el.dataset.ck]; if(!r) return;
+    if(el.checked && !isFinite(parseFloat(r.value))){ el.checked=false; alert("Type the value before confirming it."); return; }
+    r.confirmed=el.checked; el.closest(".crow").classList.toggle("ok",el.checked);
+    const ready=draft.rows.length>0&&draft.rows.every(x=>x.confirmed);
+    const b=document.getElementById("saveDraft"); if(b) b.disabled=!ready;
+    const bd=document.querySelector(".card .badge.st-in_range, .card .badge.st-watch");
+    if(bd){ const n=draft.rows.filter(x=>x.confirmed).length;
+      bd.className="badge "+(ready?"st-in_range":"st-watch");
+      bd.innerHTML='<span class="dot"></span>'+n+' of '+draft.rows.length+' checked'; }
+    return;
+  }
+  if(el.dataset && el.dataset.act){ const a=S.actions.find(x=>x.id===el.dataset.act); if(!a) return;
+    a.done=el.checked; save(); render(); return; }
+  if(el.id==="trendSel"){ trendCode=el.value; render(); return; }
+  if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
+    try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
+  if(el.id==="dFile" && draft){ const f=el.files&&el.files[0]; if(!f) return;
+    if(draft.fileURL) URL.revokeObjectURL(draft.fileURL);
+    const id=uid(), stored=await putFile(id,f);
+    draft.fileId=stored?id:null; draft.fileName=f.name;
+    draft.fileURL=f.type.indexOf("image/")===0?URL.createObjectURL(f):null;
+    render(); return; }
+});
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&detail){ detail=null; drawer(); } });
+
+/* print: CSS cannot open a <details>, so do it here */
+(function(){var r=[];function o(){r=[];document.querySelectorAll("details:not([open])").forEach(function(d){r.push(d);d.open=true});}
+function c(){r.forEach(function(d){d.open=false});r=[];}
+window.addEventListener("beforeprint",o);window.addEventListener("afterprint",c);
+if(window.matchMedia){var m=window.matchMedia("print"),h=function(v){v.matches?o():c()};
+m.addEventListener?m.addEventListener("change",h):m.addListener(h);}})();
+
+function start(){
+  S=load(); S.reports=S.reports||[]; S.actions=S.actions||[];
+  who=S.members[0].id;
+  const d=document.createElement("div"); d.id="dHost"; document.body.appendChild(d);
+  render();
+}
+start();
+</script>
+</body>
+</html>
