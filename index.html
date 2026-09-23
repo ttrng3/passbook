@@ -277,7 +277,26 @@ const C = {
  egfr:{n:"eGFR",u:"mL/min/1.73m²",g:"Kidney",syn:["egfr","mlct","gfr","do loc cau than","mlct uoc tinh"]},
  uric_acid:{n:"Uric acid",u:"µmol/L",g:"Kidney",alt:[["mg/dL",59.48]],syn:["acid uric","axit uric","uric acid","ua"]},
  bun:{n:"Urea",u:"mmol/L",g:"Kidney",alt:[["mg/dL (BUN)",0.357]],syn:["ure","ure mau","urea","bun","urê"]},
- urine_protein:{n:"Urine protein",u:"g/L",g:"Kidney",syn:["protein nieu","urine protein","pro (nieu)"]},
+ urine_protein:{n:"Protein (urine)",u:"",g:"Urine",q:true,syn:["protein nieu","urine protein","pro (nieu)","dam nieu"]},
+ /* A urine dipstick prints words, not numbers: Negative, Trace, Normal, 1+.
+    q:true marks a test whose result is text -- see qualState(). These nine
+    codes match migration 0012 exactly, because the extractor resolves against
+    that table and a code here that is not there would never arrive.
+
+    Their synonyms are deliberately NOT the bare words the strip prints.
+    "Glucose", "Protein", "Bilirubin", "Blood", "Leukocytes" and "pH" already
+    name BLOOD tests above, and a urine "Negative" filed into the fasting
+    glucose series is worse than one not recorded. matchAtStart() takes the
+    specimen printed on the report and looks here first; see URINE_SYN. */
+ urine_urobilinogen:{n:"Urobilinogen (urine)",u:"",g:"Urine",q:true,syn:["urobilinogen","urobilinogen nieu","uro"]},
+ urine_blood:{n:"Blood (urine)",u:"",g:"Urine",q:true,syn:["hong cau nieu","mau trong nuoc tieu"]},
+ urine_glucose:{n:"Glucose (urine)",u:"",g:"Urine",q:true,syn:["glucose nieu","duong nieu"]},
+ urine_ketones:{n:"Ketones (urine)",u:"",g:"Urine",q:true,syn:["ketone","ketones","ceton","xeton","ceton nieu"]},
+ urine_bilirubin:{n:"Bilirubin (urine)",u:"",g:"Urine",q:true,syn:["bilirubin nieu"]},
+ urine_nitrite:{n:"Nitrite (urine)",u:"",g:"Urine",q:true,syn:["nitrite","nitrit","nitrit nieu"]},
+ urine_leukocytes:{n:"Leukocytes (urine)",u:"",g:"Urine",q:true,syn:["bach cau nieu","leukocyte esterase"]},
+ urine_specific_gravity:{n:"Specific gravity (urine)",u:"ratio",g:"Urine",syn:["ty trong","ti trong","specific gravity","sg nieu"]},
+ urine_ph:{n:"pH (urine)",u:"pH",g:"Urine",syn:["ph nieu","ph nuoc tieu"]},
  sodium:{n:"Sodium",u:"mmol/L",g:"Electrolytes",syn:["natri","sodium","na","na+"]},
  potassium:{n:"Potassium",u:"mmol/L",g:"Electrolytes",syn:["kali","potassium","k","k+"]},
  chloride:{n:"Chloride",u:"mmol/L",g:"Electrolytes",syn:["clo","chloride","cl","cl-"]},
@@ -299,8 +318,21 @@ const C = {
  neutrophils_pct:{n:"Neutrophils",u:"%",g:"Blood count",syn:["neu%","neut%","bach cau trung tinh","neutrophil","neu"]},
  lymphocytes_pct:{n:"Lymphocytes",u:"%",g:"Blood count",syn:["lym%","lymph%","bach cau lympho","lymphocyte","lym"]},
  monocytes_pct:{n:"Monocytes",u:"%",g:"Blood count",syn:["mono%","bach cau mono","monocyte","mon"]},
- eosinophils_pct:{n:"Eosinophils",u:"%",g:"Blood count",syn:["eos%","bach cau ua acid","eosinophil","eo"]},
+ eosinophils_pct:{n:"Eosinophils",u:"%",g:"Blood count",syn:["eo%","eos%","bach cau ua acid","eosinophil","eo"]},
  basophils_pct:{n:"Basophils",u:"%",g:"Blood count",syn:["baso%","bach cau ua kiem","basophil","ba"]},
+/* The differential twice: a percentage AND an absolute count, one row apart
+   on the same sheet. The "#" is the only thing telling them apart, so it is
+   part of the synonym and matchAtStart takes the longer one -- without these,
+   "NEU#  4.46  G/L" matched the synonym "neu" and 4.46 billion cells per
+   litre was filed as 4.46 percent. */
+ neutrophils_abs:{n:"Neutrophils (count)",u:"×10⁹/L",g:"Blood count",syn:["neu#","neut#","neutrophil#","so luong bach cau trung tinh"]},
+ lymphocytes_abs:{n:"Lymphocytes (count)",u:"×10⁹/L",g:"Blood count",syn:["lymph#","lym#","lymphocyte#","so luong bach cau lympho"]},
+ monocytes_abs:{n:"Monocytes (count)",u:"×10⁹/L",g:"Blood count",syn:["mono#","mon#","monocyte#","so luong bach cau mono"]},
+ eosinophils_abs:{n:"Eosinophils (count)",u:"×10⁹/L",g:"Blood count",syn:["eo#","eos#","eosinophil#"]},
+ basophils_abs:{n:"Basophils (count)",u:"×10⁹/L",g:"Blood count",syn:["baso#","ba#","basophil#"]},
+ mpv:{n:"MPV",u:"fL",g:"Blood count",syn:["mpv","the tich trung binh tieu cau"]},
+ plateletcrit:{n:"Plateletcrit",u:"%",g:"Blood count",syn:["pct","plateletcrit","the tich khoi tieu cau"]},
+ pdw:{n:"PDW",u:"fL",g:"Blood count",syn:["pdw","do phan bo kich thuoc tieu cau"]},
  crp:{n:"CRP",u:"mg/L",g:"Inflammation",syn:["crp"]},
  hscrp:{n:"hs-CRP",u:"mg/L",g:"Inflammation",syn:["hs-crp","hscrp","crp sieu nhay","hs crp"]},
  esr:{n:"ESR",u:"mm/h",g:"Inflammation",syn:["esr","mau lang","toc do mau lang","vss"]},
@@ -308,12 +340,13 @@ const C = {
  anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Serology",syn:["anti-hbs","antihbs","anti hbs"]},
  anti_hcv:{n:"Anti-HCV",u:"index",g:"Serology",syn:["anti-hcv","anti hcv","hcv ab"]},
  anti_hav:{n:"Anti-HAV",u:"index",g:"Serology",syn:["anti-hav","anti hav"]},
- psa:{n:"PSA",u:"ng/mL",g:"Tumour markers",syn:["psa","psa toan phan","total psa"]},
+ psa:{n:"PSA",u:"ng/mL",g:"Tumour markers",syn:["psa total","psa","psa toan phan","total psa"]},
  cea:{n:"CEA",u:"ng/mL",g:"Tumour markers",syn:["cea"]},
  ca19_9:{n:"CA 19-9",u:"U/mL",g:"Tumour markers",syn:["ca 19-9","ca19-9","ca19 9"]},
  afp:{n:"AFP",u:"ng/mL",g:"Tumour markers",syn:["afp"]},
  cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Tumour markers",syn:["cyfra","cyfra 21-1"]},
  scc:{n:"SCC",u:"ng/mL",g:"Tumour markers",syn:["scc"]},
+ ca72_4:{n:"CA 72-4",u:"U/mL",g:"Tumour markers",syn:["ca 72-4","ca72-4","ca 72 - 4","cancer antigen 72-4"]},
  vit_d_25oh:{n:"Vitamin D (25-OH)",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.496]],syn:["vitamin d","25-oh vitamin d","25 oh vitamin d","vit d","vitamin d toan phan","25(oh)d"]},
  vit_b12:{n:"Vitamin B12",u:"pmol/L",g:"Vitamins",alt:[["pg/mL",0.738]],syn:["vitamin b12","b12","vit b12"]},
  ferritin:{n:"Ferritin",u:"µg/L",g:"Vitamins",syn:["ferritin"]},
@@ -322,10 +355,16 @@ const C = {
  bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
  heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vitals",syn:["mach","nhip tim","heart rate","pulse","hr"]},
  hrv_avg:{n:"HRV",u:"ms",g:"Vitals",syn:["hrv"]},
+ /* A health assessment reports these as words -- "Within normal limit",
+    "6/6" -- which is exactly what q:true is for. Each carries the expected
+    reading off its own report; nothing is assumed about what normal is. */
+ ecg_finding:{n:"ECG",u:"",g:"Vitals",q:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
+ visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vitals",q:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
+ visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vitals",q:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
  weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
  height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
  bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the"]},
- body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat","mo co the"]},
+ body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
  visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
  waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
@@ -340,7 +379,17 @@ const DEFAULT_PANEL = [
   "bmi","body_fat_pct","visceral_fat_cm2",
   "cholesterol_total","ldl_c","hdl_c","triglycerides",
   "alt","ast","egfr","vit_d_25oh","tsh","sleep_hours",
-  "hrv_avg","apob","lpa","hscrp","waist_cm"
+  "hrv_avg","apob","lpa","hscrp","waist_cm",
+  /* the ten rows a urinalysis strip prints, as one block -- a check-up in
+     Vietnam almost always includes it, and Protein moving Negative -> Trace
+     across visits is exactly the kind of change this book exists to show */
+  "urine_protein","urine_glucose","urine_blood","urine_leukocytes","urine_nitrite",
+  "urine_ketones","urine_bilirubin","urine_urobilinogen",
+  "urine_specific_gravity","urine_ph",
+  /* every remaining line a Kusumi CBC and an SGH assessment print */
+  "neutrophils_abs","lymphocytes_abs","monocytes_abs","eosinophils_abs","basophils_abs",
+  "mpv","plateletcrit","pdw","ca72_4",
+  "ecg_finding","visual_acuity_right","visual_acuity_left"
 ];
 /* Two pairs read as one measurement on a report and are shown as one card,
    while staying two rows in the data — the contract never pre-joins codes. */
@@ -382,7 +431,7 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
+const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Urine","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
@@ -434,6 +483,75 @@ const SYN = (()=>{ const m = new Map();
   }
   return m;
 })();
+/* ---------------------------------------------- results that are words
+
+   A dipstick reports Negative / Trace / 1+, not a number. Dropping those rows
+   because parseFloat() fails on them is how nine of the ten lines on a urine
+   report used to vanish without a message. They are kept as printed, and the
+   four states below are what makes a trend out of them: Protein reading
+   Negative, Negative, Trace, Trace across four visits is a direction.
+
+   Trace is its own state on purpose. It is the step between nothing and
+   something, and it is the one worth seeing change. */
+const QUAL = [
+  {k:"negative", r:0, n:"Negative", w:["am tinh","am","negative","neg","khong","khong co","khong phat hien","(-)","-","0"]},
+  {k:"normal",   r:0, n:"Normal",   w:["binh thuong","normal","norm","trong gioi han","bt",
+                                       "within normal limit","within normal limits","wnl","no abnormality detected",
+                                       /* full acuity, in the three notations these reports use. Anything
+                                          short of it ("6/12") is deliberately NOT listed: it reads as
+                                          unrecognised and asks, rather than being scored as a miss. */
+                                       "6/6","20/20","10/10","1.0","6/6 corrected"]},
+  {k:"trace",    r:1, n:"Trace",    w:["vet","trace","tr","+/-","-/+","nghi ngo","ranh gioi"]},
+  {k:"positive", r:2, n:"Positive", w:["duong tinh","duong","positive","pos","co","(+)"]}
+];
+function isQual(code){ return !!meta(code).q; }
+/* The one place that decides whether a draft row is ready to save. It used to
+   be isFinite(parseFloat(value)) inline in two places, which silently threw
+   away every word result on a urine strip -- nine of its ten rows. */
+function rowHasValue(r){
+  return r && (isQual(r.code) ? String(r.value==null?"":r.value).trim()!=="" 
+                              : isFinite(parseFloat(r.value)));
+}
+/* null means "printed something this book does not recognise" -- which is
+   kept verbatim and shown as unreadable, never guessed into a state. */
+function qualState(raw){
+  const t = deaccent(String(raw==null?"":raw)).toLowerCase().replace(/\s+/g," ").trim();
+  if(!t) return null;
+  for(const q of QUAL) if(q.w.indexOf(t)>=0) return q;
+  if(/^\d*\s*\++$/.test(t)) return QUAL[3];        /* "+", "++", "3+" */
+  if(/^\+{1,4}$/.test(t)) return QUAL[3];
+  if(/^\d+(\.\d+)?\s*(mg\/dl|mg\/l|g\/l|eu\/dl|umol\/l)?$/.test(t)) return QUAL[3];
+  return null;
+}
+
+/* The same six words -- Glucose, Protein, Bilirubin, Blood, Leukocytes, pH --
+   name a blood test and a urine test, and the report says which by printing
+   its sample type. This table is consulted FIRST, and only when the report
+   says urine. Without it, a strip reading "Glucose  Negative" would land in
+   the fasting blood-sugar series. */
+const URINE_SYN = (()=>{ const m=new Map();
+  for(const code in C) if(code.indexOf("urine_")===0){
+    m.set(deaccent(C[code].n).toLowerCase(), code);
+    (C[code].syn||[]).forEach(x=>{ if(!m.has(x)) m.set(x,code); });
+  }
+  [["glucose","urine_glucose"],["duong","urine_glucose"],
+   ["protein","urine_protein"],["dam","urine_protein"],
+   ["bilirubin","urine_bilirubin"],
+   ["blood","urine_blood"],["hong cau","urine_blood"],["mau","urine_blood"],
+   ["leukocytes","urine_leukocytes"],["leukocyte","urine_leukocytes"],
+   ["leucocytes","urine_leukocytes"],["bach cau","urine_leukocytes"],
+   ["ketones","urine_ketones"],["keton","urine_ketones"],
+   ["nitrite","urine_nitrite"],["urobilinogen","urine_urobilinogen"],
+   ["specific gravity","urine_specific_gravity"],["ty trong","urine_specific_gravity"],
+   ["ph","urine_ph"]].forEach(x=>m.set(x[0],x[1]));
+  return m;
+})();
+/* "" unless the report names urine as its sample. Nothing is inferred from
+   the test names themselves -- that would be the guess this guards against. */
+function specimenOfText(text){
+  return /nuoc tieu|urinalysis|urine|urinary/.test(deaccent(String(text||"")).toLowerCase()) ? "urine" : "";
+}
+
 const UNIT_MAP = {
   "mmol/l":"mmol/L","mg/dl":"mg/dL","umol/l":"µmol/L","µmol/l":"µmol/L","g/l":"g/L","g/dl":"g/dL",
   "u/l":"U/L","iu/l":"U/L","ui/l":"U/L","ng/ml":"ng/mL","pg/ml":"pg/mL","pmol/l":"pmol/L","nmol/l":"nmol/L",
@@ -441,7 +559,7 @@ const UNIT_MAP = {
   "mg/l":"mg/L","u/ml":"U/mL","%":"%","fl":"fL","pg":"pg","l/l":"L/L","mm/h":"mm/h","mmhg":"mmHg",
   "bpm":"bpm","lan/phut":"bpm","kg":"kg","cm":"cm","in":"in","lb":"lb","ms":"ms","ratio":"ratio",
   "t/l":"×10¹²/L","g/t":"×10⁹/L","k/ul":"×10⁹/L","10^9/l":"×10⁹/L","x10^9/l":"×10⁹/L",
-  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)"
+  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)","ph":"pH"
 };
 function normUnit(raw){
   if(!raw) return "";
@@ -464,7 +582,18 @@ function matchCode(nameRaw){
 /* Match the LONGEST synonym the line begins with. Splitting on the first
    digit fails on "1. Glucose" and on names that contain digits themselves
    ("Vitamin D (25-OH)", "CA 19-9", "Vitamin B12"), so we anchor on the name. */
-function matchAtStart(norm){
+function matchAtStart(norm, specimen){
+  if(specimen==="urine"){
+    let ub=null, ul=0;
+    for(const [k,v] of URINE_SYN){
+      if(k.length<2 || k.length<=ul) continue;
+      if(norm.lastIndexOf(k,0)===0){
+        const nx=norm.charAt(k.length);
+        if(nx==="" || !/[a-z0-9]/.test(nx)){ ub=v; ul=k.length; }
+      }
+    }
+    if(ub) return {code:ub,len:ul};
+  }
   let best=null,len=0;
   for(const [k,v] of SYN){
     if(k.length<2 || k.length<=len) continue;
@@ -477,6 +606,7 @@ function matchAtStart(norm){
 }
 function parseReport(text){
   const rows=[], skipped=[];
+  const specimen=specimenOfText(text);
   for(const rawLine of String(text||"").split(/\r?\n/)){
     const line=rawLine.replace(/\t/g,"  ").trim();
     if(!line || line.length<3) continue;
@@ -484,8 +614,17 @@ function parseReport(text){
     if(/^(ten xet nghiem|ten xn|chi tieu xet nghiem|tri so binh thuong|tri so tham chieu|gia tri tham chieu|khoang tham chieu|test name|reference range|result\s+unit|stt\s)/i.test(D)) continue;
     D=D.replace(/^\s*\d{1,3}\s*[.)]\s+/,"");          /* leading row number */
     D=D.replace(/(\d),(\d{1,2})(?!\d)/g,"$1.$2");      /* Vietnamese decimal comma */
+    /* "CA 19 - 9" has to read as one name. Printed with spaces around the
+       hyphen it did not match the synonym, so the two-letter synonym "ca"
+       won instead and CA 19-9 was filed as CALCIUM 19 mmol/L -- a value that
+       looks entirely plausible and is not a calcium at all. Ranges are
+       unaffected: their pattern already allows no space. */
+    D=D.replace(/([A-Za-z0-9])\s*[\-\u2013\u2014]\s*([A-Za-z0-9])/g,"$1-$2");
+    /* "PSA total [blood-SERUM]" puts the tag after the second word, so
+       stripping it only where it follows the name missed that row. */
+    D=D.replace(/\[[^\]]*\]/g," ").replace(/\s+/g," ");
     const norm=D.toLowerCase();
-    const hit=matchAtStart(norm);
+    const hit=matchAtStart(norm, specimen);
     let code, newName="";
     if(hit){ code=hit.code; }
     else {
@@ -498,9 +637,24 @@ function parseReport(text){
       code = slug(nm); newName = nm;
       if(!code || code==="c-"){ skipped.push(D.slice(0,34).trim()); continue; }
     }
+    /* A result printed as a word rather than a number. Read the cells off the
+       ORIGINAL line, not the deaccented copy, so "Âm tính" is stored the way
+       the report printed it (hard rule 7 -- never discard the source). */
+    if(hit && isQual(code)){
+      const cells = line.replace(/^\s*\d{1,3}\s*[.)]\s*/,"").split(/\s{2,}|\t|\|/)
+        .map(x=>x.trim()).filter(Boolean).slice(1).filter(x=>qualState(x));
+      if(!cells.length){ skipped.push(D.slice(0,34).trim()); continue; }
+      rows.push({code, value:cells[0], unit:"", refLow:"", refHigh:"",
+        refLabel:cells[1]?("expected "+cells[1]):"", refText:cells[1]||"",
+        confirmed:false, src:line.slice(0,90), newName:""});
+      continue;
+    }
     let rest = hit ? D.slice(hit.len) : D.slice(D.search(/\d/));
     rest=rest.replace(/^\s*\([^)]*\)/,"");              /* "(GOT)", "(25-OH)" */
-    rest=rest.replace(/^[\s:.|\-\u2013\u2014]+/,"");
+    /* "Glucose [blood-HEPARIN]   6.1" -- the whole Kusumi biochemistry panel,
+       all ten rows, was dropped because nothing consumed this tag. */
+    rest=rest.replace(/^\s*\[[^\]]*\]/,"");
+    rest=rest.replace(/^[\s:.|%\-\u2013\u2014]+/,"");
     const vm=rest.match(/^-?\d+(?:\.\d+)?/);
     if(!vm){ continue; }
     const value=vm[0];
@@ -515,11 +669,21 @@ function parseReport(text){
          its report printed, because there is nothing to check it against */
       if(newName || unitsFor(code).some(x=>x[0]===cand)){ unit=cand; after=after.slice(um[0].length); }
     }
-    if(!unit) unit=meta(code).u;
     let lo="",hi="",lab="",m;
     if((m=after.match(/(-?\d+(?:\.\d+)?)\s*[\-\u2013\u2014]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; hi=m[2]; lab=m[1]+"\u2013"+m[2]; }
-    else if((m=after.match(/[<\u2264]\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
-    else if((m=after.match(/[>\u2265]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    else if((m=after.match(/[<\u2264]=?\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
+    else if((m=after.match(/[>\u2265]=?\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    /* The column order here is Result | Reference Range | Units, so the unit
+       is at the END of the line rather than beside the number. Without this,
+       HCT "46.8 ... 41-53 ... %" kept the catalogue unit L/L and its range
+       was read as 41-53 L/L -- a hundredfold out, and silent. Only a unit
+       this test actually uses is accepted, so nothing is guessed. */
+    if(!unit){
+      const tail=after.match(/([A-Za-z\u00b5%^/0-9.\-]{1,14})\s*$/);
+      if(tail){ const cand=normUnit(tail[1]);
+        if(unitsFor(code).some(x=>x[0]===cand)) unit=cand; }
+    }
+    if(!unit) unit=meta(code).u;
     if(newName){
       const META=/(^|\s)(ngay|date|thoi gian|time|so dien thoai|dien thoai|phone|tel|dia chi|address|ma so|ma benh nhan|patient|benh nhan|bac si|doctor|ho ten|ho va ten|full name|gioi tinh|sex|tuoi|age|stt|barcode|so phieu)(\s|$)/;
       const looksMeta = META.test(deaccent(newName).toLowerCase());
@@ -610,6 +774,12 @@ function migrate(p){
     if(o.valueRaw===undefined){ o.valueRaw = String(o.value); o.unit = meta(o.code).u; }
     if(o.fasting===undefined) o.fasting = "";
   });
+  /* A panel saved before these codes existed would never show them, so the
+     check-up list is re-unioned on load. A code deliberately removed stays
+     removed -- that is what the p tombstones are for. */
+  p.panel = p.panel || DEFAULT_PANEL.slice();
+  const gone = (p.tomb && p.tomb.p) || [];
+  DEFAULT_PANEL.forEach(c=>{ if(p.panel.indexOf(c)<0 && gone.indexOf(c)<0) p.panel.push(c); });
   p.v = 2; return p;
 }
 let warned=false;
@@ -668,6 +838,15 @@ function statusOf(o){
   if(o.manualStatus) return o.manualStatus;
   if(o.code==="bmi"){ const std = BMI_STD[person(o.memberId).population]||BMI_STD.general, c=std.cuts;
     return o.value<c[0]?"discuss": o.value<c[1]?"in_range": o.value<c[2]?"watch":"discuss"; }
+  if(isQual(o.code)){
+    const got = qualState(o.valueRaw);
+    const want = qualState(o.refText);
+    /* hard rule 8 -- with nothing printed to compare against, this is
+       unknown, not "probably fine". Unknown renders louder than in range. */
+    if(!want || !got) return "unknown";
+    if(got.r <= want.r) return "in_range";
+    return (got.r - want.r) === 1 ? "watch" : "discuss";
+  }
   const lo = o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi = o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "unknown";
@@ -682,6 +861,14 @@ function why(o){
   if(o.code==="bmi"){ const m=person(o.memberId), std=BMI_STD[m.population]||BMI_STD.general, c=std.cuts, v=o.value;
     const b = v<c[0]?std.names[0]:v<c[1]?std.names[1]:v<c[2]?std.names[2]:std.names[3];
     return b+" on "+std.label+". Worked out from height and weight — not measured."; }
+  if(isQual(o.code)){
+    const got=qualState(o.valueRaw), want=qualState(o.refText);
+    if(!got) return "This report printed \u201C"+(o.valueRaw||"")+"\u201D, which is not a result this book recognises. It is kept exactly as printed, unchanged.";
+    if(!want) return "No expected result is printed on this report for this test, so there is nothing to measure it against. Type what the report expects and the status resolves.";
+    if(got.r<=want.r) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D, which is the expected \u201C"+esc(o.refText)+"\u201D on this report.";
+    if(got.r-want.r===1) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D where this report expects \u201C"+esc(o.refText)+"\u201D. A trace is the step between nothing and something \u2014 worth watching across the next report rather than reading anything into one.";
+    return "Printed as \u201C"+esc(o.valueRaw)+"\u201D where this report expects \u201C"+esc(o.refText)+"\u201D. Mang k\u1EBFt qu\u1EA3 n\u00E0y \u0111i kh\u00E1m.";
+  }
   const lo=o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi=o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "No reference range on file. Type the range printed on this report and the status resolves.";
@@ -697,6 +884,12 @@ function latest(mid){ const m=new Map();
   return [...m.values()]; }
 function series(mid,code){ return obsOf(mid).filter(o=>o.code===code&&isFinite(o.value))
   .sort((a,b)=>(a.observedAt||"").localeCompare(b.observedAt||"")); }
+/* A word result has no number, so it cannot be a point on a line -- but
+   Negative, Negative, Trace, Trace IS a direction, and it is the one a urine
+   strip is read for. This is the series behind that. */
+function qSeries(mid,code){ return obsOf(mid).filter(o=>o.code===code&&isQual(o.code)&&String(o.valueRaw||"").trim()!=="")
+  .sort((a,b)=>(a.observedAt||"").localeCompare(b.observedAt||"")); }
+function anySeries(mid,code){ return isQual(code) ? qSeries(mid,code) : series(mid,code); }
 
 /* ------------------------------------- safety checks (the clinical pass) */
 function checksFor(mid){
@@ -927,16 +1120,18 @@ function panelGaps(L){
 }
 function vTrends(){
   const m=person(who);
-  const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>series(m.id,c).length>1)
+  const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>anySeries(m.id,c).length>1)
     .sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
   if(!codes.length) return '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   if(!trendCode||codes.indexOf(trendCode)<0) trendCode=codes[0];
   const pts=series(m.id,trendCode), M=meta(trendCode);
+  if(!pts.length) return h+'<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   const units=[...new Set(pts.map(p=>p.unit))];
   const labs=[...new Set(pts.map(p=>(p.source||"").trim()).filter(Boolean))];
   let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
     '<select class="inp" id="trendSel" style="width:auto;min-width:220px">'+
-    codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+series(m.id,c).length+')</option>').join("")+'</select></div>';
+    codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+anySeries(m.id,c).length+')</option>').join("")+'</select></div>';
+  if(isQual(trendCode)) return h + qualTrend(m, trendCode);
   if(units.length>1) h+='<div class="callout c-blue" style="margin-bottom:var(--s3)"><div class="kick">Converted to '+esc(M.u)+'</div>'+
     '<p>These readings were reported in '+esc(units.join(" and "))+'. The line is plotted in '+esc(M.u)+' so the points are comparable; the table below shows each reading in the unit its own report used.</p></div>';
   if(labs.length>1) h+='<div class="callout c-amber" style="margin-bottom:var(--s3)"><div class="kick">'+labs.length+' different laboratories</div>'+
@@ -948,6 +1143,34 @@ function vTrends(){
       '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit)+'</td>'+
       '<td class="n">'+fmt(o.value)+'</td><td>'+badge(statusOf(o))+'</td>'+
       '<td class="cap">'+esc(o.refLabel||"none on file")+'</td><td class="cap">'+esc(o.source||"—")+'</td></tr>').join("")+
+    '</tbody></table></div></div></div>';
+  return h;
+}
+/* No line, no axis, no invented numbers -- a row of what each report said,
+   oldest first, so the eye reads the run. The point of the view is the
+   transition: three Negatives and then a Trace. */
+function qualTrend(m, code){
+  const pts=qSeries(m.id,code), M=meta(code);
+  const moves=[];
+  for(let i=1;i<pts.length;i++){
+    const a=qualState(pts[i-1].valueRaw), b=qualState(pts[i].valueRaw);
+    if(a&&b&&a.k!==b.k) moves.push(esc(pts[i].observedAt||"an undated report")+": "+esc(a.n.toLowerCase())+" \u2192 "+esc(b.n.toLowerCase()));
+  }
+  let h='<div class="card"><div class="row" style="flex-wrap:wrap;gap:var(--s2);align-items:flex-end">'+
+    pts.map(o=>'<div style="text-align:center;min-width:92px">'+
+      badge(statusOf(o))+
+      '<div style="margin-top:var(--s2);font-weight:600">'+esc(o.valueRaw||"\u2014")+'</div>'+
+      '<div class="cap">'+esc(o.observedAt||"no date")+'</div></div>').join("")+
+    '</div>'+
+    '<p class="cap" style="margin-top:var(--s4)">This test is reported as words, not a number, so there is no line to draw. '+
+    (moves.length
+      ? 'It changed '+moves.length+' time'+(moves.length>1?'s':'')+': '+moves.join(' \u00B7 ')+'.'
+      : 'It has read the same on every report here.')+'</p></div>'+
+    '<div class="sec" style="margin-top:var(--s4)"><h2>The readings behind it</h2><div class="card"><div class="tw">'+
+    '<table><thead><tr><th>Date</th><th>Printed</th><th>Expected on that report</th><th>Status</th><th>Lab</th></tr></thead><tbody>'+
+    pts.slice().reverse().map(o=>'<tr><td class="n">'+esc(o.observedAt||"\u2014")+'</td>'+
+      '<td>'+esc(o.valueRaw||"\u2014")+'</td><td class="cap">'+esc(o.refText||"none on file")+'</td>'+
+      '<td>'+badge(statusOf(o))+'</td><td class="cap">'+esc(o.source||"\u2014")+'</td></tr>').join("")+
     '</tbody></table></div></div></div>';
   return h;
 }
@@ -1071,10 +1294,17 @@ function doubtRow(r, i){
       '<button class="btn sm warn" data-rm="'+i+'">Not a result</button></div>'+
       '<div class="cap" style="margin-top:2px">'+esc(r.why || "not matched to a known test")+'</div>'+
       '<div class="cg" style="margin-top:var(--s3)">'+
-        '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
-        '<div><label class="fl" for="u'+i+'">Unit</label><input class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'"></div>'+
-        '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
-        '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+      (isQual(r.code)
+        /* a dipstick line has no number and no unit: what it printed, and
+           what it said to expect. Two fields instead of four. */
+        ? '<div><label class="fl" for="v'+i+'">What the report printed</label>'+
+            '<input class="inp" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" placeholder="Negative / Trace / 1+"></div>'+
+          '<div><label class="fl" for="rt'+i+'">What it says to expect</label>'+
+            '<input class="inp" id="rt'+i+'" data-f="refText" data-i="'+i+'" value="'+esc(r.refText||"")+'" placeholder="Âm tính / Negative"></div>'
+        : '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
+          '<div><label class="fl" for="u'+i+'">Unit</label><input class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'"></div>'+
+          '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+          '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>')+
       '</div>'+
       '<div class="row" style="margin-top:var(--s3)">'+
         '<button class="btn '+(r.confirmed?'':'pri')+'" data-keep="'+i+'">'+(r.confirmed?'Will be saved':'Looks right, keep it')+'</button>'+
@@ -1816,7 +2046,10 @@ function rowsFromVitals(vrows, fileName){
     const known = !!v.canonicalCode;
     const name  = v.sourceTestName || "";
     const code  = known ? v.canonicalCode : slug(name || "unknown");
-    const unit  = normUnit(v.unitRaw || "") || (known ? meta(code).u : (v.unitRaw || ""));
+    const q     = known && isQual(code);
+    /* A word result carries no unit. Falling back to the catalogue unit here
+       would print "Negative mmol/L". */
+    const unit  = q ? "" : (normUnit(v.unitRaw || "") || (known ? meta(code).u : (v.unitRaw || "")));
     const op    = v.refOperator;
     let lo = v.refLow, hi = v.refHigh, label = "";
     const has = x => x !== null && x !== undefined && isFinite(x);
@@ -1831,9 +2064,13 @@ function rowsFromVitals(vrows, fileName){
       code: code,
       value: String(v.valueRaw).trim(),
       unit: unit,
-      refLow:  has(lo) ? String(lo) : "",
-      refHigh: has(hi) ? String(hi) : "",
-      refLabel: label ? label + (unit ? " " + unit : "") : "",
+      refLow:  !q && has(lo) ? String(lo) : "",
+      refHigh: !q && has(hi) ? String(hi) : "",
+      /* the reference printed as words ("Âm tính") rather than numbers. This
+         is what decides a qualitative status -- see statusOf(). */
+      refText: q ? String(v.refText || "").trim() : "",
+      refLabel: q ? (v.refText ? "expected " + String(v.refText).trim() : "")
+                  : (label ? label + (unit ? " " + unit : "") : ""),
       newName: known ? "" : name,
       src: name + (v.unitRaw ? "  " + v.unitRaw : ""),
       from: fileName,
@@ -2059,7 +2296,8 @@ document.addEventListener("click", async e=>{
       '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
       '</div>'; return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
-    draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
+    draft.rows.push({code:c,value:"",unit:isQual(c)?"":meta(c).u,refLow:"",refHigh:"",refLabel:"",
+      refText:isQual(c)?"Negative":"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
   if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
   if(t.id==="killDraft"){ if((draft.rows.length||draft.files.length)&&!confirm("Discard this report and everything attached to it?")) return;
     for(const f of draft.files){ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } await delFile(f.id); }
@@ -2068,18 +2306,21 @@ document.addEventListener("click", async e=>{
     const rid=uid();
     draft.files.forEach(f=>S.reports.push({id:uid(),reportId:rid,memberId:draft.memberId,
       date:draft.date,source:draft.source,fileId:f.id,fileName:f.name}));
-    draft.rows.filter(r=>r.confirmed && isFinite(parseFloat(r.value))).forEach(r=>{
+    draft.rows.filter(r=>r.confirmed && rowHasValue(r)).forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
       }
       if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
         S.panel.push(r.code);
-      const v=parseFloat(r.value);
-      S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:r.unit,
-        value:toCanonical(v,r.code,r.unit),
-        refLow:r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
-        refHigh:r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
-        refLabel:r.refLabel||((r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
+      const q=isQual(r.code), v=parseFloat(r.value);
+      S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:q?"":r.unit,
+        /* a word result has no number: value stays null and every numeric
+           path (the line chart, the range band) skips it by that test */
+        value:q?null:toCanonical(v,r.code,r.unit),
+        refLow:q||r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
+        refHigh:q||r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
+        refText:q?(r.refText||""):"",
+        refLabel:r.refLabel||((!q&&r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
         note:"",manualStatus:null,origin:"",reportId:draft.files.length?rid:null,sample:false,mtime:Date.now()});
     });
@@ -2256,7 +2497,8 @@ document.addEventListener("input", e=>{
   if(draft && el.dataset && el.dataset.f!==undefined){
     const r=draft.rows[+el.dataset.i]; if(!r) return;
     r[el.dataset.f]=el.value;
-    if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
+    if(el.dataset.f==="refText"){ r.refLabel = r.refText ? "expected "+r.refText : ""; }
+    else if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
       r.refLabel=(r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:(r.refHigh!==""?"≤ "+r.refHigh+" "+r.unit:(r.refLow!==""?"≥ "+r.refLow+" "+r.unit:""));
     }
     r.confirmed = true;  /* a value you just typed is one you have looked at */
@@ -2277,7 +2519,9 @@ document.addEventListener("change", async e=>{
   const el=e.target;
   if(draft && el.dataset && el.dataset.ck!==undefined){
     const r=draft.rows[+el.dataset.ck]; if(!r) return;
-    if(el.checked && !isFinite(parseFloat(r.value))){ el.checked=false; alert("Type the value before confirming it."); return; }
+    if(el.checked && !rowHasValue(r)){ el.checked=false;
+      alert(isQual(r.code) ? "Type what the report printed \u2014 Negative, Trace, or 1+ \u2014 before confirming it."
+                           : "Type the value before confirming it."); return; }
     r.confirmed=el.checked; el.closest(".crow").classList.toggle("ok",el.checked);
     const ready=draft.rows.length>0&&draft.rows.every(x=>x.confirmed);
     const b=document.getElementById("saveDraft"); if(b) b.disabled=!ready;
