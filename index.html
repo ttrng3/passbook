@@ -358,9 +358,9 @@ const C = {
  /* A health assessment reports these as words -- "Within normal limit",
     "6/6" -- which is exactly what q:true is for. Each carries the expected
     reading off its own report; nothing is assumed about what normal is. */
- ecg_finding:{n:"ECG",u:"",g:"Vitals",q:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
- visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vitals",q:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
- visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vitals",q:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
+ ecg_finding:{n:"ECG",u:"",g:"Vitals",q:true,self:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
+ visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vitals",q:true,self:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
+ visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vitals",q:true,self:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
  weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
  height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
  bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the"]},
@@ -841,6 +841,13 @@ function statusOf(o){
   if(isQual(o.code)){
     const got = qualState(o.valueRaw);
     const want = qualState(o.refText);
+    /* An ECG line reading "Within normal limit" needs no reference column:
+       a clinician already did the comparing and wrote down the answer. So
+       the result stands as its own verdict. This is not the app inventing a
+       threshold (hard rule 8) -- it is quoting the issuing clinician, which
+       is the same authority a printed range carries. A comment this book
+       cannot read still falls through to unknown and says so. */
+    if(!want && meta(o.code).self) return got ? (got.r===0?"in_range":got.r===1?"watch":"discuss") : "unknown";
     /* hard rule 8 -- with nothing printed to compare against, this is
        unknown, not "probably fine". Unknown renders louder than in range. */
     if(!want || !got) return "unknown";
@@ -863,7 +870,8 @@ function why(o){
     return b+" on "+std.label+". Worked out from height and weight — not measured."; }
   if(isQual(o.code)){
     const got=qualState(o.valueRaw), want=qualState(o.refText);
-    if(!got) return "This report printed \u201C"+(o.valueRaw||"")+"\u201D, which is not a result this book recognises. It is kept exactly as printed, unchanged.";
+    if(!got) return "This report printed \u201C"+(o.valueRaw||"")+"\u201D, which is not a result this book recognises. It is kept exactly as printed, unchanged \u2014 read it on the report itself.";
+    if(!want && meta(o.code).self) return "\u201C"+esc(o.valueRaw)+"\u201D is the issuing clinician\u2019s own wording on this report. There is no separate reference column because the comparison was already made by the person who signed it.";
     if(!want) return "No expected result is printed on this report for this test, so there is nothing to measure it against. Type what the report expects and the status resolves.";
     if(got.r<=want.r) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D, which is the expected \u201C"+esc(o.refText)+"\u201D on this report.";
     if(got.r-want.r===1) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D where this report expects \u201C"+esc(o.refText)+"\u201D. A trace is the step between nothing and something \u2014 worth watching across the next report rather than reading anything into one.";
