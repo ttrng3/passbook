@@ -1004,6 +1004,15 @@ function syncCard(){
       '<button class="btn pri" id="syncBtn"'+(syncing?" disabled":"")+'>'+(syncing?"Syncing":"Sync now")+'</button>'+
       '<button class="btn" id="signOut">Sign out</button>'+
       '<span class="cap">'+esc(AUTH.email||"")+'</span></div>'+
+      '<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Who can see these records</div>'+
+      '<p>Only this account. The page is public, so anyone can open it &mdash; they get an empty book of their own and cannot reach yours. '+
+      'Every row in the database is locked to the account that wrote it by a database rule, not by anything this page does, '+
+      'and new accounts are switched off entirely. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
+      'If that is a shared machine, use <i>Sign out and erase this device</i> below.</p></div>'+
+      '<details><summary>Leaving a shared or borrowed device</summary><div>'+
+        '<div class="hint">Signs out and removes every record, attachment and setting from this browser. The account copy is untouched &mdash; sign in again anywhere and it all comes back.</div>'+
+        '<button class="btn warn sm" id="signOutWipe" style="margin-top:var(--s3)">Sign out and erase this device</button>'+
+      '</div></details>'+
       '<details><summary>Something looks wrong with sync</summary><div>'+
         '<div class="hint">Wipes the copy held in the database and re-uploads this device as the truth. '+
         'Use it if the two devices disagree about what exists. Nothing on this device is deleted.</div>'+
@@ -1464,7 +1473,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1580,6 +1589,16 @@ document.addEventListener("click", async e=>{
       await syncNow();
     }catch(err){ syncMsg={t:"red",k:"Could not reset",x:err.message||String(err)}; render(); }
     return; }
+  if(t.id==="signOutWipe"){
+    if(!confirm("Erase every record from this browser and sign out?\n\nThe account copy is not touched \u2014 signing in again brings it all back.")) return;
+    if(!confirm("Last check. Anything on this device that was never synced will be gone for good.")) return;
+    AUTH=null; saveAuth(); codeSent=false;
+    try{ localStorage.removeItem(LS); localStorage.removeItem(LS_OLD); }catch(e){}
+    try{ indexedDB.deleteDatabase("vitals-journal-files"); _db=null; }catch(e){}
+    S=seed(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
+    who=S.members[0].id; detail=null; draft=null;
+    syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
+    render(); return; }
   if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
     syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
     render(); return; }
