@@ -420,18 +420,19 @@ function parseReport(text){
 /* ------------------------------------------------------------- state */
 let S=null, who=null, tab="overview", detail=null, draft=null, trendCode=null;
 
+let _sn=0;
 function seed(){
-  const a=uid(), b=uid();
+  const a="smp-ty", b="smp-me"; _sn=0;
   const O=(memberId,code,valueRaw,unit,observedAt,source,refLow,refHigh,refLabel,fasting)=>({
-    id:uid(),memberId,code,valueRaw:String(valueRaw),unit,
+    id:"smp-o"+(++_sn),memberId,code,valueRaw:String(valueRaw),unit,
     value:toCanonical(parseFloat(valueRaw),code,unit),
     refLow:refLow===null?null:toCanonical(refLow,code,unit),
     refHigh:refHigh===null?null:toCanonical(refHigh,code,unit),
     refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
     origin:"",sample:true});
   return {v:2, members:[
-      {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam"},
-      {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam"}],
+      {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam",sample:true},
+      {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam",sample:true}],
     observations:[
       O(a,"height_cm",171,"cm","2026-07-08","Kusumi",null,null,""),
       O(a,"weight_kg",83.8,"kg","2026-08-24","Medlatec Cầu Giấy",null,null,""),
@@ -454,16 +455,34 @@ function seed(){
       O(b,"hba1c_dcct",6.1,"%","2026-06-02","Tâm Anh",4.0,6.0,"4.0–6.0 %",""),
       O(b,"haemoglobin",121,"g/L","2026-06-02","Tâm Anh",120,155,"120–155 g/L","")],
     actions:[
-      {id:uid(),memberId:a,title:"Ask which BMI standard the clinic applies",bucket:"quick_win",codes:["bmi"],done:false,sample:true},
-      {id:uid(),memberId:a,title:"Take the Kusumi and Medlatec sheets to the next visit — different labs, different ranges",bucket:"lever",codes:["glucose_fasting","ldl_c"],done:false,sample:true}],
+      {id:"smp-a1",memberId:a,title:"Ask which BMI standard the clinic applies",bucket:"quick_win",codes:["bmi"],done:false,sample:true},
+      {id:"smp-a2",memberId:a,title:"Take the Kusumi and Medlatec sheets to the next visit — different labs, different ranges",bucket:"lever",codes:["glucose_fasting","ldl_c"],done:false,sample:true}],
     reports:[]};
+}
+/* Books seeded before the ids were made stable carry examples with random ids,
+   which is what let 20 become 40. Drop those; keep every real record. */
+function isSample(x){ return !!(x && x.sample); }
+function repairLegacy(p){
+  const legacy = (p.observations||[]).some(o=>isSample(o) && String(o.id).indexOf("smp-")!==0)
+              || (p.actions||[]).some(a=>isSample(a) && String(a.id).indexOf("smp-")!==0)
+              || (p.members||[]).some(m=>isSample(m) && String(m.id).indexOf("smp-")!==0);
+  if(!legacy) return p;
+  p.observations = (p.observations||[]).filter(o=>!isSample(o));
+  p.actions      = (p.actions||[]).filter(a=>!isSample(a));
+  const real = new Set(p.observations.map(o=>o.memberId).concat(p.actions.map(a=>a.memberId)));
+  p.members = (p.members||[]).filter(m=>real.has(m.id));
+  if(!p.members.length){
+    const f = seed();
+    p.members=f.members; p.observations=f.observations; p.actions=f.actions;
+  }
+  return p;
 }
 function load(){
   try{
     const raw = localStorage.getItem(LS);
-    if(raw){ const p = JSON.parse(raw); if(p && p.members && p.members.length) return p; }
+    if(raw){ const p = JSON.parse(raw); if(p && p.members && p.members.length) return repairLegacy(p); }
     const old = localStorage.getItem(LS_OLD);
-    if(old){ const p = JSON.parse(old); if(p && p.members && p.members.length) return migrate(p); }
+    if(old){ const p = JSON.parse(old); if(p && p.members && p.members.length) return repairLegacy(migrate(p)); }
   }catch(e){ console.warn("read failed", e); }
   return seed();
 }
@@ -896,6 +915,11 @@ function syncCard(){
       '<button class="btn pri" id="syncBtn"'+(syncing?" disabled":"")+'>'+(syncing?"Syncing":"Sync now")+'</button>'+
       '<button class="btn" id="signOut">Sign out</button>'+
       '<span class="cap">'+esc(AUTH.email||"")+'</span></div>'+
+      '<details><summary>Something looks wrong with sync</summary><div>'+
+        '<div class="hint">Wipes the copy held in the database and re-uploads this device as the truth. '+
+        'Use it if the two devices disagree about what exists. Nothing on this device is deleted.</div>'+
+        '<button class="btn warn sm" id="syncReset" style="margin-top:var(--s3)">Reset the cloud copy from this device</button>'+
+      '</div></details>'+
       '<div class="hint">Signed in with the same address on your phone and your laptop, the two converge. Merging is per record, so edits made on both sides between syncs both survive, and a delete stays deleted.</div>';
   } else {
     h+='<div class="hint" style="margin-top:var(--s3)">Sign in by email. No password to set, lose, or type on a phone. Use the same address on every device you want to converge.</div>'+
@@ -1183,8 +1207,14 @@ async function syncNow(){
         throw new Error("The sync table does not exist yet. Run 0010_famrec_sync.sql in the Supabase SQL editor, then try again.");
       throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
     }
-    const remote = (r.body && r.body[0] && r.body[0].doc) || null;
-    const before = (S.observations||[]).length;
+    let remote = (r.body && r.body[0] && r.body[0].doc) || null;
+    if(remote){
+      remote.observations = (remote.observations||[]).filter(o=>!isSample(o));
+      remote.actions      = (remote.actions||[]).filter(a=>!isSample(a));
+      remote.members      = (remote.members||[]).filter(m=>!isSample(m));
+    }
+    const real = x => (x||[]).filter(r=>!isSample(r)).length;
+    const before = real(S.observations);
     const merged = syncMerge(S, remote);
     if(merged.members.length) S.members = merged.members;
     S.observations = merged.observations;
@@ -1193,20 +1223,26 @@ async function syncNow(){
     S.tomb = merged.tomb;
     if(!S.members.some(m=>m.id===who)) who = S.members[0].id;
     save();
+    const keptMembers = S.members.filter(m=>!isSample(m));
     const up = await supa("/rest/v1/famrec_state", {method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:[{user_id:AUTH.uid, device:(navigator.platform||"device"),
-             doc:{v:2, members:S.members, observations:S.observations,
-                  actions:S.actions, reports:S.reports, tomb:S.tomb}}]});
+             doc:{v:2, members:keptMembers,
+                  observations:S.observations.filter(o=>!isSample(o)),
+                  actions:S.actions.filter(a=>!isSample(a)),
+                  reports:S.reports||[], tomb:S.tomb}}]});
     if(!up.ok) throw new Error((up.body&&(up.body.message||up.body.hint))
       ||("The database refused the write (HTTP "+up.status+")."));
-    const gained = (S.observations||[]).length - before;
+    const after = real(S.observations);
+    const gained = after - before;
+    const samples = (S.observations||[]).length - after;
     S.lastSync = new Date().toISOString();
     save();
     syncMsg = {t:"green", k:"Synced",
       x:(gained>0 ? gained+" reading"+(gained===1?"":"s")+" arrived from your other device. "
                   : "Everything already matched. ")
-        +"Both devices now hold the same "+(S.observations||[]).length+" readings."};
+        +"Your devices share "+after+" reading"+(after===1?"":"s")+"."
+        +(samples? " The "+samples+" example records are local scaffolding and deliberately do not sync — clear them when you are done looking.":"")};
   }catch(e){
     const offline = e && /Failed to fetch|NetworkError|Load failed/i.test(e.message||"");
     syncMsg = {t:"red",
@@ -1260,7 +1296,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#sendCode,#verifyCode,#signOut,#wipe");
+  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -1348,6 +1384,17 @@ document.addEventListener("click", async e=>{
     if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
     return; }
   if(t.id==="syncBtn"){ await syncNow(); return; }
+  if(t.id==="syncReset"){
+    if(!AUTH) return;
+    if(!confirm("Delete what the database currently holds and replace it with this device?\n\nNothing on this device is removed.")) return;
+    syncMsg={t:"blue",k:"Resetting",x:"Clearing the stored copy."}; render();
+    try{
+      const d = await supa("/rest/v1/famrec_state?user_id=eq."+encodeURIComponent(AUTH.uid), {method:"DELETE"});
+      if(!d.ok && d.status!==404) throw new Error((d.body&&(d.body.message||d.body.hint))||("HTTP "+d.status));
+      S.lastSync=null; save();
+      await syncNow();
+    }catch(err){ syncMsg={t:"red",k:"Could not reset",x:err.message||String(err)}; render(); }
+    return; }
   if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
     syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
     render(); return; }
