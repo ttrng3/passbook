@@ -213,6 +213,8 @@ footer.fix b{color:var(--ink)}
 .gfield+.gfield{border-top:1px solid var(--line-soft)}
 .gfield>span{font-size:15px;color:var(--ink-body)}
 .gfield .inp{min-height:44px;font-size:17px;background:var(--card)}
+.vi{display:block;font-size:.82em;font-weight:400;color:var(--ink-muted);letter-spacing:0}
+@media print{ .vi{color:#222} }
 .gfield .inp.note{min-height:76px;line-height:1.45;padding:10px 12px;resize:vertical;font-family:inherit}
 @media (max-width:520px){ .gfield:has(.note){grid-template-columns:1fr} }
 .gadd{display:block;width:100%;text-align:left;background:none;border:0;
@@ -1690,7 +1692,71 @@ function quickDisplay(){
     qSwitch("qText","Larger text", simple()?"On while Simple view is on":"Bigger words and buttons", bigText()||simple(), simple())+
     qSwitch("qSimple","Simple view","Fewer tabs, main tests only", simple(), false)+'</div>';
 }
+/* ---- the printed page, in both languages ------------------------------
+
+   Ông Đức wants a sheet in Vietnamese with his name on it for the Hanoi
+   clinic; Dr Klein wants English for a twelve-minute visit in California.
+   It is the same sheet, so it prints both: the English label and the
+   Vietnamese beneath it, on one page, rather than two documents that can
+   disagree.
+
+   Only the BOOK'S OWN words are translated. A test name, a result, a range
+   and anything a clinician said stay exactly as they were recorded -- a
+   record that translates the evidence is no longer the evidence. */
+const VI = {
+  "Emergency information":"Th\u00f4ng tin kh\u1ea9n c\u1ea5p",
+  "Blood group":"Nh\u00f3m m\u00e1u",
+  "Allergies":"D\u1ecb \u1ee9ng",
+  "Medicines":"Thu\u1ed1c \u0111ang d\u00f9ng",
+  "Conditions":"B\u1ec7nh \u0111ang c\u00f3",
+  "In an emergency, call":"Khi kh\u1ea9n c\u1ea5p, g\u1ecdi",
+  "Vaccinations":"Ti\u00eam ch\u1ee7ng",
+  "Visits":"L\u1ea7n kh\u00e1m",
+  "Last visit":"L\u1ea7n kh\u00e1m g\u1ea7n nh\u1ea5t",
+  "They said":"B\u00e1c s\u0129 n\u00f3i",
+  "What changed":"Thay \u0111\u1ed5i",
+  "Asked to repeat":"H\u1eb9n l\u00e0m l\u1ea1i",
+  "Results outside or near their range":"K\u1ebft qu\u1ea3 ngo\u00e0i ho\u1eb7c g\u1ea7n ng\u01b0\u1ee1ng",
+  "What I wanted to ask":"C\u00e2u mu\u1ed1n h\u1ecfi",
+  "Test":"X\u00e9t nghi\u1ec7m",
+  "Result":"K\u1ebft qu\u1ea3",
+  "Range on that report":"Kho\u1ea3ng tham chi\u1ebfu tr\u00ean phi\u1ebfu",
+  "Status":"T\u00ecnh tr\u1ea1ng",
+  "When and where":"Ng\u00e0y v\u00e0 n\u01a1i l\u00e0m",
+  "None recorded":"Ch\u01b0a ghi",
+  "years":"tu\u1ed5i",
+  "In range":"Trong kho\u1ea3ng",
+  "Near the limit":"G\u1ea7n ng\u01b0\u1ee1ng",
+  "Outside the range":"Ngo\u00e0i kho\u1ea3ng",
+  "No range on file":"Kh\u00f4ng c\u00f3 kho\u1ea3ng tham chi\u1ebfu"
+};
+const BILINGUAL_KEY="passbook-bilingual";
+function bilingual(){ return pref(BILINGUAL_KEY, [])==="on"; }
+function setBilingual(on){ try{ on?localStorage.setItem(BILINGUAL_KEY,"on"):localStorage.removeItem(BILINGUAL_KEY); }catch(e){} render(); }
+/* An English label, with the Vietnamese under it when asked for.
+   Deliberately NOT called L: vRecord and vSheet both bind `const L =
+   latest(...)` locally, which shadowed the helper and threw only when the
+   sheet was rendered -- the kind of collision a one-letter name earns. */
+function tr2(en){
+  if(!bilingual() || !VI[en]) return esc(en);
+  return esc(en)+'<span class="vi">'+esc(VI[en])+'</span>';
+}
+
 const SIMPLE_KEY="passbook-simple";
+/* The browser is the primary copy and one "clear site data" tap deletes the
+   book. Export already exists; remembering to use it does not. This counts
+   the days and says so once, on the screen people open anyway. */
+const BACKUP_KEY="passbook-backed-up";
+function lastBackup(){ return pref(BACKUP_KEY, []) || ""; }
+function noteBackup(){ try{ localStorage.setItem(BACKUP_KEY, today()); }catch(e){} }
+function backupOverdue(){
+  const n = (S && S.observations || []).filter(o=>!isSample(o)).length;
+  if(n < 5) return null;                       /* nothing worth losing yet */
+  const last = lastBackup();
+  if(!last) return {never:true, n:n};
+  const days = Math.round((Date.now() - new Date(last+"T00:00:00").getTime())/86400000);
+  return days >= 45 ? {never:false, n:n, last:last, days:days} : null;
+}
 function simple(){ return pref(SIMPLE_KEY, ["famrec-simple"])==="on"; }
 function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
   applyText(); render(); }
@@ -1950,34 +2016,35 @@ function vCard(){
   let h = '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
     '<div class="row"><button class="btn" data-tab="sheet" style="font-size:16px;padding:12px 20px">Sheet for an appointment</button>'+
+    '<button class="btn'+(bilingual()?" pri":"")+'" id="biToggle" style="margin-right:var(--s2)">'+(bilingual()?"English only":"Th\u00eam ti\u1ebfng Vi\u1ec7t")+'</button>'+
     '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
 
   /* the card itself, styled to print on its own page */
   h += '<div class="card cardsheet" style="margin-bottom:var(--s5)">'+
     '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
-      '<div><div class="kick" style="color:var(--ink-muted)">Emergency information</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">'+tr2("Emergency information")+'</div>'+
       '<h2 style="margin:var(--s1) 0 0">'+esc(m.name)+'</h2>'+
       '<div class="cap">'+(m.dob?esc(fmtDate(m.dob))+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
         (m.sex?" \u00b7 "+esc(m.sex):"")+'</div></div>'+
-      (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">Blood group</div>'+
+      (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">'+tr2("Blood group")+'</div>'+
         '<div style="font-size:30px;font-weight:600;line-height:1.1">'+esc(blood)+'</div></div>':'')+
     '</div>'+
     '<div class="grid g240" style="margin-top:var(--s4)">'+
-      '<div><div class="kick" style="color:var(--red-ink)">Allergies</div>'+
+      '<div><div class="kick" style="color:var(--red-ink)">'+tr2("Allergies")+'</div>'+
         (al.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+al.map(a=>
             '<li><b>'+esc(a.what)+'</b>'+(a.reaction?' \u2014 '+esc(a.reaction):"")+
             (a.severity?' ('+esc(a.severity)+')':"")+'</li>').join("")+'</ul>'
           : '<p class="cap" style="margin-top:var(--s2)">None recorded. If that is right, say so below &mdash; blank reads as unknown to a stranger.</p>')+'</div>'+
-      '<div><div class="kick" style="color:var(--ink-muted)">Medicines</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">'+tr2("Medicines")+'</div>'+
         (md.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+md.filter(x=>!x.stopped).map(x=>
             '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
           : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
-      '<div><div class="kick" style="color:var(--ink-muted)">Conditions</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">'+tr2("Conditions")+'</div>'+
         (cd.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+cd.map(c=>
             '<li>'+esc(c.name)+(c.since?' (since '+esc(c.since)+')':"")+'</li>').join("")+'</ul>'
           : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
-      '<div><div class="kick" style="color:var(--ink-muted)">In an emergency, call</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">'+tr2("In an emergency, call")+'</div>'+
         (m.ecName ? '<p style="margin:var(--s2) 0 0"><b>'+esc(m.ecName)+'</b>'+(m.ecRel?" ("+esc(m.ecRel)+")":"")+
             (m.ecPhone?'<br>'+esc(m.ecPhone):"")+'</p>'
           : '<p class="cap" style="margin-top:var(--s2)">No contact set.</p>')+
@@ -2134,6 +2201,15 @@ function vToday(){
         ? '<b>'+flagged.length+'</b> sit'+(flagged.length===1?"s":"")+' outside or near the range printed on its own report.'
         : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
     '</p></div>';
+
+  const bk = backupOverdue();
+  if(bk)
+    h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Keep a copy somewhere else</div>'+
+      '<p>'+(bk.never
+        ? 'This book lives in this browser. Clearing the site\u2019s data deletes it, and nothing here has ever been copied out.'
+        : 'Last copied out on '+esc(bk.last)+', '+bk.days+' days ago.')+
+      ' A copy is one file you can put in email or a drive.</p>'+
+      '<button class="btn pri" data-tab="settings" style="margin-top:var(--s2)">Take a copy now</button></div>';
 
   const due = repeatsDue(m.id);
   const overdue = due.filter(x => new Date(x.v.repeatBy+"T00:00:00").getTime() <= Date.now());
@@ -2565,10 +2641,41 @@ function reviewBlock(){
   return h;
 }
 
+/* The page a row was read from, beside the row. Your laboratory technician
+   and both clinicians asked for this independently, and the original
+   blueprint required it: a number nobody can check against the paper is a
+   number nobody should act on.
+
+   It is the whole page rather than a cropped line, deliberately. Cropping
+   needs coordinates, a vision model's coordinates are unreliable, and a crop
+   pointing confidently at the wrong line is worse than no crop -- it would
+   make a misread look verified. So: the page, the line of text as printed,
+   and a tap to see it full size. */
+function sourceOf(r){
+  if(!draft) return null;
+  const f = (draft.files||[]).find(x => x.name === r.from && x.url);
+  return f || null;
+}
+function sourcePane(r){
+  const f = sourceOf(r);
+  const line = (r.src||"").trim();
+  if(!f && !line) return "";
+  return '<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">On the page</div>'+
+    (line ? '<div class="mono" style="font-size:12px;background:var(--sunk);padding:8px 10px;'+
+      'border-radius:var(--r-inner);word-break:break-word;margin-bottom:var(--s2)">'+esc(line)+'</div>' : '')+
+    (f ? '<img src="'+f.url+'" alt="'+esc(f.name)+'" data-zoomsrc="'+esc(f.id||"")+'" '+
+      'style="width:100%;border:1px solid var(--line);border-radius:var(--r-inner);'+
+      'background:var(--card);cursor:zoom-in">'+
+      '<div class="cap" style="margin-top:var(--s1)">'+esc(f.name)+' \u2014 tap to see it full size</div>'
+      : '<div class="cap">'+esc(r.from||"typed in")+'</div>')+
+    '</div>';
+}
+
 function doubtRow(r, i){
   const M = meta(r.code), label = r.newName || M.n;
+  const pane = sourcePane(r);
   return '<div class="card" style="margin-top:var(--s3);border-color:var(--amber-line)">'+
-    '<div style="display:grid;grid-template-columns:'+(r.crop?'minmax(0,1fr) 300px':'1fr')+';gap:var(--s4)">'+
+    '<div style="display:grid;grid-template-columns:'+((r.crop||pane)?'minmax(0,1fr) 300px':'1fr')+';gap:var(--s4)">'+
     '<div>'+
       '<div class="row" style="justify-content:space-between"><b>'+esc(label)+'</b>'+
       '<button class="btn sm warn" data-rm="'+i+'">Not a result</button></div>'+
@@ -2592,8 +2699,10 @@ function doubtRow(r, i){
           ? '<button class="btn" data-usealt="'+i+'">The other read says '+esc(r.alt)+'</button>' : '')+
       '</div>'+
     '</div>'+
-    (r.crop?'<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">On the page</div>'+
-      '<img src="'+r.crop+'" alt="the line this came from" style="width:100%;border:1px solid var(--line);border-radius:var(--r-inner);background:var(--card)"></div>':'')+
+    (r.crop
+      ? '<div><div class="kick" style="color:var(--ink-muted);margin-bottom:var(--s2)">On the page</div>'+
+        '<img src="'+r.crop+'" alt="the line this came from" style="width:100%;border:1px solid var(--line);border-radius:var(--r-inner);background:var(--card)"></div>'
+      : pane)+
     '</div></div>';
 }
 
@@ -2719,6 +2828,7 @@ function vSheet(){
 
   let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>Sheet for the appointment</h2>'+
+    '<button class="btn'+(bilingual()?" pri":"")+'" id="biToggle" style="margin-right:var(--s2)">'+(bilingual()?"English only":"Th\u00eam ti\u1ebfng Vi\u1ec7t")+'</button>'+
     '<button class="btn pri" id="printSheet" style="font-size:16px;padding:12px 20px">Print it</button></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Everything a doctor who has never met you would ask for, on one page, in the order they ask.</div>';
 
@@ -2728,21 +2838,21 @@ function vSheet(){
       (ageOf(m)!==null?" \u00b7 "+ageOf(m)+" years":"")+(m.sex?" \u00b7 "+esc(m.sex):"")+
       (bloodOf(m.id)?" \u00b7 blood group "+esc(bloodOf(m.id)):"")+'</div>'+
 
-    '<h3>Medicines</h3>'+(md.length?'<ul style="margin:0;padding-left:18px">'+md.map(x=>
+    '<h3>'+tr2("Medicines")+'</h3>'+(md.length?'<ul style="margin:0;padding-left:18px">'+md.map(x=>
       '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
       :'<p class="cap">None recorded.</p>')+
 
-    '<h3>Allergies</h3>'+(al.length?'<ul style="margin:0;padding-left:18px">'+al.map(a=>
+    '<h3>'+tr2("Allergies")+'</h3>'+(al.length?'<ul style="margin:0;padding-left:18px">'+al.map(a=>
       '<li><b>'+esc(a.what)+'</b>'+(a.reaction?" \u2014 "+esc(a.reaction):"")+'</li>').join("")+'</ul>'
       :'<p class="cap">None recorded \u2014 blank means unrecorded, not none.</p>')+
 
-    '<h3>Conditions</h3>'+(cd.length?'<ul style="margin:0;padding-left:18px">'+cd.map(c=>
+    '<h3>'+tr2("Conditions")+'</h3>'+(cd.length?'<ul style="margin:0;padding-left:18px">'+cd.map(c=>
       '<li>'+esc(c.name)+(c.since?" (since "+esc(c.since)+")":"")+'</li>').join("")+'</ul>'
       :'<p class="cap">None recorded.</p>')+
 
-    '<h3>Results outside or near their range</h3>'+
-    (flagged.length?'<div class="tw"><table><thead><tr><th>Test</th><th class="n">Result</th>'+
-      '<th>Range on that report</th><th>Status</th><th>When and where</th></tr></thead><tbody>'+
+    '<h3>'+tr2("Results outside or near their range")+'</h3>'+
+    (flagged.length?'<div class="tw"><table><thead><tr><th>'+tr2("Test")+'</th><th class="n">'+tr2("Result")+'</th>'+
+      '<th>'+tr2("Range on that report")+'</th><th>'+tr2("Status")+'</th><th>'+tr2("When and where")+'</th></tr></thead><tbody>'+
       flagged.map(line).join("")+'</tbody></table></div>'
       :'<p class="cap">Every result on file sits inside the range printed on its own report.</p>')+
 
@@ -2750,7 +2860,7 @@ function vSheet(){
       const vs=listOf("visits",m.id), last=vs[0];
       if(!last) return "";
       const d=repeatsDue(m.id);
-      return '<h3>Last visit</h3><p>'+esc(last.date||"date not recorded")+
+      return '<h3>'+tr2("Last visit")+'</h3><p>'+esc(last.date||"date not recorded")+
         (last.who?' \u00b7 '+esc(last.who):"")+(last.place?' \u00b7 '+esc(last.place):"")+
         (last.why?' \u00b7 '+esc(last.why):"")+'</p>'+
         (last.said?'<p style="margin-top:var(--s2)">They said: \u201C'+esc(last.said)+'\u201D</p>':"")+
@@ -2758,7 +2868,7 @@ function vSheet(){
         (d.length?'<p style="margin-top:var(--s2)">Asked to repeat: '+
           d.map(x=>esc(x.v.repeat)+" by "+esc(x.v.repeatBy)).join("; ")+'</p>':"");
     })()+
-    (qs.length?'<h3>What I wanted to ask</h3><ul style="margin:0;padding-left:18px">'+
+    (qs.length?'<h3>'+tr2("What I wanted to ask")+'</h3><ul style="margin:0;padding-left:18px">'+
       qs.map(a=>'<li>'+esc(a.title)+'</li>').join("")+'</ul>':'')+
 
     '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
@@ -3928,7 +4038,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
@@ -3983,6 +4093,14 @@ document.addEventListener("click", async e=>{
   if(t.dataset.ladd){ const k=t.dataset.ladd;
     S[k]=S[k]||[]; S[k].push(Object.assign({id:uid(),memberId:who,sample:false,mtime:Date.now()}, BLANK[k]));
     save(); render(); return; }
+  if(t.dataset.zoomsrc !== undefined && t.tagName === "IMG"){
+    const host=document.getElementById("dHost");
+    host.innerHTML = '<div class="scrim" data-x="1"></div>'+
+      '<div style="position:fixed;inset:var(--s5);z-index:41;display:grid;place-items:center;pointer-events:none">'+
+      '<img src="'+t.getAttribute("src")+'" alt="the page this was read from" '+
+      'style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);background:var(--card)"></div>';
+    return;
+  }
   if(t.dataset.vzoom){
     const blob = await getFile(t.dataset.vzoom); if(!blob) return;
     const url = URL.createObjectURL(blob);
@@ -4020,6 +4138,7 @@ document.addEventListener("click", async e=>{
     inviteMsg = r.ok ? null : {t:"red",k:"Could not remove that",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
     inviteRows=null; render(); return;
   }
+  if(t.id==="biToggle"){ setBilingual(!bilingual()); return; }
   if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
   if(t.id==="simpleOn"){ setSimple(true); return; }
   if(t.id==="simpleOff"){ setSimple(false); return; }
@@ -4120,11 +4239,11 @@ document.addEventListener("click", async e=>{
     if(who===m.id) who=S.members[0].id; save(); render(); return; }
 
   if(t.id==="expGo"){ document.getElementById("expBox").value=JSON.stringify(exportPayload(document.getElementById("expWho").value||null)); return; }
-  if(t.id==="expCopy"){ const b=document.getElementById("expBox");
+  if(t.id==="expCopy"){ noteBackup(); const b=document.getElementById("expBox");
     b.value=JSON.stringify(exportPayload(document.getElementById("expWho").value||null)); b.select();
     let ok=false; try{ await navigator.clipboard.writeText(b.value); ok=true; }catch(err){ try{ ok=document.execCommand("copy"); }catch(e2){} }
     t.textContent=ok?"Copied":"Select it and copy"; setTimeout(()=>{t.textContent="Copy";},2200); return; }
-  if(t.id==="expFile"){
+  if(t.id==="expFile"){ noteBackup();
     const data=JSON.stringify(exportPayload(document.getElementById("expWho").value||null));
     const ok=await saveFile("passbook-"+today()+".json", data);
     if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
