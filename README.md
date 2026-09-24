@@ -107,7 +107,9 @@ category of data this book barely holds. It also collides with an iOS feature of
 the same name. A passbook is what this actually is: a small book you carry, and
 someone writes in it each time you are seen.
 
-The repository was renamed too, so `ttrng3.github.io/famrec` now redirects here.
-Storage keys, the hand-off file's `kind` stamp and the Postgres table were
-deliberately **not** renamed — those are addresses, not names, and changing one
-would leave existing records in place and unreachable.
+The repository was renamed with it. The old address is gone rather than
+redirected, which is fine because only Ty ever had it. Storage keys, the
+IndexedDB name, the hand-off file's `kind` stamp and the Postgres table were
+renamed too, but each one reads its old address first and only drops it once
+the new one has been written and read back — a key is an address, and renaming
+one without a path leaves yesterday's records in place and unreachable.
