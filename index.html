@@ -15,7 +15,7 @@ html,body{margin:0}
 img{max-width:100%}
 [hidden]{display:none!important}
 </style>
-<title>Vitals Journal</title>
+<title>Passbook</title>
 <style>
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --sunk:#F2F2F7; --line:#E5E5EA; --line-soft:#EFEFF2;
@@ -240,7 +240,7 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
 <body>
 <header class="top">
   <div class="top-in">
-    <h1>Vitals Journal</h1>
+    <h1>Passbook</h1>
     <div class="people" id="people"></div>
     <span class="badge" id="syncBadge"></span>
   </div>
@@ -268,6 +268,21 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
      6. Under-18 and pregnancy are flagged as "adult ranges do not apply".
    =========================================================================== */
 
+/* ---- names that must never be renamed with the product ----------------
+
+   The page is called Passbook as of 2026-09-24. These are not names; they
+   are addresses, and changing one is a data-loss event with no error:
+
+     LS / LS_OLD / the IndexedDB name  -- the records and the report images
+       already written in this browser. A new key is an empty book.
+     famrec-auth / -text / -simple / -readms -- the sign-in, the text size,
+       simple mode and the measured read times on this device.
+     kind:"vitals-journal" -- stamped inside every hand-off file already
+       sent. Change it and files exported before today stop importing.
+     famrec_state -- the live Postgres table holding the synced book.
+
+   Rename any of these and yesterday's data is still there and unreachable,
+   which is the worst shape a bug can take. They stay as they are. */
 const LS = "vitals-journal-v2", LS_OLD = "vitals-journal-v1";
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
@@ -2183,7 +2198,7 @@ function vAdd(){
     '<p>Reading a report runs under your own account, so it needs you signed in. Open <b>Settings</b> and sign in, then come back. '+
     'You can still type values in by hand without signing in.</p></div>':'')+
     (IS_ARTIFACT?'<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Reading does not work in this copy</div>'+
-    '<p>The claude.ai viewer blocks this page from reaching your database. Open <b>ttrng3.github.io/famrec</b> to read a document. Typing values in works here.</p></div>':'')+
+    '<p>The claude.ai viewer blocks this page from reaching your database. Open <b>ttrng3.github.io/passbook</b> to read a document. Typing values in works here.</p></div>':'')+
     '<div class="card"><h3>1 · Get the report in</h3>'+
     '<button class="dropz big" id="pickFile2" style="width:100%;margin-top:var(--s3)">'+
       '<svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" style="margin-right:var(--s2)"><path d="M8 11V2.5M4.6 5.9 8 2.5l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 10.6v1.8a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'+
@@ -2334,7 +2349,7 @@ function exportPayload(memberId){
   return out;
 }
 function mergeIn(p, label){
-  if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Vitals Journal file");
+  if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Passbook file");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
   p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
@@ -2357,7 +2372,7 @@ function syncCard(){
   if(IS_ARTIFACT)
     return '<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Sync runs on your own site, not here</div>'+
       '<p>The claude.ai viewer blocks a page from reaching an outside server, so this copy cannot sync &mdash; a platform rule, not a choice. '+
-      'Open the same book at <b>ttrng3.github.io/famrec</b> and it will. Everything else works identically in both.</p></div>';
+      'Open the same book at <b>ttrng3.github.io/passbook</b> and it will. Everything else works identically in both.</p></div>';
   let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between"><h3>Sync</h3>'+
     (S.lastSync?'<span class="cap">Last synced '+esc(new Date(S.lastSync).toLocaleString())+'</span>':'<span class="cap">Never synced</span>')+'</div>';
   if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-top:var(--s3)"><div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
@@ -2773,7 +2788,7 @@ async function syncNow(quiet){
   if(syncing) return;
   if(IS_ARTIFACT){
     syncMsg = {t:"amber", k:"Sync does not run in this copy",
-      x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/famrec to sync."};
+      x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/passbook to sync."};
     render(); return;
   }
   if(!syncConfigured()){
@@ -2979,10 +2994,10 @@ function noteReadTime(ms){ try{ localStorage.setItem(READ_MS_KEY, JSON.stringify
 function typicalRead(){ var a=readTimes().slice().sort(function(x,y){return x-y;}); return a.length ? a[Math.floor(a.length/2)] : 0; }
 
 async function extractViaVitals(file, say){
-  if(IS_ARTIFACT) throw new Error("this copy cannot reach the extractor — open ttrng3.github.io/famrec");
+  if(IS_ARTIFACT) throw new Error("this copy cannot reach the extractor — open ttrng3.github.io/passbook");
   if(!AUTH || !AUTH.uid) throw new Error("sign in first — extraction runs under your own account");
 
-  const path = AUTH.uid + "/famrec-" + Date.now() + "-" + uid() + "." + extFor(file);
+  const path = AUTH.uid + "/passbook-" + Date.now() + "-" + uid() + "." + extFor(file);
   const mime = file.type || "application/octet-stream";
 
   const dest = SUPA.url + "/storage/v1/object/documents/" + path;
@@ -3320,7 +3335,7 @@ function paintSyncBadge(){
   let cls, txt, tip;
   if(IS_ARTIFACT){
     cls="st-unknown"; txt="Preview copy";
-    tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/famrec for the working one.";
+    tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/passbook for the working one.";
   } else if(AUTH && AUTH.email){
     cls="st-in_range"; txt="Syncing";
     tip="Signed in as "+AUTH.email+". Your own records sync to a row only this account can read. Records merged from someone else stay on this device.";
@@ -3520,7 +3535,7 @@ document.addEventListener("click", async e=>{
     t.textContent=ok?"Copied":"Select it and copy"; setTimeout(()=>{t.textContent="Copy";},2200); return; }
   if(t.id==="expFile"){
     const data=JSON.stringify(exportPayload(document.getElementById("expWho").value||null));
-    const ok=await saveFile("famrec-"+today()+".json", data);
+    const ok=await saveFile("passbook-"+today()+".json", data);
     if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
     return; }
   if(t.id==="syncBtn"){ await syncNow(); return; }
@@ -3607,7 +3622,7 @@ function doImport(raw){
   const label=(document.getElementById("impFrom").value||"").trim();
   if(!raw||!raw.trim()){ return; }
   let p; try{ p=JSON.parse(raw); }catch(e){
-    msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Could not read that</div><p>It is not a Vitals Journal hand-off. Copy the whole block, from the first <span class="mono">{</span> to the last <span class="mono">}</span>.</p></div>'; return; }
+    msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Could not read that</div><p>It is not a Passbook hand-off. Copy the whole block, from the first <span class="mono">{</span> to the last <span class="mono">}</span>.</p></div>'; return; }
   let r; try{ r=mergeIn(p,label?("from "+label+", "+today()):""); }
   catch(e){ msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Not a hand-off file</div><p>'+esc(e.message)+'</p></div>'; return; }
   save();
