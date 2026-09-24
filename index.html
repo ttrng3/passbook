@@ -1228,6 +1228,13 @@ function bloodOf(mid){
   return [(g&&g.valueRaw)||"", (r&&r.valueRaw)||""].filter(Boolean).join(" ");
 }
 function isSample(x){ return !!(x && x.sample); }
+/* Records that arrived in someone else's hand-off file. The page promises
+   they stay on this machine, and until now the sync uploaded them with
+   everything else -- which quietly rebuilt the single shared place the page
+   warns against, inside one account. Marked at import, excluded from the
+   sync document, and labelled on screen so the promise is visible. */
+function isLocal(x){ return !!(x && x.local); }
+function syncable(a){ return (a||[]).filter(x=>!isSample(x) && !isLocal(x)); }
 function repairLegacy(p){
   const legacy = (p.observations||[]).some(o=>isSample(o) && String(o.id).indexOf("smp-")!==0)
               || (p.actions||[]).some(a=>isSample(a) && String(a.id).indexOf("smp-")!==0)
@@ -1488,6 +1495,7 @@ function obsCard(o){
     '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
     '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
       (agoText(o.observedAt)?' · '+esc(agoText(o.observedAt)):'')+
+      (isLocal(o)?' · on this device only':'')+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
 }
 
@@ -2328,17 +2336,18 @@ function mergeIn(p, label){
   if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Vitals Journal file");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
-  p.members.forEach(m=>{ if(!haveM.has(m.id)){ S.members.push(m); haveM.add(m.id); addedM++; } });
+  p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
   const haveO=new Set(S.observations.map(o=>o.id));
   (p.observations||[]).forEach(o=>{ if(haveO.has(o.id)){ dupO++; return; }
-    o.origin = label || ("imported "+today()); o.sample=false; S.observations.push(o); haveO.add(o.id); addedO++; });
+    o.origin = label || ("imported "+today()); o.sample=false; o.local=true;
+    S.observations.push(o); haveO.add(o.id); addedO++; });
   const haveA=new Set(S.actions.map(a=>a.id));
-  (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; S.actions.push(a); haveA.add(a.id); addedA++; } });
+  (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; a.local=true; S.actions.push(a); haveA.add(a.id); addedA++; } });
   let addedL=0;
   LISTS.forEach(l=>{
     S[l[0]] = S[l[0]] || [];
     const have = new Set(S[l[0]].map(x=>x.id));
-    (p[l[0]]||[]).forEach(x=>{ if(!have.has(x.id)){ x.sample=false; S[l[0]].push(x); have.add(x.id); addedL++; } });
+    (p[l[0]]||[]).forEach(x=>{ if(!have.has(x.id)){ x.sample=false; x.local=true; S[l[0]].push(x); have.add(x.id); addedL++; } });
   });
   return {addedM, addedO, addedA, dupO, addedL};
 }
@@ -2399,7 +2408,7 @@ function syncCard(){
         '<button class="btn" id="verifyCode">Sign in</button></div></div></details>';
   }
   h+='<div class="hint" style="margin-top:var(--s3)"><b>What syncs:</b> readings, people, ranges, follow-ups. '+
-     '<b>What does not:</b> attached report photos &mdash; they stay on the device that took them, being the largest and most identifying thing in the book.</div>';
+     '<b>What does not:</b> attached report photos. They are the largest and most identifying thing in the book, and they stay in the browser that took them.</div>';
   return h+'</div>';
 }
 function vHandoff(){
@@ -2431,13 +2440,14 @@ function vHandoff(){
   h+='<div class="card"><h3>Family in other countries</h3>'+
     '<div class="hint">The workable shape, and it is the only one that does not build the thing that was killed:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
-    '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. Their records never leave their device unless they choose.</li>'+
+    '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
     '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
     '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
     '</ol>'+
     '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
     '<p>A single place everyone uploads to is one person holding a household&rsquo;s medical records on someone else&rsquo;s server, across borders. '+
-    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1. Copies that people choose to send you are a different thing, and they stay on your machine.</p></div></div>';
+    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1.</p>'+
+    '<p>Copies people choose to send you are a different thing, and they stay on this machine &mdash; merged records are marked <b>on this device only</b> and are excluded from the sync, so a relative&rsquo;s readings never reach the server through your account. That is enforced in the code, not just promised here.</p></div></div>';
   return h;
 }
 
@@ -2486,7 +2496,13 @@ function vSettings(){
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
-    '<p><b>There is no server.</b> No account, no sync, no upload, no AI reading your documents. Nothing crosses a border because nothing leaves the machine.</p>'+
+    '<p><b>Where your records actually go.</b> The book lives in this browser. Three things leave it, and nothing else does:</p>'+
+    '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body);margin-bottom:var(--s3)">'+
+    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs.</li>'+
+    '<li><b>Reading a report sends that page off the device.</b> The photo goes to that same Supabase project and on to Anthropic in the United States to be read, then the stored copy is deleted as soon as the read finishes. The original stays in your phone&rsquo;s camera roll; this book keeps its own copy only in this browser.</li>'+
+    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not mine to put on a server.</li>'+
+    '</ul>'+
+    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance, and it is the question the record calls Gate 1.</p>'+
     '<details><summary>What a clinician would want you to know</summary><div>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body)">'+
     '<li><b>This is not your medical record.</b> It is a patient-held copy. Hand a clinician the original report — that is the document with the lab&rsquo;s method, its accreditation and its own flags on it.</li>'+
@@ -2800,13 +2816,18 @@ async function syncNow(quiet){
     if(dedupePeople()) changed = true;
     ensurePerson();
     save();
-    const keptMembers = S.members.filter(m=>!isSample(m));
+    /* Everything the account is allowed to hold. A record someone else sent
+       is theirs, kept here as a copy, and not mine to put on a server. */
+    const keptMembers = syncable(S.members);
     const up = await supa("/rest/v1/famrec_state", {method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:[{user_id:AUTH.uid, device:(navigator.platform||"device"),
              doc:{v:2, members:keptMembers,
-                  observations:S.observations.filter(o=>!isSample(o)),
-                  actions:S.actions.filter(a=>!isSample(a)),
+                  observations:syncable(S.observations),
+                  actions:syncable(S.actions),
+                  meds:syncable(S.meds), allergies:syncable(S.allergies),
+                  conditions:syncable(S.conditions), shots:syncable(S.shots),
+                  visits:syncable(S.visits),
                   reports:S.reports||[], customCodes:S.customCodes||{},
                   panel:S.panel||[], tomb:S.tomb}}]});
     if(!up.ok) throw new Error((up.body&&(up.body.message||up.body.hint))
@@ -2983,12 +3004,29 @@ async function extractViaVitals(file, say){
 
   say && say("read");
   const readStarted = Date.now();
-  const r = await fetch(SUPA.url + "/functions/v1/extract-document", {
-    method: "POST",
-    headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok, "Content-Type": "application/json"},
-    body: JSON.stringify({documentId: documentId})
-  });
-  noteReadTime(Date.now() - readStarted);
+  /* The page said scanned reports stay on the device. They did not: the
+     image was uploaded so the reader could fetch it and was never removed,
+     so every page ever scanned was still sitting in storage. It is deleted
+     as soon as the read finishes, whether it succeeded or failed -- the
+     upload is a courier, not a filing cabinet. */
+  const dropStored = async () => {
+    try{ await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
+      method:"DELETE",
+      headers:{apikey:SUPA.key, Authorization:"Bearer "+AUTH.tok}}); }catch(e){}
+  };
+  let r;
+  try{
+    r = await fetch(SUPA.url + "/functions/v1/extract-document", {
+      method: "POST",
+      headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok, "Content-Type": "application/json"},
+      body: JSON.stringify({documentId: documentId})
+    });
+  } finally {
+    /* finally, not afterwards: a dropped connection is exactly the case
+       where a page would otherwise be left sitting in storage. */
+    noteReadTime(Date.now() - readStarted);
+    await dropStored();
+  }
   let out = null; try{ out = await r.json(); }catch(e){}
   if(!r.ok){
     /* 504 is the gateway giving up while the reader is still working, and it
