@@ -202,6 +202,41 @@ footer.fix b{color:var(--ink)}
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
    number rather than inventing one. */
+/* Grouped inset lists, the way iOS Settings is laid out: a rounded card per
+   group, rows divided by a hairline that starts where the text starts, the
+   group's name in small caps above it. It is the most familiar form there
+   is for a list of things you can edit, which is the whole argument for
+   using it -- an unfamiliar layout costs an older person far more than it
+   costs anyone else.
+
+   Every row clears 48px. Feedback is on press, not on release. */
+.ghdr{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-muted);margin:var(--s5) 0 var(--s2);padding-inline:var(--s4)}
+.glist{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.gentry+.gentry,.gadd{border-top:1px solid var(--line-soft)}
+.gentry>summary{display:flex;align-items:center;gap:var(--s3);padding:var(--s4);
+  min-height:48px;cursor:pointer;list-style:none;font-size:17px;color:var(--ink);
+  transition:background 90ms ease}
+.gentry>summary::-webkit-details-marker{display:none}
+.gentry>summary:active{background:var(--sunk)}
+.gentry>summary .sub{display:block;font-size:14px;color:var(--ink-muted);margin-top:2px}
+.gentry>summary .chev{margin-left:auto;flex:none;width:0;height:0;
+  border-left:6px solid var(--ink-muted);border-top:5px solid transparent;
+  border-bottom:5px solid transparent;transition:transform 160ms ease}
+.gentry[open]>summary .chev{transform:rotate(90deg)}
+.gbody{padding:0 var(--s4) var(--s4);background:var(--sunk)}
+.gfield{display:grid;grid-template-columns:minmax(7.5rem,34%) 1fr;gap:var(--s3);
+  align-items:center;padding:var(--s3) 0;min-height:48px}
+.gfield+.gfield{border-top:1px solid var(--line-soft)}
+.gfield>span{font-size:15px;color:var(--ink-body)}
+.gfield .inp{min-height:44px;font-size:17px;background:var(--card)}
+.gadd{display:block;width:100%;text-align:left;background:none;border:0;
+  padding:var(--s4);min-height:48px;font:inherit;font-size:17px;font-weight:600;
+  color:var(--blue-ink);cursor:pointer;transition:background 90ms ease}
+.gadd:active{background:var(--sunk)}
+.gempty{padding:var(--s4);color:var(--ink-muted);font-size:15px}
+@media (max-width:520px){ .gfield{grid-template-columns:1fr;gap:var(--s1);align-items:stretch} }
+@media (prefers-reduced-motion:reduce){ .gentry>summary,.gadd,.gentry>summary .chev{transition:none} }
 .onlyhere{margin-left:6px;font-size:9px;color:var(--ink-muted);vertical-align:middle}
 .inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
 .inp.bare:focus{background:var(--sunk)}
@@ -1627,13 +1662,113 @@ function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStora
    It deliberately says nothing clinical. It is a transcript of what the
    person has told it, which is exactly what makes it safe to hand over. */
 
-const FIELDS = {
-  meds:       [["name","Medicine"],["dose","Dose"],["freq","How often"],["since","Started"],["note","Note"]],
-  allergies:  [["what","Allergic to"],["reaction","What happens"],["severity","How bad"],["note","Note"]],
-  conditions: [["name","Condition"],["since","Since"],["note","Note"]],
-  shots:      [["name","Vaccination"],["date","Date"],["note","Note"]],
-  visits:     [["date","Date"],["who","Doctor"],["place","Where"],["why","Why"],["said","What was said"]]
+/* ---- pick from a list rather than spell it ----------------------------
+
+   Typing "Atorvastatin" or "Penicillin" correctly, on a phone, at 78, is not
+   a reasonable thing to ask, and a misspelling here is not a cosmetic fault:
+   an allergy nobody can match is an allergy nobody will act on.
+
+   So the common answers are offered and anything else can still be typed.
+   Two kinds of control, chosen by how long the list is:
+
+     select  -- a short, closed set (how bad, how often). On iOS this is the
+               full-screen wheel, which is the easiest control there is to
+               operate with imprecise hands.
+     list    -- a long set (every common medicine). An input with a datalist:
+               tap for the whole list, type to narrow it, and a name that is
+               not on the list is still accepted verbatim.
+
+   Nothing here is clinical advice. It is a spelling aid: the same words a
+   pharmacy label or a vaccination card already prints. */
+
+const PICK = {
+  allergyWhat: [
+    ["Medicines", ["Penicillin","Amoxicillin","Cephalosporin","Sulfa drugs","Aspirin",
+      "Ibuprofen / NSAIDs","Codeine","Morphine","Contrast dye (X-ray)","Local anaesthetic",
+      "Statins","Metformin","Iodine"]],
+    ["Foods", ["Peanut","Tree nuts","Shellfish","Crab","Shrimp","Fish","Egg","Cow\u2019s milk",
+      "Soy","Wheat / gluten","Sesame","Monosodium glutamate (MSG)"]],
+    ["Around you", ["Pollen","House dust mite","Cat","Dog","Mould","Latex","Bee or wasp sting",
+      "Nickel","Fragrance"]]
+  ],
+  allergyReaction: ["Rash or hives","Itching","Swelling of the face, lips or tongue",
+    "Trouble breathing","Wheezing","Runny nose or sneezing","Watery eyes","Stomach pain",
+    "Nausea or vomiting","Diarrhoea","Dizziness or fainting","Anaphylaxis"],
+  allergySeverity: ["Mild","Moderate","Severe","Life-threatening"],
+
+  medName: [
+    ["Heart and blood pressure", ["Amlodipine","Lisinopril","Losartan","Valsartan","Metoprolol",
+      "Bisoprolol","Atenolol","Hydrochlorothiazide","Furosemide","Spironolactone","Nifedipine"]],
+    ["Cholesterol", ["Atorvastatin","Rosuvastatin","Simvastatin","Ezetimibe","Fenofibrate"]],
+    ["Blood thinners", ["Aspirin (low dose)","Clopidogrel","Warfarin","Apixaban","Rivaroxaban"]],
+    ["Diabetes", ["Metformin","Gliclazide","Glipizide","Sitagliptin","Empagliflozin",
+      "Dapagliflozin","Insulin (long acting)","Insulin (fast acting)"]],
+    ["Stomach", ["Omeprazole","Esomeprazole","Pantoprazole","Famotidine","Domperidone"]],
+    ["Thyroid", ["Levothyroxine","Carbimazole","Methimazole"]],
+    ["Pain and inflammation", ["Paracetamol / Acetaminophen","Ibuprofen","Naproxen","Diclofenac",
+      "Tramadol","Prednisone","Prednisolone"]],
+    ["Gout", ["Allopurinol","Febuxostat","Colchicine"]],
+    ["Breathing", ["Salbutamol inhaler","Budesonide inhaler","Montelukast"]],
+    ["Prostate", ["Tamsulosin","Finasteride","Dutasteride"]],
+    ["Mood and sleep", ["Sertraline","Escitalopram","Fluoxetine","Amitriptyline","Melatonin"]],
+    ["Supplements", ["Vitamin D","Calcium","Vitamin B12","Folic acid","Iron","Fish oil",
+      "Multivitamin","Magnesium","Probiotic"]]
+  ],
+  medDose: ["2.5 mg","5 mg","10 mg","20 mg","25 mg","40 mg","50 mg","75 mg","81 mg","100 mg",
+    "250 mg","500 mg","850 mg","1000 mg","1 tablet","2 tablets","Half a tablet","1 puff","2 puffs"],
+  medFreq: ["Once a day, morning","Once a day, evening","Once a day, at night","Twice a day",
+    "Three times a day","Four times a day","Every other day","Once a week","With meals",
+    "Before meals","Only when needed"],
+
+  conditionName: [
+    ["Heart and circulation", ["High blood pressure","High cholesterol","Heart disease",
+      "Atrial fibrillation","Heart failure","Stroke","Deep vein thrombosis"]],
+    ["Metabolic", ["Type 2 diabetes","Type 1 diabetes","Prediabetes","Gout","Obesity",
+      "Underactive thyroid","Overactive thyroid"]],
+    ["Digestive and liver", ["Fatty liver","Hepatitis B","Hepatitis C","Acid reflux (GERD)",
+      "Stomach ulcer","Irritable bowel","Gallstones"]],
+    ["Kidney and urinary", ["Chronic kidney disease","Kidney stones","Enlarged prostate"]],
+    ["Breathing", ["Asthma","COPD","Sleep apnoea","Chronic sinusitis"]],
+    ["Bones and joints", ["Osteoarthritis","Rheumatoid arthritis","Osteoporosis","Back pain"]],
+    ["Eyes and ears", ["Cataract","Glaucoma","Macular degeneration","Hearing loss"]],
+    ["Mind", ["Depression","Anxiety","Insomnia","Migraine"]],
+    ["Blood", ["Anaemia","Iron deficiency","Thalassaemia trait"]]
+  ],
+  shotName: ["Influenza (flu)","COVID-19","Tetanus (Td or Tdap)","Shingles (zoster)",
+    "Pneumococcal","Hepatitis A","Hepatitis B","MMR (measles, mumps, rubella)","Chickenpox",
+    "HPV","RSV","Typhoid","Japanese encephalitis","Rabies","Yellow fever","Meningococcal"],
+  visitWhy: ["Annual check-up","Follow-up","New symptom","Test results","Vaccination",
+    "Prescription refill","Specialist referral","Emergency","Dental","Eye test"]
 };
+
+/* label · field · control · which list */
+const FIELDS = {
+  meds:       [["name","Medicine","list","medName"],["dose","Dose","list","medDose"],
+               ["freq","How often","select","medFreq"],["since","Started","month"],["note","Note","text"]],
+  allergies:  [["what","Allergic to","list","allergyWhat"],["reaction","What happens","select","allergyReaction"],
+               ["severity","How bad","select","allergySeverity"],["note","Note","text"]],
+  conditions: [["name","Condition","list","conditionName"],["since","Since","month"],["note","Note","text"]],
+  shots:      [["name","Vaccination","list","shotName"],["date","Date","date"],["note","Note","text"]],
+  visits:     [["date","Date","date"],["who","Doctor","text"],["place","Where","text"],
+               ["why","Why","list","visitWhy"],["said","What was said","text"]]
+};
+
+/* A datalist is written once per list and shared by every row that uses it. */
+function pickOptions(key){
+  const v = PICK[key] || [];
+  if(!v.length) return "";
+  if(Array.isArray(v[0]))
+    return v.map(g=>'<optgroup label="'+esc(g[0])+'">'+
+      g[1].map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</optgroup>').join("");
+  return v.map(o=>'<option value="'+esc(o)+'"></option>').join("");
+}
+function pickFlat(key){
+  const v = PICK[key] || [];
+  return Array.isArray(v[0]) ? v.reduce((a,g)=>a.concat(g[1]), []) : v.slice();
+}
+function dataLists(){
+  return Object.keys(PICK).map(k=>'<datalist id="dl-'+k+'">'+pickOptions(k)+'</datalist>').join("");
+}
 const BLANK = {
   meds:{name:"",dose:"",freq:"",since:"",note:""},
   allergies:{what:"",reaction:"",severity:"",note:""},
@@ -1642,15 +1777,55 @@ const BLANK = {
   visits:{date:today(),who:"",place:"",why:"",said:""}
 };
 
+/* One control per field, chosen by the shape of its answer. */
+function control(key, row, f){
+  const [name, label, kind, list] = f;
+  const v = row[name] || "";
+  const at = 'data-lk="'+key+'" data-lid="'+esc(row.id)+'" data-lf="'+name+'"';
+  if(kind === "select"){
+    const opts = pickFlat(list);
+    const known = !v || opts.indexOf(v) >= 0;
+    return '<select class="inp" '+at+'>'+
+      '<option value=""'+(v?"":" selected")+'>\u2014</option>'+
+      opts.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>').join("")+
+      (known?"":'<option selected>'+esc(v)+'</option>')+
+      '</select>';
+  }
+  if(kind === "list")
+    return '<input class="inp" '+at+' list="dl-'+list+'" value="'+esc(v)+'" '+
+      'placeholder="tap to choose, or type" autocapitalize="sentences" autocomplete="off">';
+  if(kind === "date")
+    return '<input class="inp" type="date" '+at+' value="'+esc(v)+'">';
+  if(kind === "month")
+    return '<input class="inp" type="month" '+at+' value="'+esc(String(v).slice(0,7))+'">';
+  return '<input class="inp" '+at+' value="'+esc(v)+'" placeholder="\u2014">';
+}
+
+/* The one line a person reads without opening anything. */
+function entrySummary(key, r){
+  if(key==="meds")       return [r.name||"New medicine", [r.dose,r.freq].filter(Boolean).join(" \u00b7 ")];
+  if(key==="allergies")  return [r.what||"New allergy", [r.reaction,r.severity].filter(Boolean).join(" \u00b7 ")];
+  if(key==="conditions") return [r.name||"New condition", r.since?("since "+r.since):""];
+  if(key==="shots")      return [r.name||"New vaccination", r.date||""];
+  return [r.date||"New visit", [r.who,r.place,r.why].filter(Boolean).join(" \u00b7 ")];
+}
+
 function listRows(key, mid){
   const rows = listOf(key, mid), F = FIELDS[key];
-  if(!rows.length) return '<div class="cap" style="padding:var(--s3) 0">Nothing written down yet.</div>';
-  return '<div class="tw"><table><thead><tr>'+F.map(f=>'<th>'+esc(f[1])+'</th>').join("")+
-    '<th style="width:1%"></th></tr></thead><tbody>'+
-    rows.map(r=>'<tr>'+F.map(f=>'<td'+(f[0]==="date"||f[0]==="since"?' class="n"':'')+'>'+
-        '<input class="inp bare" data-lk="'+key+'" data-lid="'+esc(r.id)+'" data-lf="'+f[0]+'" value="'+esc(r[f[0]]||"")+'" placeholder="&mdash;"></td>').join("")+
-      '<td><button class="btn sm warn" data-ldel="'+key+'|'+esc(r.id)+'">Remove</button></td></tr>').join("")+
-    '</tbody></table></div>';
+  const add = '<button class="gadd" data-ladd="'+key+'">+ Add'+
+    (key==="meds"?" a medicine":key==="allergies"?" an allergy":key==="conditions"?" a condition":
+     key==="shots"?" a vaccination":" a visit")+'</button>';
+  if(!rows.length)
+    return '<div class="glist"><div class="gempty">Nothing written down yet.</div>'+add+'</div>';
+  return '<div class="glist">'+rows.map(r=>{
+    const [title, sub] = entrySummary(key, r);
+    return '<details class="gentry"><summary><span>'+esc(title)+
+      (sub?'<span class="sub">'+esc(sub)+'</span>':'')+'</span><span class="chev"></span></summary>'+
+      '<div class="gbody">'+
+        F.map(f=>'<label class="gfield"><span>'+esc(f[1])+'</span>'+control(key,r,f)+'</label>').join("")+
+        '<div style="padding-top:var(--s3)"><button class="btn sm warn" data-ldel="'+key+'|'+esc(r.id)+'">Remove this entry</button></div>'+
+      '</div></details>';
+  }).join("")+add+'</div>';
 }
 
 function vCard(){
@@ -1707,16 +1882,12 @@ function vCard(){
       pf("insurer","Insurance")+pf("policy","Member or policy number")+
     '</div></div></details>';
 
-  /* the five lists */
+  /* the five lists, each its own grouped inset list */
   LISTS.forEach(l=>{
     const key=l[0], title=l[2], n=listOf(key,m.id).length;
-    h += '<details class="sec" '+(key==="allergies"||key==="meds"?"open":"")+'>'+
-      '<summary><span>'+esc(title)+'</span>'+
-      '<span class="cap" style="margin-left:auto"><span class="num">'+n+'</span></span></summary>'+
-      '<div class="card" style="margin-top:var(--s3)">'+listRows(key, m.id)+
-      '<button class="btn" data-ladd="'+key+'" style="margin-top:var(--s3)">Add a row</button></div></details>';
+    h += '<div class="ghdr">'+esc(title)+(n?' &middot; '+n:'')+'</div>'+listRows(key, m.id);
   });
-  return h;
+  return h + dataLists();
 }
 
 /* ============================================================== views */
@@ -3826,6 +3997,10 @@ document.addEventListener("input", e=>{
 
 document.addEventListener("change", async e=>{
   const el=e.target;
+  if(el.dataset && el.dataset.lk!==undefined){
+    const row=(S[el.dataset.lk]||[]).find(x=>x.id===el.dataset.lid); if(!row) return;
+    row[el.dataset.lf]=el.value; touch(row); save(); render(); return;
+  }
   if(draft && el.dataset && el.dataset.ck!==undefined){
     const r=draft.rows[+el.dataset.ck]; if(!r) return;
     if(el.checked && !rowHasValue(r)){ el.checked=false;
