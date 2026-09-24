@@ -1630,10 +1630,10 @@ function checksFor(mid){
    roll-up. */
 function obsBadge(o){
   return meta(o.code).fact
-    ? '<span class="badge" style="background:var(--sunk);color:var(--ink-muted)"><span class="dot"></span>On file</span>'
+    ? '<span class="badge" style="background:var(--sunk);color:var(--ink-muted)"><span class="dot"></span>'+esc(t("On file"))+'</span>'
     : badge(statusOf(o));
 }
-function badge(st){ return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(ST[st]||st)+'</span>'; }
+function badge(st){ return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(t(ST[st]||st))+'</span>'; }
 function bandHTML(o, cuts, names){
   const M=meta(o.code);
   let marks=[];
@@ -1700,6 +1700,80 @@ function agoText(iso){
    metrics only, the archive hidden, type a step up, and three tabs instead
    of six. Per device and never per account, because the person who needs it
    is not always the person who set it up. */
+
+/* ---- the interface in Vietnamese --------------------------------------
+
+   Ba Hoa opens the app, sees nothing she can read, and closes it. The
+   extraction reads her lab sheet in Vietnamese and the tabs will not speak
+   to her -- backwards for the person whose blood is in it.
+
+   WHAT IS TRANSLATED: the book's own words. Tabs, headings, buttons, empty
+   states, the status words, the panel names.
+
+   WHAT IS NOT, and never will be: a test name, a value, a range, a
+   laboratory's name, a medicine, or anything a clinician said. Those are
+   evidence, and a record that translates its own evidence stops being one.
+
+   Test names stay in English on purpose rather than by omission: a
+   Vietnamese laboratory prints them that way. The Kusumi haematology sheet
+   reads "RBC / HGB / HCT" under a Vietnamese heading, so English test names
+   beside Vietnamese chrome is what the paper already looks like. */
+const UI_VI = {
+  /* tabs */
+  "Today":"H\u00f4m nay", "Family":"Gia \u0111\u00ecnh", "Results":"K\u1ebft qu\u1ea3",
+  "Trends":"Xu h\u01b0\u1edbng", "Card":"Th\u1ebb", "Questions":"C\u00e2u h\u1ecfi",
+  "Settings":"C\u00e0i \u0111\u1eb7t",
+  /* status */
+  "In range":"Trong kho\u1ea3ng", "Near the limit":"G\u1ea7n ng\u01b0\u1ee1ng",
+  "Outside the range":"Ngo\u00e0i kho\u1ea3ng", "Flagged by hand":"T\u1ef1 \u0111\u00e1nh d\u1ea5u",
+  "No range on file":"Kh\u00f4ng c\u00f3 kho\u1ea3ng tham chi\u1ebfu", "On file":"\u0110\u00e3 ghi",
+  /* the switches */
+  "Larger text":"Ch\u1eef to h\u01a1n", "Bigger words and buttons":"Ch\u1eef v\u00e0 n\u00fat to h\u01a1n",
+  "Simple view":"Xem \u0111\u01a1n gi\u1ea3n", "Fewer tabs, main tests only":"\u00cdt th\u1ebb h\u01a1n, ch\u1ec9 c\u00e1c x\u00e9t nghi\u1ec7m ch\u00ednh",
+  "On while Simple view is on":"B\u1eadt s\u1eb5n khi xem \u0111\u01a1n gi\u1ea3n",
+  "Ti\u1ebfng Vi\u1ec7t":"Ti\u1ebfng Vi\u1ec7t",
+  "Menus in Vietnamese":"Menu b\u1eb1ng ti\u1ebfng Vi\u1ec7t",
+  "Test names stay in English":"T\u00ean x\u00e9t nghi\u1ec7m v\u1eabn ti\u1ebfng Anh",
+  /* buttons and headings */
+  "Add a report":"Th\u00eam phi\u1ebfu k\u1ebft qu\u1ea3",
+  "Where things stand":"T\u00ecnh h\u00ecnh hi\u1ec7n t\u1ea1i",
+  "Worth a look":"N\u00ean xem",
+  "Changed since the report before":"Thay \u0111\u1ed5i so v\u1edbi phi\u1ebfu tr\u01b0\u1edbc",
+  "Asked for, and not done yet":"B\u00e1c s\u0129 h\u1eb9n, ch\u01b0a l\u00e0m",
+  "Not measured in over a year":"Tr\u00ean m\u1ed9t n\u0103m ch\u01b0a \u0111o",
+  "Never measured":"Ch\u01b0a \u0111o l\u1ea7n n\u00e0o",
+  "Came back inside its range":"K\u1ebft qu\u1ea3 trong kho\u1ea3ng",
+  "Keep a copy somewhere else":"Gi\u1eef m\u1ed9t b\u1ea3n sao n\u01a1i kh\u00e1c",
+  "Take a copy now":"Sao l\u01b0u ngay",
+  "What your doctor follows":"B\u00e1c s\u0129 theo d\u00f5i nh\u1eefng ch\u1ec9 s\u1ed1 n\u00e0y",
+  "Measured once":"M\u1edbi \u0111o m\u1ed9t l\u1ea7n",
+  "Print this card":"In th\u1ebb n\u00e0y",
+  "Print it":"In ra",
+  "Secondary":"Ph\u1ee5",
+  "Also on your reports":"C\u00f3 tr\u00ean phi\u1ebfu c\u1ee7a b\u1ea1n",
+  /* panels */
+  "Vital signs":"D\u1ea5u hi\u1ec7u sinh t\u1ed3n", "Body":"C\u01a1 th\u1ec3",
+  "Blood sugar":"\u0110\u01b0\u1eddng huy\u1ebft", "Cholesterol":"M\u1ee1 m\u00e1u",
+  "Heart":"Tim", "Kidney":"Th\u1eadn", "Liver":"Gan",
+  "Salts & minerals":"\u0110i\u1ec7n gi\u1ea3i & kho\u00e1ng", "Urine":"N\u01b0\u1edbc ti\u1ec3u",
+  "Stool":"Ph\u00e2n", "Blood count":"C\u00f4ng th\u1ee9c m\u00e1u", "Iron":"S\u1eaft",
+  "Clotting":"\u0110\u00f4ng m\u00e1u", "Thyroid":"Tuy\u1ebfn gi\u00e1p", "Hormones":"N\u1ed9i ti\u1ebft",
+  "Inflammation":"Vi\u00eam", "Immune system":"Mi\u1ec5n d\u1ecbch", "Infections":"Nhi\u1ec5m khu\u1ea9n",
+  "Cancer markers":"D\u1ea5u \u1ea5n ung th\u01b0", "Vitamins":"Vitamin", "Scans":"Ch\u1ea9n \u0111o\u00e1n h\u00ecnh \u1ea3nh",
+  "Breathing, hearing & sight":"H\u00f4 h\u1ea5p, th\u00ednh l\u1ef1c & th\u1ecb l\u1ef1c",
+  "Lifestyle":"L\u1ed1i s\u1ed1ng", "Body, limb by limb":"C\u01a1 th\u1ec3 theo t\u1eebng ph\u1ea7n"
+};
+const LANG_KEY="passbook-lang";
+function lang(){ return pref(LANG_KEY, [])==="vi" ? "vi" : "en"; }
+function setLang(v){
+  try{ v==="vi" ? localStorage.setItem(LANG_KEY,"vi") : localStorage.removeItem(LANG_KEY); }catch(e){}
+  try{ document.documentElement.lang = v==="vi" ? "vi" : "en"; }catch(e){}
+  render();
+}
+/* The book's own word, in the language chosen. Anything absent falls through
+   to English rather than to a blank, so a missing line never hides a label. */
+function t(en){ return (lang()==="vi" && UI_VI[en]) ? UI_VI[en] : en; }
+
 const EMPTY_KEY="passbook-show-empty";
 function showEmpty(){ try{ return localStorage.getItem(EMPTY_KEY)==="on"; }catch(e){ return false; } }
 function qSwitch(id, label, sub, on, disabled){
@@ -1708,8 +1782,9 @@ function qSwitch(id, label, sub, on, disabled){
 }
 function quickDisplay(){
   return '<div class="qbar">'+
-    qSwitch("qText","Larger text", simple()?"On while Simple view is on":"Bigger words and buttons", bigText()||simple(), simple())+
-    qSwitch("qSimple","Simple view","Fewer tabs, main tests only", simple(), false)+'</div>';
+    qSwitch("qText",t("Larger text"), simple()?t("On while Simple view is on"):t("Bigger words and buttons"), bigText()||simple(), simple())+
+    qSwitch("qSimple",t("Simple view"),t("Fewer tabs, main tests only"), simple(), false)+
+    qSwitch("qLang","Ti\u1ebfng Vi\u1ec7t", lang()==="vi"?t("Test names stay in English"):t("Menus in Vietnamese"), lang()==="vi", false)+'</div>';
 }
 /* ---- the printed page, in both languages ------------------------------
 
@@ -2036,7 +2111,7 @@ function vCard(){
     '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
     '<div class="row"><button class="btn" data-tab="sheet" style="font-size:16px;padding:12px 20px">Sheet for an appointment</button>'+
     '<button class="btn'+(bilingual()?" pri":"")+'" id="biToggle" style="margin-right:var(--s2)">'+(bilingual()?"English only":"Th\u00eam ti\u1ebfng Vi\u1ec7t")+'</button>'+
-    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div></div>'+
+    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">'+esc(t("Print this card"))+'</button></div></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
 
   /* the card itself, styled to print on its own page */
@@ -2086,7 +2161,7 @@ function vCard(){
   /* the five lists, each its own grouped inset list */
   LISTS.forEach(l=>{
     const key=l[0], title=l[2], n=listOf(key,m.id).length;
-    h += '<div class="ghdr">'+esc(title)+(n?' &middot; '+n:'')+'</div>'+listRows(key, m.id);
+    h += '<div class="ghdr">'+esc(t(title))+(n?' &middot; '+n:'')+'</div>'+listRows(key, m.id);
   });
   return h + dataLists();
 }
@@ -2206,13 +2281,13 @@ function vToday(){
 
   let h='<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>'+quickDisplay();
+    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">'+esc(t("Add a report"))+'</button></div>'+quickDisplay();
 
   if(!obsOf(m.id).length)
     return h+'<div class="empty"><b>Nothing on file yet</b>Photograph a lab report or a health check and it will be read into this book.</div>';
 
   h+='<div class="card" style="margin-bottom:var(--s4)">'+
-    '<div class="kick" style="color:var(--ink-muted)">Where things stand</div>'+
+    '<div class="kick" style="color:var(--ink-muted)">'+esc(t("Where things stand"))+'</div>'+
     '<p style="margin-top:var(--s2)">'+
       '<b>'+L.length+'</b> measurement'+(L.length===1?"":"s")+' on file'+
       (newest?', the newest from <b>'+esc(fmtDate(newest))+'</b> ('+esc(agoText(newest))+')':"")+'. '+
@@ -2223,30 +2298,30 @@ function vToday(){
 
   const bk = backupOverdue();
   if(bk)
-    h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Keep a copy somewhere else</div>'+
+    h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">'+esc(t("Keep a copy somewhere else"))+'</div>'+
       '<p>'+(bk.never
         ? 'This book lives in this browser. Clearing the site\u2019s data deletes it, and nothing here has ever been copied out.'
         : 'Last copied out on '+esc(bk.last)+', '+bk.days+' days ago.')+
       ' A copy is one file you can put in email or a drive.</p>'+
-      '<button class="btn pri" data-tab="settings" style="margin-top:var(--s2)">Take a copy now</button></div>';
+      '<button class="btn pri" data-tab="settings" style="margin-top:var(--s2)">'+esc(t("Take a copy now"))+'</button></div>';
 
   const due = repeatsDue(m.id);
   const overdue = due.filter(x => new Date(x.v.repeatBy+"T00:00:00").getTime() <= Date.now());
   if(overdue.length)
-    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Asked for, and not done yet</div>'+
+    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">'+esc(t("Asked for, and not done yet"))+'</div>'+
       '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+
       overdue.map(x=>'<li>'+repeatLine(x)+'</li>').join("")+'</ul>'+
       '<p class="cap" style="margin-top:var(--s2)">Recorded from a visit, in the words written down at the time. Whether it still applies is a conversation with them, not a judgement this book makes.</p></div>';
 
   if(crossings.length)
-    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Changed since the report before</div>'+
+    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">'+esc(t("Changed since the report before"))+'</div>'+
       '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+crossings.map(c=>
         '<li><b>'+esc(meta(c.code).n)+'</b> went from <i>'+esc(ST[c.from]).toLowerCase()+'</i> to <i>'+
         esc(ST[c.to]).toLowerCase()+'</i> \u2014 '+esc(c.o.valueRaw||fmt(c.o.value))+' '+esc(c.o.unit||"")+
         ' on '+esc(c.o.observedAt||"an undated report")+'</li>').join("")+'</ul></div>';
 
   if(flagged.length)
-    h+='<div class="sec"><h3>Worth a look</h3><div class="grid g240">'+
+    h+='<div class="sec"><h3>'+esc(t("Worth a look"))+'</h3><div class="grid g240">'+
       flagged.slice(0,6).map(obsCard).join("")+'</div></div>';
 
   /* A record that only ever surfaces problems teaches people to dread
@@ -2255,13 +2330,13 @@ function vToday(){
      fact against each report's own range, with the caveat attached. */
   const fine = L.filter(o=>statusOf(o)==="in_range" && !meta(o.code).fact);
   if(fine.length)
-    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Came back inside its range</span>'+
+    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>'+esc(t("Came back inside its range"))+'</span>'+
       '<span class="cap" style="margin-left:auto"><span class="num">'+fine.length+'</span></span></summary>'+
       '<div class="cap" style="margin-top:var(--s3)">Each of these sits inside the range printed on its own report. In range is not the same as healthy, and a normal result is not a clean bill of health &mdash; but it is what the report said, and it is worth seeing.</div>'+
       '<p style="margin-top:var(--s2)">'+fine.map(o=>esc(meta(o.code).n)).join(" \u00b7 ")+'</p></details>';
 
   if(stale.length && !simple())
-    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Not measured in over a year</span>'+
+    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>'+esc(t("Not measured in over a year"))+'</span>'+
       '<span class="cap" style="margin-left:auto"><span class="num">'+stale.length+'</span></span></summary>'+
       '<div class="cap" style="margin-top:var(--s3)">How long it has been, and nothing more. Whether any of it needs repeating is a conversation with a doctor, not a judgement this book makes.</div>'+
       '<div class="tw" style="margin-top:var(--s3)"><table><tbody>'+stale.map(x=>
@@ -2270,7 +2345,7 @@ function vToday(){
       '</tbody></table></div></details>';
 
   if(gaps.length && !simple())
-    h+='<details class="sec" style="margin-top:var(--s3)"><summary><span>Never measured</span>'+
+    h+='<details class="sec" style="margin-top:var(--s3)"><summary><span>'+esc(t("Never measured"))+'</span>'+
       '<span class="cap" style="margin-left:auto"><span class="num">'+gaps.length+'</span></span></summary>'+
       '<div class="cap" style="margin-top:var(--s3)">On the standard check-up list and never on any report you have uploaded. A test nobody has done is invisible otherwise.</div>'+
       '<p style="margin-top:var(--s2)">'+gaps.map(c=>esc(meta(c).n)).join(" \u00b7 ")+'</p></details>';
@@ -2309,7 +2384,7 @@ function vRecord(){
   let h = hasSamples()?sampleNote():"";
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>';
+    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">'+esc(t("Add a report"))+'</button></div>';
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
 
@@ -2377,7 +2452,7 @@ function vRecord(){
     const open = b.on > 0 && g !== "Secondary";
     const flag = (b.on && b.worst !== "in_range" && b.worst !== "unknown") ? badge(b.worst) : "";
     return '<details class="sec" '+(open?"open":"")+' style="margin-top:var(--s4)">'+
-      '<summary><span>'+esc(g)+'</span>'+
+      '<summary><span>'+esc(t(g))+'</span>'+
         '<span class="cap" style="margin-left:auto;white-space:nowrap">'+
           '<span class="num">'+b.on+'</span> of <span class="num">'+b.n+'</span></span>'+
         (flag ? '<span style="margin-left:var(--s2)">'+flag+'</span>' : '')+
@@ -2449,7 +2524,7 @@ function vKeyTrends(mid){
   }).filter(Boolean);
   if(!rows.length) return "";
   const withTrend = rows.filter(r=>r.pts.length>1), single = rows.filter(r=>r.pts.length===1);
-  let h = '<h3 style="margin-bottom:var(--s2)">What your doctor follows</h3>'+
+  let h = '<h3 style="margin-bottom:var(--s2)">'+esc(t("What your doctor follows"))+'</h3>'+
     '<div class="cap" style="margin-bottom:var(--s3)">The measurements that change what happens next, over time. Tap one for the full chart and the readings behind it.</div>';
   const card = r => {
     const M = meta(r.code), last = r.pts[r.pts.length-1], first = r.pts[0], st = statusOf(last);
@@ -2471,7 +2546,7 @@ function vKeyTrends(mid){
   };
   h += '<div class="grid g240">'+withTrend.map(card).join("")+'</div>';
   if(single.length)
-    h += '<details class="sec" style="margin-top:var(--s4)"><summary><span>Measured once</span>'+
+    h += '<details class="sec" style="margin-top:var(--s4)"><summary><span>'+esc(t("Measured once"))+'</span>'+
       '<span class="cap" style="margin-left:auto"><span class="num">'+single.length+'</span></span></summary>'+
       '<div class="cap" style="margin-top:var(--s3)">One reading is a fact, not a trend. These need a second report before they can show a direction.</div>'+
       '<div class="grid g240" style="margin-top:var(--s3)">'+single.map(card).join("")+'</div></details>';
@@ -2848,7 +2923,7 @@ function vSheet(){
   let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>Sheet for the appointment</h2>'+
     '<button class="btn'+(bilingual()?" pri":"")+'" id="biToggle" style="margin-right:var(--s2)">'+(bilingual()?"English only":"Th\u00eam ti\u1ebfng Vi\u1ec7t")+'</button>'+
-    '<button class="btn pri" id="printSheet" style="font-size:16px;padding:12px 20px">Print it</button></div>'+
+    '<button class="btn pri" id="printSheet" style="font-size:16px;padding:12px 20px">'+esc(t("Print it"))+'</button></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Everything a doctor who has never met you would ask for, on one page, in the order they ask.</div>';
 
   h+='<div class="card cardsheet">'+
@@ -3966,12 +4041,12 @@ function docGallery(){
 function tabList(){
   /* Simple mode is three tabs, not six. The record does not get smaller;
      the number of decisions on screen does. */
-  if(simple()) return [["today","Today"],["record","Results"],["card","Card"]];
-  const t=[["today","Today"]];
-  if((S.members||[]).length>1) t.push(["overview","Family"]);
-  t.push(["record","Results"],["trends","Trends"],["card","Card"],
-         ["actions","Questions"],["settings","Settings"]);
-  return t;
+  if(simple()) return [["today",t("Today")],["record",t("Results")],["card",t("Card")]];
+  const out=[["today",t("Today")]];
+  if((S.members||[]).length>1) out.push(["overview",t("Family")]);
+  out.push(["record",t("Results")],["trends",t("Trends")],["card",t("Card")],
+           ["actions",t("Questions")],["settings",t("Settings")]);
+  return out;
 }
 function paintTabs(){
   const m=person(who);
@@ -4057,7 +4132,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
@@ -4083,6 +4158,7 @@ document.addEventListener("click", async e=>{
     try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
     applyText(); render(); return; }
   if(t.id==="qSimple"){ setSimple(!simple()); return; }
+  if(t.id==="qLang"){ setLang(lang()==="vi" ? "en" : "vi"); return; }
   if(t.id==="qEmpty"){ try{ showEmpty()?localStorage.removeItem(EMPTY_KEY):localStorage.setItem(EMPTY_KEY,"on"); }catch(e){}
     render(); return; }
   if(t.id==="textSize"){
