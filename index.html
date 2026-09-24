@@ -242,6 +242,22 @@ footer.fix b{color:var(--ink)}
 .inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
 .inp.bare:focus{background:var(--sunk)}
 @media print{ .cardsheet{break-inside:avoid;break-after:page} }
+/* Quick switches: the two display settings an older reader needs, on the
+   screens they land on, instead of four taps deep in Settings. */
+.qbar{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s4)}
+.qsw{display:flex;align-items:center;gap:var(--s3);min-height:48px;padding:var(--s2) var(--s3) var(--s2) var(--s4);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;
+  font:inherit;font-size:17px;font-weight:600;color:var(--ink);flex:1 1 200px;text-align:left}
+.qsw .qs{font-size:13px;font-weight:400;color:var(--ink-muted);display:block}
+.qsw .tr{margin-left:auto;flex:none;width:51px;height:31px;border-radius:16px;background:#E9E9EB;position:relative;transition:background 160ms ease}
+.qsw .tr::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform 160ms ease}
+.qsw[aria-checked="true"] .tr{background:var(--green-ink)}
+.qsw[aria-checked="true"] .tr::after{transform:translateX(20px)}
+.qsw:disabled{cursor:default;opacity:.75}
+.qsw:focus-visible{outline:3px solid var(--blue-ink);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){ .qsw .tr,.qsw .tr::after{transition:none} }
+@media print{ .qbar{display:none} }
 details.sec>summary{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
   list-style:none;padding:var(--s3) 0;border-bottom:1px solid var(--line);
   font-size:16px;font-weight:600;color:var(--ink)}
@@ -1680,6 +1696,17 @@ function agoText(iso){
    metrics only, the archive hidden, type a step up, and three tabs instead
    of six. Per device and never per account, because the person who needs it
    is not always the person who set it up. */
+const EMPTY_KEY="passbook-show-empty";
+function showEmpty(){ try{ return localStorage.getItem(EMPTY_KEY)==="on"; }catch(e){ return false; } }
+function qSwitch(id, label, sub, on, disabled){
+  return '<button class="qsw" id="'+id+'" role="switch" aria-checked="'+(on?"true":"false")+'"'+(disabled?" disabled":"")+'>'+
+    '<span>'+esc(label)+(sub?'<span class="qs">'+esc(sub)+'</span>':'')+'</span><span class="tr" aria-hidden="true"></span></button>';
+}
+function quickDisplay(){
+  return '<div class="qbar">'+
+    qSwitch("qText","Larger text", simple()?"On while Simple view is on":"Bigger words and buttons", bigText()||simple(), simple())+
+    qSwitch("qSimple","Simple view","Fewer tabs, main tests only", simple(), false)+'</div>';
+}
 const SIMPLE_KEY="passbook-simple";
 function simple(){ return pref(SIMPLE_KEY, ["famrec-simple"])==="on"; }
 function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
@@ -2039,7 +2066,7 @@ function vToday(){
 
   let h='<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>';
+    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>'+quickDisplay();
 
   if(!obsOf(m.id).length)
     return h+'<div class="empty"><b>Nothing on file yet</b>Photograph a lab report or a health check and it will be read into this book.</div>';
@@ -2114,7 +2141,7 @@ function vRecord(){
   let h = hasSamples()?sampleNote():"";
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>';
+    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>'+quickDisplay();
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
 
@@ -2126,8 +2153,12 @@ function vRecord(){
     '<h3>Latest values &amp; flags</h3>'+
     '<span class="cap"><span class="num">'+onFile+'</span> of <span class="num">'+panel.length+'</span> measured</span></div>'+
     '<div class="cap" style="margin-bottom:var(--s3)">Newest reading for each metric, against the range printed on its own report.</div>'+
-    '<div class="row" style="margin-bottom:var(--s4)">'+
+    '<div class="row" style="margin-bottom:var(--s3)">'+
       badge("in_range")+badge("watch")+badge("discuss")+badge("unknown")+'</div>';
+  const blank = panel.length - onFile;
+  const showE = showEmpty();
+  if(blank>0) h += '<div class="qbar">'+qSwitch("qEmpty","Show tests with no readings",
+      showE ? blank+" not yet measured, shown" : blank+" not yet measured, hidden", showE, false)+'</div>';
 
   /* One flat grid stopped working somewhere past a hundred metrics. A report
      is not read as one list either -- it is read panel by panel, and a
@@ -2153,10 +2184,12 @@ function vRecord(){
     if(pair && panel.indexOf(pair.mate)>=0){
       consumed.add(code); consumed.add(pair.mate);
       const a = L.find(x=>x.code===code);
-      put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
+      const bb = L.find(x=>x.code===pair.mate);
+      if(a || bb || showE) put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
       continue;
     }
     const o = L.find(x=>x.code===code);
+    if(!o && !showE) continue;
     put(g, o ? obsCard(o) : ghostCard(code), o ? statusOf(o) : null, !!meta(code).fact);
   }
   /* Anything measured that is not on the panel keeps its own group too, so a
@@ -3790,7 +3823,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#invAdd,[data-invdel],[data-setpage],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
@@ -3812,6 +3845,12 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="qText"){ if(simple()) return;
+    try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
+    applyText(); render(); return; }
+  if(t.id==="qSimple"){ setSimple(!simple()); return; }
+  if(t.id==="qEmpty"){ try{ showEmpty()?localStorage.removeItem(EMPTY_KEY):localStorage.setItem(EMPTY_KEY,"on"); }catch(e){}
+    render(); return; }
   if(t.id==="textSize"){
     try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
     applyText(); render(); return; }
