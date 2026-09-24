@@ -383,12 +383,12 @@ const C = {
  ecg_finding:{n:"ECG",u:"",g:"Vitals",q:true,self:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
  visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vitals",q:true,self:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
  visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vitals",q:true,self:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
- weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
- height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
- bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the"]},
- body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
- visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
- waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
+ weight_kg:{n:"Weight",u:"kg",g:"Body & composition",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
+ height_cm:{n:"Height",u:"cm",g:"Body & composition",alt:[["in",2.54]],syn:["chieu cao","height"]},
+ bmi:{n:"BMI",u:"kg/m²",g:"Body & composition",syn:["bmi","chi so khoi co the","body mass index"]},
+ body_fat_pct:{n:"Body fat",u:"%",g:"Body & composition",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
+ visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body & composition",syn:["mo noi tang","visceral fat"]},
+ waist_cm:{n:"Waist",u:"cm",g:"Body & composition",alt:[["in",2.54]],syn:["vong eo","waist"]},
  /* An InBody sheet: body water and its two compartments, protein and mineral
     mass, fat and lean mass whole-body and per limb. Worth storing as series
     because skeletal muscle falling while fat mass rises, at an unchanged
@@ -397,22 +397,22 @@ const C = {
     "Protein" is NOT a synonym here -- it already means a serum total protein
     and a urine protein. The section heading is what tells them apart, and
     that lives in the alias table, not in this list. */
- total_body_water:{n:"Total body water",u:"L",g:"Body composition",syn:["total body water","tbw","tong luong nuoc co the"]},
- intracellular_water:{n:"Water inside cells",u:"L",g:"Body composition",syn:["intracellular water","icw"]},
- extracellular_water:{n:"Water outside cells",u:"L",g:"Body composition",syn:["extracellular water","ecw"]},
- ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body composition",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
- protein_mass:{n:"Protein mass",u:"kg",g:"Body composition",syn:["protein mass"]},
- mineral_mass:{n:"Minerals",u:"kg",g:"Body composition",syn:["minerals","mineral","chat khoang"]},
- body_fat_mass:{n:"Fat mass",u:"kg",g:"Body composition",syn:["body fat mass","bfm","khoi luong mo"]},
- soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body composition",syn:["soft lean mass","slm"]},
- fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body composition",syn:["fat free mass","fat-free mass","ffm"]},
- skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body composition",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
- body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body composition",syn:["body cell mass","bcm"]},
- smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body composition",syn:["smi","skeletal muscle index"]},
- bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body composition",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
- waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body composition",syn:["waist-hip ratio","whr","ty le eo hong"]},
- phase_angle:{n:"Phase angle",u:"°",g:"Body composition",syn:["phase angle","whole body phase angle"]},
- inbody_score:{n:"InBody score",u:"points",g:"Body composition",syn:["inbody score","inbody points"]},
+ total_body_water:{n:"Total body water",u:"L",g:"Body & composition",syn:["total body water","tbw","tong luong nuoc co the"]},
+ intracellular_water:{n:"Water inside cells",u:"L",g:"Body & composition",syn:["intracellular water","icw"]},
+ extracellular_water:{n:"Water outside cells",u:"L",g:"Body & composition",syn:["extracellular water","ecw"]},
+ ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body & composition",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
+ protein_mass:{n:"Protein mass",u:"kg",g:"Body & composition",syn:["protein mass"]},
+ mineral_mass:{n:"Minerals",u:"kg",g:"Body & composition",syn:["minerals","mineral","chat khoang"]},
+ body_fat_mass:{n:"Fat mass",u:"kg",g:"Body & composition",syn:["body fat mass","bfm","khoi luong mo"]},
+ soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body & composition",syn:["soft lean mass","slm"]},
+ fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body & composition",syn:["fat free mass","fat-free mass","ffm"]},
+ skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body & composition",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
+ body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body & composition",syn:["body cell mass","bcm"]},
+ smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body & composition",syn:["smi","skeletal muscle index"]},
+ bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body & composition",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
+ waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body & composition",syn:["waist-hip ratio","whr","ty le eo hong"]},
+ phase_angle:{n:"Phase angle",u:"°",g:"Body & composition",syn:["phase angle","whole body phase angle"]},
+ inbody_score:{n:"InBody score",u:"points",g:"Body & composition",syn:["inbody score","inbody points"]},
  /* One name, three measurements: an arm has a lean mass, a fat mass and an
     ECW ratio, all printed as "Right Arm" on the same page. */
  lean_right_arm:{n:"Lean mass, right arm",u:"kg",g:"Segmental",syn:["lean right arm"]},
@@ -604,7 +604,14 @@ const C = {
  temperature_c:{n:"Temperature",u:"°C",g:"Vitals",syn:["body temperature","nhiet do"]},
  spo2:{n:"Oxygen saturation",u:"%",g:"Vitals",syn:["do bao hoa oxy","spo2"]},
  respiratory_rate:{n:"Breathing rate",u:"/min",g:"Vitals",syn:["nhip tho","respiratory rate","rr"]},
- hip_cm:{n:"Hip",u:"cm",g:"Body",syn:["hip circumference","vong hong","vong mong"]},
+ hip_cm:{n:"Hip",u:"cm",g:"Body & composition",syn:["hip circumference","vong hong","vong mong"]},
+ /* The device's own targets. Recording the number a machine printed is
+    recording, not advising -- but they carry no reference range and never
+    will, so they show as facts on file rather than as readings missing one. */
+ target_weight:{n:"Target weight (device)",u:"kg",g:"Body & composition",fact:true,syn:["target weight","can nang muc tieu"]},
+ weight_control:{n:"Weight to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["weight control"]},
+ fat_control:{n:"Fat to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["fat control"]},
+ muscle_control:{n:"Muscle to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["muscle control"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
@@ -687,7 +694,7 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Vitals","Body","Body composition","Segmental",
+const GROUPS = ["Vitals","Body & composition","Segmental",
   "Metabolic","Lipids","Liver","Kidney","Electrolytes","Urine","Stool",
   "Blood count","Iron studies","Clotting","Thyroid","Hormones","Heart",
   "Inflammation","Immune","Serology","Infections","Tumour markers","Vitamins",
