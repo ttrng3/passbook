@@ -202,6 +202,7 @@ footer.fix b{color:var(--ink)}
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
    number rather than inventing one. */
+.onlyhere{margin-left:6px;font-size:9px;color:var(--ink-muted);vertical-align:middle}
 .inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
 .inp.bare:focus{background:var(--sunk)}
 @media print{ .cardsheet{break-inside:avoid;break-after:page} }
@@ -2465,6 +2466,9 @@ function vSettings(){
     '<button class="btn" data-tab="sheet">Open it</button></div></div>'+
     vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
+    (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
+      '<span class="dot"></span>On this device only</span>'+
+      '<div class="cap" style="margin-top:var(--s2)">'+esc(m.name)+' arrived in a copy somebody sent you. Their records stay in this browser and are left out of the sync, so they never reach the server through your account. Delete them here and they are gone from this device.</div></div>':'')+
     '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
     '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
       ["female","male"].map(x=>'<option'+(m.sex===x?" selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
@@ -3309,8 +3313,11 @@ function paintTabs(){
 }
 function paintPeople(){
   document.getElementById("people").innerHTML=S.members.map(m=>
-    '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'">'+
-    (m.id===who?'<span class="dot"></span>':'')+esc(m.name)+'</button>').join("");
+    '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'"'+
+    (isLocal(m)?' title="Kept on this device only \u2014 never uploaded"':'')+'>'+
+    (m.id===who?'<span class="dot"></span>':'')+esc(m.name)+
+    (isLocal(m)?'<span class="onlyhere" aria-label="on this device only">\u25CF</span>':'')+
+    '</button>').join("");
 }
 function render(){
   paintPeople(); paintTabs();
