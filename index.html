@@ -202,6 +202,9 @@ footer.fix b{color:var(--ink)}
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
    number rather than inventing one. */
+.inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
+.inp.bare:focus{background:var(--sunk)}
+@media print{ .cardsheet{break-inside:avoid;break-after:page} }
 details.sec>summary{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
   list-style:none;padding:var(--s3) 0;border-bottom:1px solid var(--line);
   font-size:16px;font-weight:600;color:var(--ink)}
@@ -1149,7 +1152,7 @@ function parseReport(text){
 }
 
 /* ------------------------------------------------------------- state */
-let S=null, who=null, tab="overview", detail=null, draft=null, trendCode=null;
+let S=null, who=null, tab="today", detail=null, draft=null, trendCode=null;
 
 let _sn=0;
 function seed(){
@@ -1161,7 +1164,7 @@ function seed(){
     refHigh:refHigh===null?null:toCanonical(refHigh,code,unit),
     refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
     origin:"",sample:true});
-  return {v:2, members:[
+  return {v:2, meds:[], allergies:[], conditions:[], shots:[], visits:[], members:[
       {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam",sample:true},
       {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam",sample:true}],
     observations:[
@@ -1192,6 +1195,38 @@ function seed(){
 }
 /* Books seeded before the ids were made stable carry examples with random ids,
    which is what let 20 become 40. Drop those; keep every real record. */
+/* ---- the other half of a health record --------------------------------
+
+   Until now this book held results and nothing else. Every intake form in
+   America asks four things before it asks for a lab value: what do you take,
+   what are you allergic to, what conditions do you have, what have you been
+   vaccinated for. A record without them is not a record a doctor can read,
+   and allergies in particular are the single highest-consequence field in
+   any chart.
+
+   Each list is the same shape -- id, memberId, its own fields, mtime -- so
+   they sync, tombstone, export and merge through the machinery that already
+   exists rather than five new special cases. The two-letter key is its
+   tombstone bucket. */
+const LISTS = [
+  ["meds",       "md", "Medicines"],
+  ["allergies",  "al", "Allergies"],
+  ["conditions", "cd", "Conditions"],
+  ["shots",      "sh", "Vaccinations"],
+  ["visits",     "vs", "Visits"]
+];
+function listOf(key, mid){
+  return (S[key]||[]).filter(x=>x.memberId===mid)
+    .sort((a,b)=>String(b.date||b.since||"").localeCompare(String(a.date||a.since||"")));
+}
+/* Blood group is a reading like any other, so it is not stored twice -- the
+   card reads it back out of the record. */
+function bloodOf(mid){
+  const g=latest(mid).find(o=>o.code==="blood_group_abo"),
+        r=latest(mid).find(o=>o.code==="rh_factor");
+  if(!g && !r) return "";
+  return [(g&&g.valueRaw)||"", (r&&r.valueRaw)||""].filter(Boolean).join(" ");
+}
 function isSample(x){ return !!(x && x.sample); }
 function repairLegacy(p){
   const legacy = (p.observations||[]).some(o=>isSample(o) && String(o.id).indexOf("smp-")!==0)
@@ -1249,6 +1284,7 @@ function migrate(p){
     for(const from in moved) delete cc[from];
     p.customCodes = cc;
   }
+  LISTS.forEach(l=>{ if(!Array.isArray(p[l[0]])) p[l[0]] = []; });
   p.v = 2; return p;
 }
 let warned=false;
@@ -1259,7 +1295,8 @@ function save(){
 }
 const TEXT_KEY="famrec-text";
 function bigText(){ try{ return localStorage.getItem(TEXT_KEY)==="large"; }catch(e){ return false; } }
-function applyText(){ try{ document.body.setAttribute("data-text", bigText()?"large":"normal"); }catch(e){} }
+function applyText(){ try{ document.body.setAttribute("data-text", (bigText()||simple())?"large":"normal");
+  document.body.setAttribute("data-simple", simple()?"on":"off"); }catch(e){} }
 function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actions||[]).some(a=>a.sample); }
 
 /* --------------------------------------------------- attachments */
@@ -1450,7 +1487,143 @@ function obsCard(o){
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
     '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
     '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
+      (agoText(o.observedAt)?' · '+esc(agoText(o.observedAt)):'')+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
+}
+
+/* ---- how long ago, stated as a fact and never as advice ---------------
+
+   "Last measured 14 months ago" is arithmetic. "You are due for a lipid
+   panel" is a recommendation, and a recommendation is the one thing this
+   record does not make. The difference is the whole reason this is safe to
+   ship without a clinician: it reports the gap and lets the person and
+   their doctor decide what it means. */
+function monthsSince(iso){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||""))) return null;
+  const d=new Date(iso+"T00:00:00"); if(isNaN(d)) return null;
+  return Math.max(0, Math.round((Date.now()-d.getTime())/(1000*60*60*24*30.44)));
+}
+function agoText(iso){
+  const n=monthsSince(iso);
+  if(n===null) return "";
+  if(n<1)  return "this month";
+  if(n<2)  return "last month";
+  if(n<24) return n+" months ago";
+  const y=Math.floor(n/12), r=n%12;
+  return y+" year"+(y>1?"s":"")+(r?" "+r+" months":"")+" ago";
+}
+
+/* ---- simple mode ------------------------------------------------------
+
+   Not a different app: the same record with less of it on screen. Core
+   metrics only, the archive hidden, type a step up, and three tabs instead
+   of six. Per device and never per account, because the person who needs it
+   is not always the person who set it up. */
+const SIMPLE_KEY="famrec-simple";
+function simple(){ try{ return localStorage.getItem(SIMPLE_KEY)==="on"; }catch(e){ return false; } }
+function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
+  applyText(); render(); }
+
+/* ---- the emergency card ------------------------------------------------
+
+   The highest-value page in the book and the cheapest to build, because
+   everything on it is already stored. In an emergency department nobody
+   reads a trend chart: they ask what you take, what you react to, what you
+   have, and who to call. One page, printable, readable at arm's length.
+
+   It deliberately says nothing clinical. It is a transcript of what the
+   person has told it, which is exactly what makes it safe to hand over. */
+
+const FIELDS = {
+  meds:       [["name","Medicine"],["dose","Dose"],["freq","How often"],["since","Started"],["note","Note"]],
+  allergies:  [["what","Allergic to"],["reaction","What happens"],["severity","How bad"],["note","Note"]],
+  conditions: [["name","Condition"],["since","Since"],["note","Note"]],
+  shots:      [["name","Vaccination"],["date","Date"],["note","Note"]],
+  visits:     [["date","Date"],["who","Doctor"],["place","Where"],["why","Why"],["said","What was said"]]
+};
+const BLANK = {
+  meds:{name:"",dose:"",freq:"",since:"",note:""},
+  allergies:{what:"",reaction:"",severity:"",note:""},
+  conditions:{name:"",since:"",note:""},
+  shots:{name:"",date:"",note:""},
+  visits:{date:today(),who:"",place:"",why:"",said:""}
+};
+
+function listRows(key, mid){
+  const rows = listOf(key, mid), F = FIELDS[key];
+  if(!rows.length) return '<div class="cap" style="padding:var(--s3) 0">Nothing written down yet.</div>';
+  return '<div class="tw"><table><thead><tr>'+F.map(f=>'<th>'+esc(f[1])+'</th>').join("")+
+    '<th style="width:1%"></th></tr></thead><tbody>'+
+    rows.map(r=>'<tr>'+F.map(f=>'<td'+(f[0]==="date"||f[0]==="since"?' class="n"':'')+'>'+
+        '<input class="inp bare" data-lk="'+key+'" data-lid="'+esc(r.id)+'" data-lf="'+f[0]+'" value="'+esc(r[f[0]]||"")+'" placeholder="&mdash;"></td>').join("")+
+      '<td><button class="btn sm warn" data-ldel="'+key+'|'+esc(r.id)+'">Remove</button></td></tr>').join("")+
+    '</tbody></table></div>';
+}
+
+function vCard(){
+  const m = person(who), blood = bloodOf(m.id);
+  const al = listOf("allergies", m.id), md = listOf("meds", m.id), cd = listOf("conditions", m.id);
+  const age = ageOf(m);
+
+  let h = '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
+    '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
+    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div>'+
+    '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
+
+  /* the card itself, styled to print on its own page */
+  h += '<div class="card cardsheet" style="margin-bottom:var(--s5)">'+
+    '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Emergency information</div>'+
+      '<h2 style="margin:var(--s1) 0 0">'+esc(m.name)+'</h2>'+
+      '<div class="cap">'+(m.dob?esc(m.dob)+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
+        (m.sex?" \u00b7 "+esc(m.sex):"")+'</div></div>'+
+      (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">Blood group</div>'+
+        '<div style="font-size:30px;font-weight:600;line-height:1.1">'+esc(blood)+'</div></div>':'')+
+    '</div>'+
+    '<div class="grid g240" style="margin-top:var(--s4)">'+
+      '<div><div class="kick" style="color:var(--red-ink)">Allergies</div>'+
+        (al.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+al.map(a=>
+            '<li><b>'+esc(a.what)+'</b>'+(a.reaction?' \u2014 '+esc(a.reaction):"")+
+            (a.severity?' ('+esc(a.severity)+')':"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded. If that is right, say so below &mdash; blank reads as unknown to a stranger.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Medicines</div>'+
+        (md.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+md.filter(x=>!x.stopped).map(x=>
+            '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Conditions</div>'+
+        (cd.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+cd.map(c=>
+            '<li>'+esc(c.name)+(c.since?' (since '+esc(c.since)+')':"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">In an emergency, call</div>'+
+        (m.ecName ? '<p style="margin:var(--s2) 0 0"><b>'+esc(m.ecName)+'</b>'+(m.ecRel?" ("+esc(m.ecRel)+")":"")+
+            (m.ecPhone?'<br>'+esc(m.ecPhone):"")+'</p>'
+          : '<p class="cap" style="margin-top:var(--s2)">No contact set.</p>')+
+        (m.insurer?'<p class="cap" style="margin-top:var(--s2)">'+esc(m.insurer)+(m.policy?" \u00b7 "+esc(m.policy):"")+'</p>':"")+'</div>'+
+    '</div>'+
+    '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
+      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+today()+'.</p>'+
+  '</div>';
+
+  /* who to call, and the insurer -- edited in place */
+  const pf = (f,label,ph) => '<div><label class="fl">'+esc(label)+'</label>'+
+    '<input class="inp" data-mf="'+f+'" data-mid="'+esc(m.id)+'" value="'+esc(m[f]||"")+'" placeholder="'+esc(ph||"")+'"></div>';
+  h += '<details class="sec"><summary><span>Emergency contact and insurance</span></summary>'+
+    '<div class="card" style="margin-top:var(--s3)"><div class="grid g180">'+
+      pf("ecName","Who to call")+pf("ecRel","Relationship","daughter, son, spouse")+
+      pf("ecPhone","Their phone")+pf("phone","This person\u2019s phone")+
+      pf("insurer","Insurance")+pf("policy","Member or policy number")+
+    '</div></div></details>';
+
+  /* the five lists */
+  LISTS.forEach(l=>{
+    const key=l[0], title=l[2], n=listOf(key,m.id).length;
+    h += '<details class="sec" '+(key==="allergies"||key==="meds"?"open":"")+'>'+
+      '<summary><span>'+esc(title)+'</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+n+'</span></span></summary>'+
+      '<div class="card" style="margin-top:var(--s3)">'+listRows(key, m.id)+
+      '<button class="btn" data-ladd="'+key+'" style="margin-top:var(--s3)">Add a row</button></div></details>';
+  });
+  return h;
 }
 
 /* ============================================================== views */
@@ -1545,6 +1718,73 @@ function pairCard(ca, cb, label, L){
       (half?' <span class="badge st-unknown"><span class="dot"></span>'+esc(a?meta(cb).n:meta(ca).n)+' not measured</span>':'')+'</div>'+
     '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt||"no date")+'</div></button>';
 }
+/* ---- Today ------------------------------------------------------------
+
+   The book used to open on the full record, which is the least useful
+   screen to land on: it answers "what do I have" when the question is
+   "what changed". One card, three answers, one button. */
+function vToday(){
+  const m=person(who), L=latest(m.id);
+  const flagged = L.filter(o=>{ const st=statusOf(o); return st==="act"||st==="discuss"||st==="watch"; })
+                   .sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]);
+  const newest = obsOf(m.id).map(o=>o.observedAt).filter(Boolean).sort().pop() || "";
+  const crossings = [];
+  [...new Set(obsOf(m.id).map(o=>o.code))].forEach(code=>{
+    const pts=anySeries(m.id,code); if(pts.length<2) return;
+    const a=statusOf(pts[pts.length-2]), b=statusOf(pts[pts.length-1]);
+    if(a!==b && RANK[b]<RANK[a]) crossings.push({code:code, from:a, to:b, o:pts[pts.length-1]});
+  });
+  const gaps = CORE.filter(c=>!L.some(o=>o.code===c));
+  const stale = CORE.map(c=>{ const o=L.find(x=>x.code===c); const n=o?monthsSince(o.observedAt):null;
+      return (n!==null && n>=12) ? {code:c,o:o,n:n} : null; }).filter(Boolean)
+    .sort((a,b)=>b.n-a.n);
+
+  let h='<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)">'+
+    '<h2>'+esc(m.name)+'</h2>'+
+    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>';
+
+  if(!obsOf(m.id).length)
+    return h+'<div class="empty"><b>Nothing on file yet</b>Photograph a lab report or a health check and it will be read into this book.</div>';
+
+  h+='<div class="card" style="margin-bottom:var(--s4)">'+
+    '<div class="kick" style="color:var(--ink-muted)">Where things stand</div>'+
+    '<p style="margin-top:var(--s2)">'+
+      '<b>'+L.length+'</b> measurement'+(L.length===1?"":"s")+' on file'+
+      (newest?', the newest from <b>'+esc(newest)+'</b> ('+esc(agoText(newest))+')':"")+'. '+
+      (flagged.length
+        ? '<b>'+flagged.length+'</b> sit'+(flagged.length===1?"s":"")+' outside or near the range printed on its own report.'
+        : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
+    '</p></div>';
+
+  if(crossings.length)
+    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Changed since the report before</div>'+
+      '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+crossings.map(c=>
+        '<li><b>'+esc(meta(c.code).n)+'</b> went from <i>'+esc(ST[c.from]).toLowerCase()+'</i> to <i>'+
+        esc(ST[c.to]).toLowerCase()+'</i> \u2014 '+esc(c.o.valueRaw||fmt(c.o.value))+' '+esc(c.o.unit||"")+
+        ' on '+esc(c.o.observedAt||"an undated report")+'</li>').join("")+'</ul></div>';
+
+  if(flagged.length)
+    h+='<div class="sec"><h3>Worth a look</h3><div class="grid g240">'+
+      flagged.slice(0,6).map(obsCard).join("")+'</div></div>';
+
+  if(stale.length && !simple())
+    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Not measured in over a year</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+stale.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">How long it has been, and nothing more. Whether any of it needs repeating is a conversation with a doctor, not a judgement this book makes.</div>'+
+      '<div class="tw" style="margin-top:var(--s3)"><table><tbody>'+stale.map(x=>
+        '<tr><td>'+esc(meta(x.code).n)+'</td><td class="n cap">'+esc(agoText(x.o.observedAt))+'</td>'+
+        '<td class="n">'+esc(x.o.valueRaw||fmt(x.o.value))+' '+esc(x.o.unit||"")+'</td></tr>').join("")+
+      '</tbody></table></div></details>';
+
+  if(gaps.length && !simple())
+    h+='<details class="sec" style="margin-top:var(--s3)"><summary><span>Never measured</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+gaps.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">On the standard check-up list and never on any report you have uploaded. A test nobody has done is invisible otherwise.</div>'+
+      '<p style="margin-top:var(--s2)">'+gaps.map(c=>esc(meta(c).n)).join(" \u00b7 ")+'</p></details>';
+
+  return h;
+}
+
 function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
@@ -1993,24 +2233,96 @@ function vActions(){
   if(done.length) h+='<div class="sec"><h2>Done</h2>'+done.map(a=>aRow(a,L)).join("")+'</div>';
   return h;
 }
+/* The Leverage Graph, as the original blueprint defined it: for each item,
+   count how many of THIS person's flagged results it touches, and sort by
+   the worst status first, the count second. It is a join and a COUNT -- the
+   judgement about what to do is still the person's and their doctor's, and
+   the items are ones they wrote themselves. Nothing here is seeded advice. */
+function leverage(a, L){
+  return (a.codes||[]).filter(c=>{ const o=L.find(x=>x.code===c);
+    return o && statusOf(o)!=="in_range"; }).length;
+}
 function aRow(a,L){
   const chips=(a.codes||[]).map(c=>{ const o=L.find(x=>x.code===c), st=o?statusOf(o):"unknown";
     return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(meta(c).n)+'</span>'; }).join("");
   return '<div class="card" style="margin-bottom:var(--s3);padding:var(--s4)"><div class="row" style="align-items:flex-start;flex-wrap:nowrap">'+
     '<input type="checkbox" class="ck" data-act="'+esc(a.id)+'"'+(a.done?" checked":"")+' aria-label="Mark done">'+
     '<div style="flex:1;min-width:0"><div'+(a.done?' class="muted" style="text-decoration:line-through"':'')+'>'+esc(a.title)+'</div>'+
-    (chips?'<div class="row" style="margin-top:var(--s2)">'+chips+'</div>':'')+'</div>'+
+    (chips?'<div class="row" style="margin-top:var(--s2)">'+chips+'</div>':'')+
+    (leverage(a,L)>1?'<div class="cap" style="margin-top:var(--s2)">Covers <b>'+leverage(a,L)+'</b> of the results currently flagged</div>':'')+'</div>'+
     '<button class="btn sm warn" data-dela="'+esc(a.id)+'">Delete</button></div></div>';
+}
+
+/* ---- the sheet you take to the appointment ----------------------------
+
+   A US visit is about twelve minutes and the doctor has not seen any of
+   this. One page: who you are, what you take, what you react to, what is
+   flagged and what changed, and the questions you wrote. No interpretation
+   and no advice -- it is a transcript of the record, laid out so somebody
+   can read it in ninety seconds. */
+function vSheet(){
+  const m=person(who), L=latest(m.id);
+  const flagged=L.filter(o=>statusOf(o)!=="in_range" && !meta(o.code).fact)
+                 .sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]);
+  const md=listOf("meds",m.id).filter(x=>!x.stopped), al=listOf("allergies",m.id),
+        cd=listOf("conditions",m.id), qs=S.actions.filter(a=>a.memberId===m.id&&!a.done);
+  const labs=[...new Set(obsOf(m.id).map(o=>(o.source||"").trim()).filter(Boolean))];
+  const line = o => '<tr><td>'+esc(meta(o.code).n)+'</td>'+
+    '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit||meta(o.code).u)+'</td>'+
+    '<td class="cap">'+esc(o.refLabel||o.refText||"no range on report")+'</td>'+
+    '<td>'+esc(ST[statusOf(o)])+'</td>'+
+    '<td class="cap">'+esc(o.observedAt||"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
+
+  let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
+    '<h2>Sheet for the appointment</h2>'+
+    '<button class="btn pri" id="printSheet" style="font-size:16px;padding:12px 20px">Print it</button></div>'+
+    '<div class="cap" style="margin-bottom:var(--s4)">Everything a doctor who has never met you would ask for, on one page, in the order they ask.</div>';
+
+  h+='<div class="card cardsheet">'+
+    '<h2 style="margin:0">'+esc(m.name)+'</h2>'+
+    '<div class="cap">'+(m.dob?esc(m.dob):"date of birth not set")+
+      (ageOf(m)!==null?" \u00b7 "+ageOf(m)+" years":"")+(m.sex?" \u00b7 "+esc(m.sex):"")+
+      (bloodOf(m.id)?" \u00b7 blood group "+esc(bloodOf(m.id)):"")+'</div>'+
+
+    '<h3>Medicines</h3>'+(md.length?'<ul style="margin:0;padding-left:18px">'+md.map(x=>
+      '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded.</p>')+
+
+    '<h3>Allergies</h3>'+(al.length?'<ul style="margin:0;padding-left:18px">'+al.map(a=>
+      '<li><b>'+esc(a.what)+'</b>'+(a.reaction?" \u2014 "+esc(a.reaction):"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded \u2014 blank means unrecorded, not none.</p>')+
+
+    '<h3>Conditions</h3>'+(cd.length?'<ul style="margin:0;padding-left:18px">'+cd.map(c=>
+      '<li>'+esc(c.name)+(c.since?" (since "+esc(c.since)+")":"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded.</p>')+
+
+    '<h3>Results outside or near their range</h3>'+
+    (flagged.length?'<div class="tw"><table><thead><tr><th>Test</th><th class="n">Result</th>'+
+      '<th>Range on that report</th><th>Status</th><th>When and where</th></tr></thead><tbody>'+
+      flagged.map(line).join("")+'</tbody></table></div>'
+      :'<p class="cap">Every result on file sits inside the range printed on its own report.</p>')+
+
+    (qs.length?'<h3>What I wanted to ask</h3><ul style="margin:0;padding-left:18px">'+
+      qs.map(a=>'<li>'+esc(a.title)+'</li>').join("")+'</ul>':'')+
+
+    '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
+      L.length+' measurements on file'+(labs.length>1?' from '+labs.length+' laboratories ('+esc(labs.join(", "))+')':"")+
+      '. Each result is shown against the range printed on its own report, not against a common one. '+
+      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+today()+'.</p>'+
+  '</div>';
+  return h;
 }
 
 /* -------------------------------------------------------- hand-off */
 function exportPayload(memberId){
   const mem = memberId ? S.members.filter(m=>m.id===memberId) : S.members;
   const ids = mem.map(m=>m.id);
-  return {kind:"vitals-journal", v:2, exported:today(),
+  const out = {kind:"vitals-journal", v:2, exported:today(),
     members:mem,
     observations:S.observations.filter(o=>ids.indexOf(o.memberId)>=0),
     actions:S.actions.filter(a=>ids.indexOf(a.memberId)>=0)};
+  LISTS.forEach(l=>{ out[l[0]] = (S[l[0]]||[]).filter(x=>ids.indexOf(x.memberId)>=0); });
+  return out;
 }
 function mergeIn(p, label){
   if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Vitals Journal file");
@@ -2022,7 +2334,13 @@ function mergeIn(p, label){
     o.origin = label || ("imported "+today()); o.sample=false; S.observations.push(o); haveO.add(o.id); addedO++; });
   const haveA=new Set(S.actions.map(a=>a.id));
   (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; S.actions.push(a); haveA.add(a.id); addedA++; } });
-  return {addedM, addedO, addedA, dupO};
+  let addedL=0;
+  LISTS.forEach(l=>{
+    S[l[0]] = S[l[0]] || [];
+    const have = new Set(S[l[0]].map(x=>x.id));
+    (p[l[0]]||[]).forEach(x=>{ if(!have.has(x.id)){ x.sample=false; S[l[0]].push(x); have.add(x.id); addedL++; } });
+  });
+  return {addedM, addedO, addedA, dupO, addedL};
 }
 let pendingEmail="", codeSent=false;
 function syncCard(){
@@ -2125,7 +2443,17 @@ function vHandoff(){
 
 /* -------------------------------------------------------- settings */
 function vSettings(){
-  let h=vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
+  let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+    '<div><h3 style="margin:0">Simple mode</h3>'+
+    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
+    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
+    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
+      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
+    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+    '<div><h3 style="margin:0">Sheet for an appointment</h3>'+
+    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">One printable page: medicines, allergies, conditions, whatever is flagged, and the questions you wrote.</div></div>'+
+    '<button class="btn" data-tab="sheet">Open it</button></div></div>'+
+    vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
     '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
     '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
@@ -2321,7 +2649,7 @@ function syncMerge(a, b){
                 a:uniq((ta.a||[]).concat(tb.a||[])),
                 m:uniq((ta.m||[]).concat(tb.m||[])),
                 p:uniq((ta.p||[]).concat(tb.p||[]))};
-  return {v:2,
+  const out = {v:2,
     members:      pickById(a.members,      b.members,      tomb.m),
     observations: pickById(a.observations, b.observations, tomb.o),
     actions:      pickById(a.actions,      b.actions,      tomb.a),
@@ -2329,9 +2657,15 @@ function syncMerge(a, b){
     customCodes:  Object.assign({}, b.customCodes||{}, a.customCodes||{}),
     panel:        uniq((a.panel||[]).concat(b.panel||[])).filter(c=>tomb.p.indexOf(c)<0),
     tomb:tomb};
+  LISTS.forEach(l=>{
+    tomb[l[1]] = uniq((ta[l[1]]||[]).concat(tb[l[1]]||[]));
+    out[l[0]] = pickById(a[l[0]], b[l[0]], tomb[l[1]]);
+  });
+  return out;
 }
 function tombstone(kind, id){
   S.tomb = S.tomb || {o:[],a:[],m:[]};
+  S.tomb[kind] = S.tomb[kind] || [];
   if(S.tomb[kind].indexOf(id)<0) S.tomb[kind].push(id);
 }
 function touch(rec){ if(rec) rec.mtime = Date.now(); return rec; }
@@ -2919,9 +3253,13 @@ function docGallery(){
    report" was both a tab and a button on the same screen, which is one way of
    doing a thing too many; it is a screen you enter and leave, not a place. */
 function tabList(){
-  const t=[];
+  /* Simple mode is three tabs, not six. The record does not get smaller;
+     the number of decisions on screen does. */
+  if(simple()) return [["today","Today"],["record","Results"],["card","Card"]];
+  const t=[["today","Today"]];
   if((S.members||[]).length>1) t.push(["overview","Family"]);
-  t.push(["record","Results"],["trends","Trends"],["actions","Questions"],["settings","Settings"]);
+  t.push(["record","Results"],["trends","Trends"],["card","Card"],
+         ["actions","Questions"],["settings","Settings"]);
   return t;
 }
 function paintTabs(){
@@ -2939,7 +3277,8 @@ function paintPeople(){
 function render(){
   paintPeople(); paintTabs();
   document.getElementById("view").innerHTML =
-    tab==="overview"?vOverview(): tab==="record"?vRecord(): tab==="trends"?vTrends():
+    tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
+    tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
     tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings();
   drawer();
   if(tab==="trends") wireChart();
@@ -2962,7 +3301,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -3007,6 +3346,16 @@ document.addEventListener("click", async e=>{
       '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
       '</div>'; return; }
   if(t.dataset.trend){ trendCode=t.dataset.trend; tab="trends"; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.ladd){ const k=t.dataset.ladd;
+    S[k]=S[k]||[]; S[k].push(Object.assign({id:uid(),memberId:who,sample:false,mtime:Date.now()}, BLANK[k]));
+    save(); render(); return; }
+  if(t.dataset.ldel){ const [k,id]=t.dataset.ldel.split("|");
+    const key = (LISTS.find(l=>l[0]===k)||[])[1];
+    S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
+    save(); render(); return; }
+  if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
+  if(t.id==="simpleOn"){ setSimple(true); return; }
+  if(t.id==="simpleOff"){ setSimple(false); return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
     draft.rows.push({code:c,value:"",unit:isQual(c)?"":meta(c).u,refLow:"",refHigh:"",refLabel:"",
       refText:isQual(c)?"Negative":"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
@@ -3215,6 +3564,10 @@ document.addEventListener("input", e=>{
     }
     r.confirmed = true;  /* a value you just typed is one you have looked at */
     return;
+  }
+  if(el.dataset && el.dataset.lk!==undefined){
+    const row=(S[el.dataset.lk]||[]).find(x=>x.id===el.dataset.lid); if(!row) return;
+    row[el.dataset.lf]=el.value; touch(row); save(); return;
   }
   if(el.dataset && el.dataset.mf){ const m=person(el.dataset.mid); if(!m) return;
     m[el.dataset.mf]=el.value; touch(m); save(); paintPeople(); return; }
