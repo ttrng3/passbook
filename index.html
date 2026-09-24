@@ -242,7 +242,7 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
   <div class="top-in">
     <h1>Vitals Journal</h1>
     <div class="people" id="people"></div>
-    <span class="badge st-in_range" title="No server, no account. Records stay in this browser."><span class="dot"></span>On this device</span>
+    <span class="badge" id="syncBadge"></span>
   </div>
 </header>
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
@@ -3311,6 +3311,27 @@ function paintTabs(){
     '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+esc(t[1])+
     (c[t[0]]?'<span class="c">'+c[t[0]]+'</span>':'')+'</button>').join("");
 }
+/* The header badge said "On this device \u2014 no server, no account" on every
+   screen, in green, from before sync existed. It was the most visible of the
+   four places that claim had gone stale, and the only one a person sees
+   without scrolling. It now reports the state the book is actually in. */
+function paintSyncBadge(){
+  const el=document.getElementById("syncBadge"); if(!el) return;
+  let cls, txt, tip;
+  if(IS_ARTIFACT){
+    cls="st-unknown"; txt="Preview copy";
+    tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/famrec for the working one.";
+  } else if(AUTH && AUTH.email){
+    cls="st-in_range"; txt="Syncing";
+    tip="Signed in as "+AUTH.email+". Your own records sync to a row only this account can read. Records merged from someone else stay on this device.";
+  } else {
+    cls="st-watch"; txt="This device only";
+    tip="Not signed in, so nothing syncs and nothing leaves this browser. Reading a report still sends that page to be read \u2014 see Settings.";
+  }
+  el.className="badge "+cls;
+  el.title=tip;
+  el.innerHTML='<span class="dot"></span>'+esc(txt);
+}
 function paintPeople(){
   document.getElementById("people").innerHTML=S.members.map(m=>
     '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'"'+
@@ -3320,7 +3341,7 @@ function paintPeople(){
     '</button>').join("");
 }
 function render(){
-  paintPeople(); paintTabs();
+  paintPeople(); paintTabs(); paintSyncBadge();
   document.getElementById("view").innerHTML =
     tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
     tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
