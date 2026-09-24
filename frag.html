@@ -1,4 +1,4 @@
-<title>Vitals Journal</title>
+<title>Passbook</title>
 <style>
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --sunk:#F2F2F7; --line:#E5E5EA; --line-soft:#EFEFF2;
@@ -182,7 +182,68 @@ footer.fix b{color:var(--ink)}
   h1{font-size:24px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
   .top-in h1{font-size:17px; width:100%; margin-bottom:var(--s1)}
 }
+/* Progress. The bar is only ever drawn from something measured: bytes sent,
+   or pages finished. Where nothing is measurable it animates without a
+   number rather than inventing one. */
+/* Grouped inset lists, the way iOS Settings is laid out: a rounded card per
+   group, rows divided by a hairline that starts where the text starts, the
+   group's name in small caps above it. It is the most familiar form there
+   is for a list of things you can edit, which is the whole argument for
+   using it -- an unfamiliar layout costs an older person far more than it
+   costs anyone else.
+
+   Every row clears 48px. Feedback is on press, not on release. */
+.ghdr{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;
+  color:var(--ink-muted);margin:var(--s5) 0 var(--s2);padding-inline:var(--s4)}
+.glist{background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);overflow:hidden}
+.gentry+.gentry,.gadd{border-top:1px solid var(--line-soft)}
+.gentry>summary{display:flex;align-items:center;gap:var(--s3);padding:var(--s4);
+  min-height:48px;cursor:pointer;list-style:none;font-size:17px;color:var(--ink);
+  transition:background 90ms ease}
+.gentry>summary::-webkit-details-marker{display:none}
+.gentry>summary:active{background:var(--sunk)}
+.gentry>summary .sub{display:block;font-size:14px;color:var(--ink-muted);margin-top:2px}
+.gentry>summary .chev{margin-left:auto;flex:none;width:0;height:0;
+  border-left:6px solid var(--ink-muted);border-top:5px solid transparent;
+  border-bottom:5px solid transparent;transition:transform 160ms ease}
+.gentry[open]>summary .chev{transform:rotate(90deg)}
+.gbody{padding:0 var(--s4) var(--s4);background:var(--sunk)}
+.gfield{display:grid;grid-template-columns:minmax(7.5rem,34%) 1fr;gap:var(--s3);
+  align-items:center;padding:var(--s3) 0;min-height:48px}
+.gfield+.gfield{border-top:1px solid var(--line-soft)}
+.gfield>span{font-size:15px;color:var(--ink-body)}
+.gfield .inp{min-height:44px;font-size:17px;background:var(--card)}
+.gadd{display:block;width:100%;text-align:left;background:none;border:0;
+  padding:var(--s4);min-height:48px;font:inherit;font-size:17px;font-weight:600;
+  color:var(--blue-ink);cursor:pointer;transition:background 90ms ease}
+.gadd:active{background:var(--sunk)}
+.gempty{padding:var(--s4);color:var(--ink-muted);font-size:15px}
+@media (max-width:520px){ .gfield{grid-template-columns:1fr;gap:var(--s1);align-items:stretch} }
+@media (prefers-reduced-motion:reduce){ .gentry>summary,.gadd,.gentry>summary .chev{transition:none} }
+.onlyhere{margin-left:6px;font-size:9px;color:var(--ink-muted);vertical-align:middle}
+.inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
+.inp.bare:focus{background:var(--sunk)}
+@media print{ .cardsheet{break-inside:avoid;break-after:page} }
+details.sec>summary{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
+  list-style:none;padding:var(--s3) 0;border-bottom:1px solid var(--line);
+  font-size:16px;font-weight:600;color:var(--ink)}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary:before{content:"";width:0;height:0;flex:none;
+  border-left:5px solid var(--ink-muted);border-top:4px solid transparent;
+  border-bottom:4px solid transparent;transition:transform .15s ease}
+details.sec[open]>summary:before{transform:rotate(90deg)}
+.pbar{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;margin:var(--s2) 0}
+.pbar>i{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .35s ease}
+.pbar.ind>i{width:34%;animation:pslide 1.15s ease-in-out infinite}
+@keyframes pslide{0%{margin-left:-34%}100%{margin-left:100%}}
+.stg{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s3)}
+.stg b{font-size:12px;font-weight:600;border-radius:var(--r-pill);padding:2px 8px;
+  background:var(--sunk);color:var(--ink-muted);display:inline-flex;align-items:center;gap:6px}
+.stg b:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.stg b.on{background:var(--blue-bg);color:var(--blue-ink)}
+.stg b.did{background:var(--green-bg);color:var(--green-ink)}
 @media print{
+  .pbar,.stg{display:none!important}
   body{background:#FFFFFF; font-size:11pt}
   :root{--ink-muted:#222; --ink-body:#222; --bg:#FFFFFF; --line:#BBB; --line-soft:#DDD}
   .card,.tile,.callout{background:#FFFFFF!important; border:1px solid #BBB; break-inside:avoid}
@@ -196,15 +257,15 @@ footer.fix b{color:var(--ink)}
 
 <header class="top">
   <div class="top-in">
-    <h1>Vitals Journal</h1>
+    <h1>Passbook</h1>
     <div class="people" id="people"></div>
-    <span class="badge st-in_range" title="No server, no account. Records stay in this browser."><span class="dot"></span>On this device</span>
+    <span class="badge" id="syncBadge"></span>
   </div>
 </header>
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
 <div id="dropveil" hidden><div>Drop the report here<small>A PDF has its values read out of it. A photo is attached to check against.</small></div></div>
 <input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" multiple hidden>
-<footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
+<footer class="fix"><b>For reference, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
 
 <script>
 "use strict";
@@ -224,7 +285,42 @@ footer.fix b{color:var(--ink)}
      6. Under-18 and pregnancy are flagged as "adult ranges do not apply".
    =========================================================================== */
 
-const LS = "vitals-journal-v2", LS_OLD = "vitals-journal-v1";
+/* ---- names that must never be renamed with the product ----------------
+
+   The page is called Passbook as of 2026-09-24. These are not names; they
+   are addresses, and changing one is a data-loss event with no error:
+
+     LS / LS_OLD / the IndexedDB name  -- the records and the report images
+       already written in this browser. A new key is an empty book.
+     famrec-auth / -text / -simple / -readms -- the sign-in, the text size,
+       simple mode and the measured read times on this device.
+     kind:"vitals-journal" -- stamped inside every hand-off file already
+       sent. Change it and files exported before today stop importing.
+     famrec_state -- the live Postgres table holding the synced book.
+
+   Rename any of these and yesterday's data is still there and unreachable,
+   which is the worst shape a bug can take. They stay as they are. */
+const LS = "passbook-v1";
+/* Read in order, newest first. A key is an address: the records written
+   yesterday are under the old one, and a rename that forgets them is a
+   data-loss event that raises no error and simply shows an empty book. So
+   nothing is renamed without a path from the old address to the new. */
+const LS_LEGACY = ["vitals-journal-v2", "vitals-journal-v1"];
+let _cameFrom = null;
+/* A preference is cheap to lose but annoying, so it copies forward once and
+   the old key is dropped in the same breath. */
+function pref(key, legacy){
+  try{
+    let v = localStorage.getItem(key);
+    if(v === null){
+      for(const old of legacy){
+        const o = localStorage.getItem(old);
+        if(o !== null){ localStorage.setItem(key, o); localStorage.removeItem(old); v = o; break; }
+      }
+    }
+    return v;
+  }catch(e){ return null; }
+}
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -233,17 +329,17 @@ const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
    u  = canonical unit · alt = [displayUnit, multiply-by-this-to-reach-canonical]
    syn = names seen on Vietnamese and English reports, lowercased, accent-free */
 const C = {
- glucose_fasting:{n:"Glucose (fasting)",u:"mmol/L",g:"Metabolic",alt:[["mg/dL",1/18.016]],syn:["glucose","duong huyet","glucose mau","glu","duong mau","blood glucose","fasting glucose"]},
- hba1c_dcct:{n:"HbA1c",u:"%",g:"Metabolic",syn:["hba1c","hb a1c","a1c","hemoglobin a1c","huyet sac to a1c"]},
- hba1c_ifcc:{n:"HbA1c (IFCC)",u:"mmol/mol",g:"Metabolic",syn:["hba1c ifcc"]},
- insulin_fasting:{n:"Insulin (fasting)",u:"pmol/L",g:"Metabolic",alt:[["µIU/mL",6.945]],syn:["insulin","insulin doi"]},
- cholesterol_total:{n:"Cholesterol, total",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["cholesterol toan phan","cholesterol total","cholesterol tp","total cholesterol","cholesterol","chol"]},
- ldl_c:{n:"LDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["ldl","ldl-c","ldl c","ldl cholesterol","ldl - cholesterol"]},
- hdl_c:{n:"HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["hdl","hdl-c","hdl c","hdl cholesterol","hdl - cholesterol"]},
- non_hdl_c:{n:"Non-HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["non hdl","non-hdl","non hdl-c"]},
- triglycerides:{n:"Triglycerides",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/88.57]],syn:["triglycerid","triglyceride","triglycerides","tg","trigly"]},
- apob:{n:"Apolipoprotein B",u:"g/L",g:"Lipids",syn:["apob","apo b","apolipoprotein b"]},
- lpa:{n:"Lipoprotein(a)",u:"nmol/L",g:"Lipids",syn:["lp(a)","lpa","lipoprotein a"]},
+ glucose_fasting:{n:"Glucose (fasting)",u:"mmol/L",g:"Blood sugar",alt:[["mg/dL",1/18.016]],syn:["glucose","duong huyet","glucose mau","glu","duong mau","blood glucose","fasting glucose"]},
+ hba1c_dcct:{n:"HbA1c",u:"%",g:"Blood sugar",syn:["hba1c","hb a1c","a1c","hemoglobin a1c","huyet sac to a1c"]},
+ hba1c_ifcc:{n:"HbA1c (IFCC)",u:"mmol/mol",g:"Blood sugar",syn:["hba1c ifcc"]},
+ insulin_fasting:{n:"Insulin (fasting)",u:"pmol/L",g:"Blood sugar",alt:[["µIU/mL",6.945]],syn:["insulin","insulin doi"]},
+ cholesterol_total:{n:"Cholesterol, total",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["cholesterol toan phan","cholesterol total","cholesterol tp","total cholesterol","cholesterol","chol"]},
+ ldl_c:{n:"LDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["ldl","ldl-c","ldl c","ldl cholesterol","ldl - cholesterol"]},
+ hdl_c:{n:"HDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["hdl","hdl-c","hdl c","hdl cholesterol","hdl - cholesterol"]},
+ non_hdl_c:{n:"Non-HDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["non hdl","non-hdl","non hdl-c"]},
+ triglycerides:{n:"Triglycerides",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/88.57]],syn:["triglycerid","triglyceride","triglycerides","tg","trigly"]},
+ apob:{n:"Apolipoprotein B",u:"g/L",g:"Cholesterol",syn:["apob","apo b","apolipoprotein b"]},
+ lpa:{n:"Lipoprotein(a)",u:"nmol/L",g:"Cholesterol",syn:["lp(a)","lpa","lipoprotein a"]},
  alt:{n:"ALT",u:"U/L",g:"Liver",syn:["alt","sgpt","alt (gpt)","gpt","alt/sgpt","alanin aminotransferase"]},
  ast:{n:"AST",u:"U/L",g:"Liver",syn:["ast","sgot","ast (got)","got","ast/sgot","aspartat aminotransferase"]},
  ggt:{n:"GGT",u:"U/L",g:"Liver",syn:["ggt","gamma gt","gamma-gt","g-gt"]},
@@ -259,13 +355,32 @@ const C = {
  egfr:{n:"eGFR",u:"mL/min/1.73m²",g:"Kidney",syn:["egfr","mlct","gfr","do loc cau than","mlct uoc tinh"]},
  uric_acid:{n:"Uric acid",u:"µmol/L",g:"Kidney",alt:[["mg/dL",59.48]],syn:["acid uric","axit uric","uric acid","ua"]},
  bun:{n:"Urea",u:"mmol/L",g:"Kidney",alt:[["mg/dL (BUN)",0.357]],syn:["ure","ure mau","urea","bun","urê"]},
- urine_protein:{n:"Urine protein",u:"g/L",g:"Kidney",syn:["protein nieu","urine protein","pro (nieu)"]},
- sodium:{n:"Sodium",u:"mmol/L",g:"Electrolytes",syn:["natri","sodium","na","na+"]},
- potassium:{n:"Potassium",u:"mmol/L",g:"Electrolytes",syn:["kali","potassium","k","k+"]},
- chloride:{n:"Chloride",u:"mmol/L",g:"Electrolytes",syn:["clo","chloride","cl","cl-"]},
- calcium:{n:"Calcium",u:"mmol/L",g:"Electrolytes",alt:[["mg/dL",0.2495]],syn:["canxi","calcium","ca","ca toan phan","calci"]},
- phosphate:{n:"Phosphate",u:"mmol/L",g:"Electrolytes",syn:["phospho","phosphate","photpho"]},
- magnesium:{n:"Magnesium",u:"mmol/L",g:"Electrolytes",syn:["magie","magnesium","mg"]},
+ urine_protein:{n:"Protein (urine)",u:"",g:"Urine",q:true,syn:["protein nieu","urine protein","pro (nieu)","dam nieu"]},
+ /* A urine dipstick prints words, not numbers: Negative, Trace, Normal, 1+.
+    q:true marks a test whose result is text -- see qualState(). These nine
+    codes match migration 0012 exactly, because the extractor resolves against
+    that table and a code here that is not there would never arrive.
+
+    Their synonyms are deliberately NOT the bare words the strip prints.
+    "Glucose", "Protein", "Bilirubin", "Blood", "Leukocytes" and "pH" already
+    name BLOOD tests above, and a urine "Negative" filed into the fasting
+    glucose series is worse than one not recorded. matchAtStart() takes the
+    specimen printed on the report and looks here first; see URINE_SYN. */
+ urine_urobilinogen:{n:"Urobilinogen (urine)",u:"",g:"Urine",q:true,syn:["urobilinogen","urobilinogen nieu","uro"]},
+ urine_blood:{n:"Blood (urine)",u:"",g:"Urine",q:true,syn:["hong cau nieu","mau trong nuoc tieu"]},
+ urine_glucose:{n:"Glucose (urine)",u:"",g:"Urine",q:true,syn:["glucose nieu","duong nieu"]},
+ urine_ketones:{n:"Ketones (urine)",u:"",g:"Urine",q:true,syn:["ketone","ketones","ceton","xeton","ceton nieu"]},
+ urine_bilirubin:{n:"Bilirubin (urine)",u:"",g:"Urine",q:true,syn:["bilirubin nieu"]},
+ urine_nitrite:{n:"Nitrite (urine)",u:"",g:"Urine",q:true,syn:["nitrite","nitrit","nitrit nieu"]},
+ urine_leukocytes:{n:"Leukocytes (urine)",u:"",g:"Urine",q:true,syn:["bach cau nieu","leukocyte esterase"]},
+ urine_specific_gravity:{n:"Specific gravity (urine)",u:"ratio",g:"Urine",syn:["ty trong","ti trong","specific gravity","sg nieu"]},
+ urine_ph:{n:"pH (urine)",u:"pH",g:"Urine",syn:["ph nieu","ph nuoc tieu"]},
+ sodium:{n:"Sodium",u:"mmol/L",g:"Salts & minerals",syn:["natri","sodium","na","na+"]},
+ potassium:{n:"Potassium",u:"mmol/L",g:"Salts & minerals",syn:["kali","potassium","k","k+"]},
+ chloride:{n:"Chloride",u:"mmol/L",g:"Salts & minerals",syn:["clo","chloride","cl","cl-"]},
+ calcium:{n:"Calcium",u:"mmol/L",g:"Salts & minerals",alt:[["mg/dL",0.2495]],syn:["canxi","calcium","ca","ca toan phan","calci"]},
+ phosphate:{n:"Phosphate",u:"mmol/L",g:"Salts & minerals",syn:["phospho","phosphate","photpho"]},
+ magnesium:{n:"Magnesium",u:"mmol/L",g:"Salts & minerals",syn:["magie","magnesium","mg"]},
  tsh:{n:"TSH",u:"mIU/L",g:"Thyroid",syn:["tsh","tsh sieu nhay"]},
  free_t4:{n:"Free T4",u:"pmol/L",g:"Thyroid",alt:[["ng/dL",12.87]],syn:["ft4","free t4","t4 tu do"]},
  free_t3:{n:"Free T3",u:"pmol/L",g:"Thyroid",alt:[["pg/mL",1.536]],syn:["ft3","free t3","t3 tu do"]},
@@ -281,49 +396,321 @@ const C = {
  neutrophils_pct:{n:"Neutrophils",u:"%",g:"Blood count",syn:["neu%","neut%","bach cau trung tinh","neutrophil","neu"]},
  lymphocytes_pct:{n:"Lymphocytes",u:"%",g:"Blood count",syn:["lym%","lymph%","bach cau lympho","lymphocyte","lym"]},
  monocytes_pct:{n:"Monocytes",u:"%",g:"Blood count",syn:["mono%","bach cau mono","monocyte","mon"]},
- eosinophils_pct:{n:"Eosinophils",u:"%",g:"Blood count",syn:["eos%","bach cau ua acid","eosinophil","eo"]},
+ eosinophils_pct:{n:"Eosinophils",u:"%",g:"Blood count",syn:["eo%","eos%","bach cau ua acid","eosinophil","eo"]},
  basophils_pct:{n:"Basophils",u:"%",g:"Blood count",syn:["baso%","bach cau ua kiem","basophil","ba"]},
+/* The differential twice: a percentage AND an absolute count, one row apart
+   on the same sheet. The "#" is the only thing telling them apart, so it is
+   part of the synonym and matchAtStart takes the longer one -- without these,
+   "NEU#  4.46  G/L" matched the synonym "neu" and 4.46 billion cells per
+   litre was filed as 4.46 percent. */
+ neutrophils_abs:{n:"Neutrophils (count)",u:"×10⁹/L",g:"Blood count",syn:["neu#","neut#","neutrophil#","so luong bach cau trung tinh"]},
+ lymphocytes_abs:{n:"Lymphocytes (count)",u:"×10⁹/L",g:"Blood count",syn:["lymph#","lym#","lymphocyte#","so luong bach cau lympho"]},
+ monocytes_abs:{n:"Monocytes (count)",u:"×10⁹/L",g:"Blood count",syn:["mono#","mon#","monocyte#","so luong bach cau mono"]},
+ eosinophils_abs:{n:"Eosinophils (count)",u:"×10⁹/L",g:"Blood count",syn:["eo#","eos#","eosinophil#"]},
+ basophils_abs:{n:"Basophils (count)",u:"×10⁹/L",g:"Blood count",syn:["baso#","ba#","basophil#"]},
+ mpv:{n:"MPV",u:"fL",g:"Blood count",syn:["mpv","the tich trung binh tieu cau"]},
+ plateletcrit:{n:"Plateletcrit",u:"%",g:"Blood count",syn:["pct","plateletcrit","the tich khoi tieu cau"]},
+ pdw:{n:"PDW",u:"fL",g:"Blood count",syn:["pdw","do phan bo kich thuoc tieu cau"]},
  crp:{n:"CRP",u:"mg/L",g:"Inflammation",syn:["crp"]},
  hscrp:{n:"hs-CRP",u:"mg/L",g:"Inflammation",syn:["hs-crp","hscrp","crp sieu nhay","hs crp"]},
  esr:{n:"ESR",u:"mm/h",g:"Inflammation",syn:["esr","mau lang","toc do mau lang","vss"]},
- hbsag:{n:"HBsAg",u:"index",g:"Serology",syn:["hbsag","hbs ag"]},
- anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Serology",syn:["anti-hbs","antihbs","anti hbs"]},
- anti_hcv:{n:"Anti-HCV",u:"index",g:"Serology",syn:["anti-hcv","anti hcv","hcv ab"]},
- anti_hav:{n:"Anti-HAV",u:"index",g:"Serology",syn:["anti-hav","anti hav"]},
- psa:{n:"PSA",u:"ng/mL",g:"Tumour markers",syn:["psa","psa toan phan","total psa"]},
- cea:{n:"CEA",u:"ng/mL",g:"Tumour markers",syn:["cea"]},
- ca19_9:{n:"CA 19-9",u:"U/mL",g:"Tumour markers",syn:["ca 19-9","ca19-9","ca19 9"]},
- afp:{n:"AFP",u:"ng/mL",g:"Tumour markers",syn:["afp"]},
- cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Tumour markers",syn:["cyfra","cyfra 21-1"]},
- scc:{n:"SCC",u:"ng/mL",g:"Tumour markers",syn:["scc"]},
+ hbsag:{n:"HBsAg",u:"index",g:"Infections",syn:["hbsag","hbs ag"]},
+ anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Infections",syn:["anti-hbs","antihbs","anti hbs"]},
+ anti_hcv:{n:"Anti-HCV",u:"index",g:"Infections",syn:["anti-hcv","anti hcv","hcv ab"]},
+ anti_hav:{n:"Anti-HAV",u:"index",g:"Infections",syn:["anti-hav","anti hav"]},
+ psa:{n:"PSA",u:"ng/mL",g:"Cancer markers",syn:["psa total","psa","psa toan phan","total psa"]},
+ cea:{n:"CEA",u:"ng/mL",g:"Cancer markers",syn:["cea"]},
+ ca19_9:{n:"CA 19-9",u:"U/mL",g:"Cancer markers",syn:["ca 19-9","ca19-9","ca19 9"]},
+ afp:{n:"AFP",u:"ng/mL",g:"Cancer markers",syn:["afp"]},
+ cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Cancer markers",syn:["cyfra","cyfra 21-1"]},
+ scc:{n:"SCC",u:"ng/mL",g:"Cancer markers",syn:["scc"]},
+ ca72_4:{n:"CA 72-4",u:"U/mL",g:"Cancer markers",syn:["ca 72-4","ca72-4","ca 72 - 4","cancer antigen 72-4"]},
  vit_d_25oh:{n:"Vitamin D (25-OH)",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.496]],syn:["vitamin d","25-oh vitamin d","25 oh vitamin d","vit d","vitamin d toan phan","25(oh)d"]},
  vit_b12:{n:"Vitamin B12",u:"pmol/L",g:"Vitamins",alt:[["pg/mL",0.738]],syn:["vitamin b12","b12","vit b12"]},
  ferritin:{n:"Ferritin",u:"µg/L",g:"Vitamins",syn:["ferritin"]},
  folate:{n:"Folate",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.266]],syn:["folate","acid folic","folic acid"]},
- bp_systolic:{n:"Blood pressure, systolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam thu","systolic","sbp","huyet ap toi da"]},
- bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
- heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vitals",syn:["mach","nhip tim","heart rate","pulse","hr"]},
- hrv_avg:{n:"HRV",u:"ms",g:"Vitals",syn:["hrv"]},
+ bp_systolic:{n:"Blood pressure, systolic",u:"mmHg",g:"Vital signs",syn:["huyet ap tam thu","systolic","sbp","huyet ap toi da"]},
+ bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vital signs",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
+ heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vital signs",syn:["mach","nhip tim","heart rate","pulse","hr"]},
+ hrv_avg:{n:"HRV",u:"ms",g:"Vital signs",syn:["hrv"]},
+ /* A health assessment reports these as words -- "Within normal limit",
+    "6/6" -- which is exactly what q:true is for. Each carries the expected
+    reading off its own report; nothing is assumed about what normal is. */
+ ecg_finding:{n:"ECG",u:"",g:"Vital signs",q:true,self:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
+ visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vital signs",q:true,self:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
+ visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vital signs",q:true,self:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
  weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
  height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
- bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the"]},
- body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat","mo co the"]},
+ bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the","body mass index"]},
+ body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
  visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
  waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
+ /* An InBody sheet: body water and its two compartments, protein and mineral
+    mass, fat and lean mass whole-body and per limb. Worth storing as series
+    because skeletal muscle falling while fat mass rises, at an unchanged
+    total weight, is the one thing this kind of sheet exists to show.
+
+    "Protein" is NOT a synonym here -- it already means a serum total protein
+    and a urine protein. The section heading is what tells them apart, and
+    that lives in the alias table, not in this list. */
+ total_body_water:{n:"Total body water",u:"L",g:"Body",syn:["total body water","tbw","tong luong nuoc co the"]},
+ intracellular_water:{n:"Water inside cells",u:"L",g:"Body",syn:["intracellular water","icw"]},
+ extracellular_water:{n:"Water outside cells",u:"L",g:"Body",syn:["extracellular water","ecw"]},
+ ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
+ protein_mass:{n:"Protein mass",u:"kg",g:"Body",syn:["protein mass"]},
+ mineral_mass:{n:"Minerals",u:"kg",g:"Body",syn:["minerals","mineral","chat khoang"]},
+ body_fat_mass:{n:"Fat mass",u:"kg",g:"Body",syn:["body fat mass","bfm","khoi luong mo"]},
+ soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body",syn:["soft lean mass","slm"]},
+ fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body",syn:["fat free mass","fat-free mass","ffm"]},
+ skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
+ body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body",syn:["body cell mass","bcm"]},
+ smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body",syn:["smi","skeletal muscle index"]},
+ bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
+ waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body",syn:["waist-hip ratio","whr","ty le eo hong"]},
+ phase_angle:{n:"Phase angle",u:"°",g:"Body",syn:["phase angle","whole body phase angle"]},
+ inbody_score:{n:"InBody score",u:"points",g:"Body",syn:["inbody score","inbody points"]},
+ /* One name, three measurements: an arm has a lean mass, a fat mass and an
+    ECW ratio, all printed as "Right Arm" on the same page. */
+ lean_right_arm:{n:"Lean mass, right arm",u:"kg",g:"Body, limb by limb",syn:["lean right arm"]},
+ lean_pct_right_arm:{n:"Lean, right arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_right_arm:{n:"Fat mass, right arm",u:"kg",g:"Body, limb by limb",syn:["fat right arm"]},
+ fat_pct_right_arm:{n:"Fat, right arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_right_arm:{n:"ECW ratio, right arm",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio right arm"]},
+ lean_left_arm:{n:"Lean mass, left arm",u:"kg",g:"Body, limb by limb",syn:["lean left arm"]},
+ lean_pct_left_arm:{n:"Lean, left arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_left_arm:{n:"Fat mass, left arm",u:"kg",g:"Body, limb by limb",syn:["fat left arm"]},
+ fat_pct_left_arm:{n:"Fat, left arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_left_arm:{n:"ECW ratio, left arm",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio left arm"]},
+ lean_trunk:{n:"Lean mass, trunk",u:"kg",g:"Body, limb by limb",syn:["lean trunk"]},
+ lean_pct_trunk:{n:"Lean, trunk (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_trunk:{n:"Fat mass, trunk",u:"kg",g:"Body, limb by limb",syn:["fat trunk"]},
+ fat_pct_trunk:{n:"Fat, trunk (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_trunk:{n:"ECW ratio, trunk",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio trunk"]},
+ lean_right_leg:{n:"Lean mass, right leg",u:"kg",g:"Body, limb by limb",syn:["lean right leg"]},
+ lean_pct_right_leg:{n:"Lean, right leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_right_leg:{n:"Fat mass, right leg",u:"kg",g:"Body, limb by limb",syn:["fat right leg"]},
+ fat_pct_right_leg:{n:"Fat, right leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_right_leg:{n:"ECW ratio, right leg",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio right leg"]},
+ lean_left_leg:{n:"Lean mass, left leg",u:"kg",g:"Body, limb by limb",syn:["lean left leg"]},
+ lean_pct_left_leg:{n:"Lean, left leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_left_leg:{n:"Fat mass, left leg",u:"kg",g:"Body, limb by limb",syn:["fat left leg"]},
+ fat_pct_left_leg:{n:"Fat, left leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_left_leg:{n:"ECW ratio, left leg",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio left leg"]},
+ /* ---- a comprehensive annual examination, seeded in advance ----------
+    Generated with migration 0016 from one shared list, so the two cannot
+    drift apart. The point is to stop discovering the panel one report at a
+    time: a person having an annual physical does not learn their panel
+    gradually, so neither should this book. Expect one or two additions a
+    year from here, not a dozen a report.
+
+    No reference range is seeded for any of them, deliberately. The range
+    that counts is the one the issuing laboratory printed beside the result
+    -- its analyser, its population -- and a table written here would quietly
+    override the lab that actually ran the test. These supply the name and
+    the slot; the standard arrives with the report. */
+ pt_sec:{n:"Prothrombin time",u:"s",g:"Clotting",syn:["pt","pt (giay)","thoi gian prothrombin","tq"]},
+ pt_pct:{n:"Prothrombin activity",u:"%",g:"Clotting",syn:["prothrombin %","pt activity","pt%","ty le prothrombin"]},
+ inr:{n:"INR",u:"ratio",g:"Clotting",syn:["chi so inr","pt-inr"]},
+ aptt_sec:{n:"APTT",u:"s",g:"Clotting",syn:["tck","thoi gian thromboplastin tung phan"]},
+ aptt_ratio:{n:"APTT ratio",u:"ratio",g:"Clotting",syn:["raptt"]},
+ fibrinogen:{n:"Fibrinogen",u:"g/L",g:"Clotting",syn:["soi huyet"]},
+ d_dimer:{n:"D-dimer",u:"mg/L",g:"Clotting",syn:["d dimer","dd"]},
+ bleeding_time:{n:"Bleeding time",u:"min",g:"Clotting",syn:["thoi gian mau chay","ts"]},
+ reticulocytes_pct:{n:"Reticulocytes",u:"%",g:"Blood count",syn:["hong cau luoi","ret%","reticulocyte"]},
+ nrbc_pct:{n:"Nucleated red cells",u:"%",g:"Blood count",syn:["nrbc","nrbc%"]},
+ blood_group_abo:{n:"Blood group",u:"",g:"Blood count",q:true,fact:true,syn:["abo","nhom mau","nhom mau abo"]},
+ rh_factor:{n:"Rh factor",u:"",g:"Blood count",q:true,fact:true,syn:["rh","rh(d)","yeu to rh"]},
+ iron_serum:{n:"Iron",u:"µmol/L",g:"Iron",syn:["fe","sat","sat huyet thanh","serum iron"]},
+ tibc:{n:"Iron binding capacity",u:"µmol/L",g:"Iron",syn:["kha nang gan sat toan phan","tibc","total iron binding capacity"]},
+ transferrin:{n:"Transferrin",u:"g/L",g:"Iron",syn:[]},
+ transferrin_sat:{n:"Transferrin saturation",u:"%",g:"Iron",syn:["do bao hoa transferrin","tsat"]},
+ haptoglobin:{n:"Haptoglobin",u:"g/L",g:"Iron",syn:[]},
+ glucose_random:{n:"Glucose (random)",u:"mmol/L",g:"Blood sugar",syn:["duong huyet bat ky","random glucose","rbs"]},
+ glucose_ogtt_2h:{n:"Glucose (2h after load)",u:"mmol/L",g:"Blood sugar",syn:["2-hour glucose","glucose 2h","nghiem phap dung nap glucose","ogtt 2h"]},
+ c_peptide:{n:"C-peptide",u:"nmol/L",g:"Blood sugar",syn:["c peptid"]},
+ homa_ir:{n:"HOMA-IR",u:"index",g:"Blood sugar",syn:["homa ir"]},
+ fructosamine:{n:"Fructosamine",u:"µmol/L",g:"Blood sugar",syn:[]},
+ lactate:{n:"Lactate",u:"mmol/L",g:"Blood sugar",syn:["acid lactic"]},
+ ketone_blood:{n:"Ketones (blood)",u:"mmol/L",g:"Blood sugar",syn:["beta-hydroxybutyrate","blood ketone","ceton mau"]},
+ apoa1:{n:"Apolipoprotein A1",u:"g/L",g:"Cholesterol",syn:["apo a1","apoa1"]},
+ apob_apoa1_ratio:{n:"ApoB / ApoA1",u:"ratio",g:"Cholesterol",syn:["apob/a1","apob/apoa1"]},
+ chol_hdl_ratio:{n:"Cholesterol / HDL",u:"ratio",g:"Cholesterol",syn:["chol/hdl","cholesterol/hdl","tc/hdl"]},
+ ldl_hdl_ratio:{n:"LDL / HDL",u:"ratio",g:"Cholesterol",syn:["ldl/hdl"]},
+ remnant_chol:{n:"Remnant cholesterol",u:"mmol/L",g:"Cholesterol",syn:[]},
+ ldh:{n:"LDH",u:"U/L",g:"Liver",syn:["lactate dehydrogenase"]},
+ ammonia:{n:"Ammonia",u:"µmol/L",g:"Liver",syn:["amoniac","nh3"]},
+ prealbumin:{n:"Prealbumin",u:"g/L",g:"Liver",syn:["tien albumin"]},
+ bile_acids:{n:"Bile acids",u:"µmol/L",g:"Liver",syn:["acid mat"]},
+ cystatin_c:{n:"Cystatin C",u:"mg/L",g:"Kidney",syn:["cystatin-c"]},
+ microalbumin_urine:{n:"Microalbumin (urine)",u:"mg/L",g:"Urine",syn:["albumin nieu vi luong","micro albumin nieu","microalbumin"]},
+ urine_acr:{n:"Albumin / creatinine (urine)",u:"mg/mmol",g:"Urine",syn:["acr","albumin/creatinine ratio","ty le albumin/creatinin nieu","uacr"]},
+ urine_creatinine:{n:"Creatinine (urine)",u:"mmol/L",g:"Urine",syn:["creatinin nieu","urine creatinine"]},
+ urine_protein_24h:{n:"Protein (24h urine)",u:"g/24h",g:"Urine",syn:["24h urine protein","dam nieu 24 gio","protein nieu 24h"]},
+ bicarbonate:{n:"Bicarbonate",u:"mmol/L",g:"Salts & minerals",syn:["bicarbonat","co2 total","hco3"]},
+ anion_gap:{n:"Anion gap",u:"mmol/L",g:"Salts & minerals",syn:["khoang trong anion"]},
+ osmolality:{n:"Osmolality",u:"mOsm/kg",g:"Salts & minerals",syn:["ap luc tham thau"]},
+ total_t3:{n:"Total T3",u:"nmol/L",g:"Thyroid",syn:["t3","t3 toan phan"]},
+ total_t4:{n:"Total T4",u:"nmol/L",g:"Thyroid",syn:["t4","t4 toan phan"]},
+ anti_tpo:{n:"Anti-TPO",u:"IU/mL",g:"Thyroid",syn:["anti thyroid peroxidase","khang the khang tpo","tpoab"]},
+ anti_tg:{n:"Anti-thyroglobulin",u:"IU/mL",g:"Thyroid",syn:["anti thyroglobulin","anti-tg","tgab"]},
+ trab:{n:"TRAb",u:"IU/L",g:"Thyroid",syn:["tsh receptor antibody"]},
+ thyroglobulin:{n:"Thyroglobulin",u:"µg/L",g:"Thyroid",syn:["tg (thyroglobulin)","thyroglobulin huyet thanh"]},
+ testosterone_total:{n:"Testosterone (total)",u:"nmol/L",g:"Hormones",syn:["testosterone","testosterone toan phan","total testosterone"]},
+ testosterone_free:{n:"Testosterone (free)",u:"pmol/L",g:"Hormones",syn:["free testosterone","testosterone tu do"]},
+ shbg:{n:"SHBG",u:"nmol/L",g:"Hormones",syn:["sex hormone binding globulin"]},
+ estradiol:{n:"Estradiol",u:"pmol/L",g:"Hormones",syn:["e2"]},
+ progesterone:{n:"Progesterone",u:"nmol/L",g:"Hormones",syn:[]},
+ lh:{n:"LH",u:"IU/L",g:"Hormones",syn:["luteinizing hormone"]},
+ fsh:{n:"FSH",u:"IU/L",g:"Hormones",syn:["follicle stimulating hormone"]},
+ prolactin:{n:"Prolactin",u:"mIU/L",g:"Hormones",syn:["prl"]},
+ cortisol_am:{n:"Cortisol (morning)",u:"nmol/L",g:"Hormones",syn:["cortisol","cortisol 8h","morning cortisol"]},
+ dhea_s:{n:"DHEA-S",u:"µmol/L",g:"Hormones",syn:["dhea sulfate","dheas"]},
+ pth:{n:"Parathyroid hormone",u:"pmol/L",g:"Hormones",syn:["pth"]},
+ igf1:{n:"IGF-1",u:"nmol/L",g:"Hormones",syn:["igf1","somatomedin c"]},
+ growth_hormone:{n:"Growth hormone",u:"µg/L",g:"Hormones",syn:["gh"]},
+ amh:{n:"AMH",u:"pmol/L",g:"Hormones",syn:["anti-mullerian hormone"]},
+ beta_hcg:{n:"Beta-hCG",u:"IU/L",g:"Hormones",syn:["beta hcg","hcg","β-hcg"]},
+ troponin_i:{n:"Troponin I",u:"ng/L",g:"Heart",syn:["tni","troponin i hs"]},
+ troponin_t_hs:{n:"Troponin T (hs)",u:"ng/L",g:"Heart",syn:["hs-tnt","troponin t","troponin t hs"]},
+ ck:{n:"Creatine kinase",u:"U/L",g:"Heart",syn:["ck","cpk"]},
+ ck_mb:{n:"CK-MB",u:"U/L",g:"Heart",syn:["ckmb"]},
+ bnp:{n:"BNP",u:"ng/L",g:"Heart",syn:[]},
+ nt_probnp:{n:"NT-proBNP",u:"ng/L",g:"Heart",syn:["nt pro bnp","probnp"]},
+ homocysteine:{n:"Homocysteine",u:"µmol/L",g:"Heart",syn:["homocystein"]},
+ myoglobin:{n:"Myoglobin",u:"µg/L",g:"Heart",syn:[]},
+ rheumatoid_factor:{n:"Rheumatoid factor",u:"IU/mL",g:"Immune system",syn:["rf","yeu to dang thap"]},
+ ana:{n:"ANA",u:"",g:"Immune system",q:true,syn:["antinuclear antibody","khang the khang nhan"]},
+ anti_ccp:{n:"Anti-CCP",u:"U/mL",g:"Immune system",syn:["ccp"]},
+ aso:{n:"ASO",u:"IU/mL",g:"Immune system",syn:["anti streptolysin o","aslo"]},
+ complement_c3:{n:"Complement C3",u:"g/L",g:"Immune system",syn:["bo the c3","c3"]},
+ complement_c4:{n:"Complement C4",u:"g/L",g:"Immune system",syn:["bo the c4","c4"]},
+ igg:{n:"IgG",u:"g/L",g:"Immune system",syn:[]},
+ iga:{n:"IgA",u:"g/L",g:"Immune system",syn:[]},
+ igm:{n:"IgM",u:"g/L",g:"Immune system",syn:[]},
+ ige_total:{n:"IgE (total)",u:"IU/mL",g:"Immune system",syn:["ige","ige toan phan","total ige"]},
+ procalcitonin:{n:"Procalcitonin",u:"ng/mL",g:"Inflammation",syn:["pct (procalcitonin)","pro-calcitonin"]},
+ anti_hbc:{n:"Anti-HBc",u:"",g:"Infections",q:true,syn:["anti hbc total","hbcab"]},
+ hbeag:{n:"HBeAg",u:"",g:"Infections",q:true,syn:["hbe ag"]},
+ anti_hbe:{n:"Anti-HBe",u:"",g:"Infections",q:true,syn:["hbeab"]},
+ hiv_ag_ab:{n:"HIV Ag/Ab",u:"",g:"Infections",q:true,syn:["hiv","hiv ab","hiv combo"]},
+ syphilis_rpr:{n:"Syphilis RPR",u:"",g:"Infections",q:true,syn:["giang mai rpr","rpr","vdrl"]},
+ syphilis_tpha:{n:"Syphilis TPHA",u:"",g:"Infections",q:true,syn:["giang mai tpha","tpha"]},
+ h_pylori_igg:{n:"H. pylori IgG",u:"",g:"Infections",q:true,syn:["h pylori igg","helicobacter pylori igg","hp igg"]},
+ h_pylori_stool:{n:"H. pylori (stool antigen)",u:"",g:"Infections",q:true,syn:["h pylori stool antigen","hp stool ag"]},
+ h_pylori_breath:{n:"H. pylori (breath test)",u:"",g:"Infections",q:true,syn:["test tho hp","ubt","urea breath test"]},
+ rubella_igg:{n:"Rubella IgG",u:"",g:"Infections",q:true,syn:[]},
+ measles_igg:{n:"Measles IgG",u:"",g:"Infections",q:true,syn:["soi igg"]},
+ varicella_igg:{n:"Varicella IgG",u:"",g:"Infections",q:true,syn:["thuy dau igg"]},
+ ebv_vca_igg:{n:"EBV VCA IgG",u:"",g:"Infections",q:true,syn:["ebv igg"]},
+ cmv_igg:{n:"CMV IgG",u:"",g:"Infections",q:true,syn:[]},
+ dengue_ns1:{n:"Dengue NS1",u:"",g:"Infections",q:true,syn:["ns1","sot xuat huyet ns1"]},
+ tb_igra:{n:"TB interferon test",u:"",g:"Infections",q:true,syn:["igra","quantiferon","tb igra"]},
+ hbv_dna:{n:"HBV DNA",u:"IU/mL",g:"Infections",syn:["dinh luong hbv dna","hbv-dna"]},
+ hcv_rna:{n:"HCV RNA",u:"IU/mL",g:"Infections",syn:["hcv-rna"]},
+ psa_free:{n:"PSA (free)",u:"ng/mL",g:"Cancer markers",syn:["fpsa","free psa","psa tu do"]},
+ psa_ratio:{n:"PSA free / total",u:"%",g:"Cancer markers",syn:["%fpsa","fpsa/tpsa","psa ratio"]},
+ ca125:{n:"CA 125",u:"U/mL",g:"Cancer markers",syn:["ca 12-5","ca125"]},
+ ca15_3:{n:"CA 15-3",u:"U/mL",g:"Cancer markers",syn:["ca15-3"]},
+ nse:{n:"NSE",u:"ng/mL",g:"Cancer markers",syn:["neuron specific enolase"]},
+ he4:{n:"HE4",u:"pmol/L",g:"Cancer markers",syn:[]},
+ beta2_microglobulin:{n:"Beta-2 microglobulin",u:"mg/L",g:"Cancer markers",syn:["b2m","beta 2 microglobulin","β2-microglobulin"]},
+ vit_b1:{n:"Vitamin B1",u:"nmol/L",g:"Vitamins",syn:["thiamine"]},
+ vit_b6:{n:"Vitamin B6",u:"nmol/L",g:"Vitamins",syn:["pyridoxine"]},
+ vit_a:{n:"Vitamin A",u:"µmol/L",g:"Vitamins",syn:["retinol"]},
+ vit_e:{n:"Vitamin E",u:"µmol/L",g:"Vitamins",syn:["tocopherol"]},
+ vit_c:{n:"Vitamin C",u:"µmol/L",g:"Vitamins",syn:["ascorbic acid"]},
+ zinc:{n:"Zinc",u:"µmol/L",g:"Vitamins",syn:["kem","zn"]},
+ copper:{n:"Copper",u:"µmol/L",g:"Vitamins",syn:["dong huyet thanh"]},
+ selenium:{n:"Selenium",u:"µmol/L",g:"Vitamins",syn:["selen"]},
+ urine_wbc_hpf:{n:"White cells (urine, counted)",u:"/HPF",g:"Urine",syn:["bach cau (soi can)","bach cau vi truong","te bao bach cau nieu","urine wbc","wbc (urine)"]},
+ urine_rbc_hpf:{n:"Red cells (urine, counted)",u:"/HPF",g:"Urine",syn:["hong cau (soi can)","hong cau vi truong","rbc (urine)","te bao hong cau nieu","urine rbc"]},
+ urine_epithelial:{n:"Epithelial cells (urine)",u:"",g:"Urine",q:true,syn:["epithelial cells","te bao bieu mo"]},
+ urine_casts:{n:"Casts (urine)",u:"",g:"Urine",q:true,syn:["casts","cylinders","tru nieu"]},
+ urine_crystals:{n:"Crystals (urine)",u:"",g:"Urine",q:true,syn:["crystals","tinh the"]},
+ urine_bacteria:{n:"Bacteria (urine)",u:"",g:"Urine",q:true,syn:["bacteria","vi khuan nieu"]},
+ urine_color:{n:"Colour (urine)",u:"",g:"Urine",q:true,fact:true,syn:["color","colour","mau sac"]},
+ urine_clarity:{n:"Clarity (urine)",u:"",g:"Urine",q:true,syn:["clarity","do trong","turbidity"]},
+ stool_occult_blood:{n:"Occult blood (stool)",u:"",g:"Stool",q:true,syn:["fit","fobt","hong cau an trong phan","occult blood"]},
+ stool_parasites:{n:"Parasites (stool)",u:"",g:"Stool",q:true,syn:["ky sinh trung duong ruot","soi phan","stool parasites"]},
+ stool_wbc:{n:"White cells (stool)",u:"",g:"Stool",q:true,syn:["bach cau phan","stool wbc"]},
+ chest_xray:{n:"Chest X-ray",u:"",g:"Scans",q:true,self:true,syn:["cxr","x quang tim phoi","x-quang nguc"]},
+ abdominal_us:{n:"Abdominal ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am bung","sieu am o bung"]},
+ thyroid_us:{n:"Thyroid ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tuyen giap"]},
+ carotid_us:{n:"Carotid ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am dong mach canh"]},
+ breast_us:{n:"Breast ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tuyen vu"]},
+ pelvic_us:{n:"Pelvic ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tu cung phan phu"]},
+ echocardiogram:{n:"Echocardiogram",u:"",g:"Scans",q:true,self:true,syn:["echo","sieu am tim"]},
+ mammogram:{n:"Mammogram",u:"",g:"Scans",q:true,self:true,syn:["chup nhu anh","mammography"]},
+ pap_smear:{n:"Pap smear",u:"",g:"Scans",q:true,self:true,syn:["pap","phet te bao co tu cung"]},
+ gastroscopy:{n:"Gastroscopy",u:"",g:"Scans",q:true,self:true,syn:["noi soi da day","noi soi thuc quan da day"]},
+ colonoscopy:{n:"Colonoscopy",u:"",g:"Scans",q:true,self:true,syn:["noi soi dai trang"]},
+ ct_scan:{n:"CT scan",u:"",g:"Scans",q:true,self:true,syn:["chup cat lop","ct"]},
+ mri_scan:{n:"MRI",u:"",g:"Scans",q:true,self:true,syn:["chup cong huong tu"]},
+ bone_density_t:{n:"Bone density (T-score)",u:"T-score",g:"Scans",syn:["dxa t-score","mat do xuong t-score","t score","t-score"]},
+ bone_density_z:{n:"Bone density (Z-score)",u:"Z-score",g:"Scans",syn:["dxa z-score","z score","z-score"]},
+ fev1:{n:"FEV1",u:"L",g:"Breathing, hearing & sight",syn:["fev 1"]},
+ fvc:{n:"FVC",u:"L",g:"Breathing, hearing & sight",syn:[]},
+ fev1_fvc:{n:"FEV1 / FVC",u:"%",g:"Breathing, hearing & sight",syn:["chi so gaensler","fev1/fvc"]},
+ pef:{n:"Peak flow",u:"L/min",g:"Breathing, hearing & sight",syn:["peak expiratory flow","pef"]},
+ audiometry:{n:"Hearing test",u:"",g:"Breathing, hearing & sight",q:true,self:true,syn:["audiometry","do thinh luc"]},
+ iop_right:{n:"Eye pressure, right",u:"mmHg",g:"Breathing, hearing & sight",syn:["iop od","iop right","nhan ap mat phai"]},
+ iop_left:{n:"Eye pressure, left",u:"mmHg",g:"Breathing, hearing & sight",syn:["iop left","iop os","nhan ap mat trai"]},
+ grip_strength:{n:"Grip strength",u:"kg",g:"Breathing, hearing & sight",syn:["handgrip","luc nam tay"]},
+ vo2max:{n:"VO2 max",u:"mL/kg/min",g:"Breathing, hearing & sight",syn:["vo2max"]},
+ temperature_c:{n:"Temperature",u:"°C",g:"Vital signs",syn:["body temperature","nhiet do"]},
+ spo2:{n:"Oxygen saturation",u:"%",g:"Vital signs",syn:["do bao hoa oxy","spo2"]},
+ respiratory_rate:{n:"Breathing rate",u:"/min",g:"Vital signs",syn:["nhip tho","respiratory rate","rr"]},
+ hip_cm:{n:"Hip",u:"cm",g:"Body",syn:["hip circumference","vong hong","vong mong"]},
+ /* The device's own targets. Recording the number a machine printed is
+    recording, not advising -- but they carry no reference range and never
+    will, so they show as facts on file rather than as readings missing one. */
+ target_weight:{n:"Target weight (device)",u:"kg",g:"Body",fact:true,syn:["target weight","can nang muc tieu"]},
+ weight_control:{n:"Weight to change (device)",u:"kg",g:"Body",fact:true,syn:["weight control"]},
+ fat_control:{n:"Fat to change (device)",u:"kg",g:"Body",fact:true,syn:["fat control"]},
+ muscle_control:{n:"Muscle to change (device)",u:"kg",g:"Body",fact:true,syn:["muscle control"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
 /* A general check-up panel: the things worth looking for on your own reports.
    It is a checklist, not a recommendation about which tests you need -- that is
    a conversation with a doctor. Edit it freely in Settings. */
-const DEFAULT_PANEL = [
+const DEFAULT_PANEL_OLD = [
   "bp_systolic","bp_diastolic","heart_rate_resting",
   "glucose_fasting","hba1c_dcct",
   "bmi","body_fat_pct","visceral_fat_cm2",
   "cholesterol_total","ldl_c","hdl_c","triglycerides",
   "alt","ast","egfr","vit_d_25oh","tsh","sleep_hours",
-  "hrv_avg","apob","lpa","hscrp","waist_cm"
+  "hrv_avg","apob","lpa","hscrp","waist_cm",
+  /* the ten rows a urinalysis strip prints, as one block -- a check-up in
+     Vietnam almost always includes it, and Protein moving Negative -> Trace
+     across visits is exactly the kind of change this book exists to show */
+  "urine_protein","urine_glucose","urine_blood","urine_leukocytes","urine_nitrite",
+  "urine_ketones","urine_bilirubin","urine_urobilinogen",
+  "urine_specific_gravity","urine_ph",
+  /* every remaining line a Kusumi CBC and an SGH assessment print */
+  "neutrophils_abs","lymphocytes_abs","monocytes_abs","eosinophils_abs","basophils_abs",
+  "mpv","plateletcrit","pdw","ca72_4",
+  "ecg_finding","visual_acuity_right","visual_acuity_left",
+  "skeletal_muscle_mass","body_fat_mass","total_body_water","bmr",
+  "waist_hip_ratio","ecw_tbw_ratio","smi","phase_angle",
+  /* The rest of a comprehensive annual examination. Everything in the
+     catalogue is recognised on a report whether or not it is listed here --
+     this is the CHECKLIST, the things worth noticing the absence of. The
+     sex-specific and the situational (AMH, CA 125, dengue, troponin) stay out
+     of it on purpose: a permanent empty card for a test nobody expects is
+     noise, and they still land the moment a report carries one. */
+  "hip_cm","spo2",
+  "pt_sec","inr","aptt_sec","fibrinogen",
+  "blood_group_abo","rh_factor","iron_serum","transferrin_sat",
+  "apoa1","chol_hdl_ratio","ldh","bicarbonate",
+  "microalbumin_urine","urine_acr",
+  "anti_tpo","homocysteine","ck",
+  "hiv_ag_ab","syphilis_tpha","h_pylori_igg","anti_hbc",
+  "urine_wbc_hpf","urine_rbc_hpf","stool_occult_blood",
+  "chest_xray","abdominal_us","thyroid_us","echocardiogram",
+  "fev1_fvc","iop_right","iop_left"
 ];
+
 /* Two pairs read as one measurement on a report and are shown as one card,
    while staying two rows in the data — the contract never pre-joins codes. */
 const PAIRS = {bp_systolic:{mate:"bp_diastolic", label:"Blood pressure", sep:"/"},
@@ -364,11 +751,99 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Body","Vitals","Metabolic","Lipids","Liver","Kidney","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
+/* Ordered the way a body is talked about, not the way a laboratory bills. */
+const GROUPS = ["Vital signs","Body","Blood sugar","Cholesterol","Heart",
+  "Kidney","Liver","Salts & minerals","Urine","Stool",
+  "Blood count","Iron","Clotting","Thyroid","Hormones",
+  "Inflammation","Immune system","Infections","Cancer markers","Vitamins",
+  "Scans","Breathing, hearing & sight","Lifestyle",
+  "Body, limb by limb","Secondary","Also on your reports"];
+
+/* ---- what is worth watching, and what is only worth keeping -------------
+
+   CORE is the spine of a US adult annual physical -- the measurements that
+   change what a doctor does next, and that are followed year on year:
+   blood pressure and lipids (ACC/AHA), glucose and HbA1c (ADA), kidney
+   function including the urine albumin ratio (KDIGO), liver enzymes for
+   fatty liver, a blood count, thyroid, and the deficiencies worth catching.
+   These are the check-up list and these are what Trends leads with.
+
+   EXTENDED is clinically real and worth a trend when a report carries it,
+   but is not something to chase a missing value for.
+
+   Everything else is SECONDARY: kept, searchable, never thrown away, but off
+   the checklist and out of the trend board. Almost all of it is one machine
+   describing the same measurement several ways -- an InBody derives soft lean
+   mass, fat-free mass, body cell mass and protein mass from one impedance
+   scan, and twenty-five segmental rows from the same. Tracking five algebraic
+   views of one number is not five pieces of information. */
+
+const CORE = ["bp_systolic","bp_diastolic","heart_rate_resting",
+  "weight_kg","height_cm","bmi","waist_cm","body_fat_pct",
+  "glucose_fasting","hba1c_dcct",
+  "cholesterol_total","ldl_c","hdl_c","triglycerides","non_hdl_c","apob","lpa","hscrp",
+  "creatinine","egfr","urine_acr","uric_acid",
+  "alt","ast",
+  "haemoglobin","wbc","platelets",
+  "tsh","vit_d_25oh","vit_b12","ferritin","sodium","potassium"];
+
+const EXTENDED = ["spo2","hip_cm","waist_hip_ratio","visceral_fat_cm2",
+  "skeletal_muscle_mass","total_body_water","bmr","smi","phase_angle","ecw_tbw_ratio",
+  "insulin_fasting","hba1c_ifcc","glucose_ogtt_2h","c_peptide",
+  "apoa1","chol_hdl_ratio",
+  "ggt","alp","bilirubin_total","albumin","total_protein","globulin","ldh",
+  "bun","cystatin_c","microalbumin_urine",
+  "calcium","magnesium","phosphate","chloride","bicarbonate",
+  "hematocrit","rbc","mcv","mch","mchc","rdw_cv",
+  "neutrophils_pct","lymphocytes_pct","monocytes_pct","eosinophils_pct","basophils_pct",
+  "blood_group_abo","rh_factor","iron_serum","transferrin_sat",
+  "pt_sec","inr","aptt_sec",
+  "free_t4","free_t3","anti_tpo",
+  "crp","esr","homocysteine","ck",
+  "urine_protein","urine_glucose","urine_blood","urine_leukocytes",
+  "urine_ph","urine_specific_gravity","urine_wbc_hpf","urine_rbc_hpf",
+  "hbsag","anti_hbs","anti_hcv","hiv_ag_ab",
+  "psa","cea","afp","ca19_9",
+  "folate","testosterone_total","cortisol_am",
+  "ecg_finding","chest_xray","abdominal_us","visual_acuity_right","visual_acuity_left",
+  "bone_density_t","fev1_fvc","sleep_hours","steps_daily"];
+
+const TIER = (()=>{ const m = {};
+  CORE.forEach(c=>m[c]="core"); EXTENDED.forEach(c=>{ if(!m[c]) m[c]="ext"; });
+  return m; })();
+function tierOf(code){ return TIER[code] || "sec"; }
+
+/* The checklist is the core set itself. Keeping a second hand-written list
+   beside it is how the two drift. */
+const DEFAULT_PANEL = CORE.slice();
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
 };
+/* Body fat is the one measurement on a health assessment that arrives with
+   NO printed range -- SGH reports 27.5% and nothing to read it against, so it
+   sat at "no range on file" forever. Unlike a lab value there is no issuing
+   laboratory to take a range from, so a published standard has to be named,
+   the same way BMI already names WHO.
+
+   This is the American Council on Exercise classification, which is banded by
+   sex and not by age. Other bodies band by age as well and disagree with it;
+   that is why the label is printed on screen beside every reading rather than
+   the numbers being presented as simply true. Change the standard here and
+   every body-fat status in the book moves with it.
+
+   Source: American Council on Exercise, body-fat percentage categories.
+   https://www.acefitness.org/  (men: essential 2-5, athletes 6-13,
+   fitness 14-17, average 18-24, obese 25+; women: essential 10-13,
+   athletes 14-20, fitness 21-24, average 25-31, obese 32+)
+
+   Without a sex on the profile there is no applicable band, and hard rule 8
+   applies: the status stays unknown rather than borrowing the other one. */
+const BF_STD = {
+  male:{label:"ACE, men",cuts:[6,18,25],names:["Below essential","Athletic to fitness","Average","Obese"]},
+  female:{label:"ACE, women",cuts:[14,25,32],names:["Below essential","Athletic to fitness","Average","Obese"]}
+};
+function bfStd(m){ return BF_STD[(m&&m.sex)||""] || null; }
 const ST = {in_range:"In range", watch:"Near the limit", discuss:"Outside the range", act:"Flagged by hand", unknown:"No range on file"};
 const RANK = {act:0, discuss:1, watch:2, unknown:3, in_range:4};
 const BUCKET = {do_first:"Ask about this first", lever:"Affects several results",
@@ -416,6 +891,118 @@ const SYN = (()=>{ const m = new Map();
   }
   return m;
 })();
+/* ---------------------------------------------- results that are words
+
+   A dipstick reports Negative / Trace / 1+, not a number. Dropping those rows
+   because parseFloat() fails on them is how nine of the ten lines on a urine
+   report used to vanish without a message. They are kept as printed, and the
+   four states below are what makes a trend out of them: Protein reading
+   Negative, Negative, Trace, Trace across four visits is a direction.
+
+   Trace is its own state on purpose. It is the step between nothing and
+   something, and it is the one worth seeing change. */
+const QUAL = [
+  {k:"negative", r:0, n:"Negative", w:["am tinh","am","negative","neg","khong","khong co","khong phat hien","(-)","-","0"]},
+  {k:"normal",   r:0, n:"Normal",   w:["binh thuong","normal","norm","trong gioi han","bt",
+                                       "within normal limit","within normal limits","wnl","no abnormality detected",
+                                       /* full acuity, in the three notations these reports use. Anything
+                                          short of it ("6/12") is deliberately NOT listed: it reads as
+                                          unrecognised and asks, rather than being scored as a miss. */
+                                       "6/6","20/20","10/10","1.0","6/6 corrected"]},
+  {k:"trace",    r:1, n:"Trace",    w:["vet","trace","tr","+/-","-/+","nghi ngo","ranh gioi"]},
+  {k:"positive", r:2, n:"Positive", w:["duong tinh","duong","positive","pos","co","(+)"]}
+];
+function isQual(code){ return !!meta(code).q; }
+/* The one place that decides whether a draft row is ready to save. It used to
+   be isFinite(parseFloat(value)) inline in two places, which silently threw
+   away every word result on a urine strip -- nine of its ten rows. */
+function rowHasValue(r){
+  return r && (isQual(r.code) ? String(r.value==null?"":r.value).trim()!=="" 
+                              : isFinite(parseFloat(r.value)));
+}
+/* null means "printed something this book does not recognise" -- which is
+   kept verbatim and shown as unreadable, never guessed into a state. */
+function qualState(raw){
+  const t = deaccent(String(raw==null?"":raw)).toLowerCase().replace(/\s+/g," ").trim();
+  if(!t) return null;
+  for(const q of QUAL) if(q.w.indexOf(t)>=0) return q;
+  if(/^\d*\s*\++$/.test(t)) return QUAL[3];        /* "+", "++", "3+" */
+  if(/^\+{1,4}$/.test(t)) return QUAL[3];
+  if(/^\d+(\.\d+)?\s*(mg\/dl|mg\/l|g\/l|eu\/dl|umol\/l)?$/.test(t)) return QUAL[3];
+  return null;
+}
+
+/* The same six words -- Glucose, Protein, Bilirubin, Blood, Leukocytes, pH --
+   name a blood test and a urine test, and the report says which by printing
+   its sample type. This table is consulted FIRST, and only when the report
+   says urine. Without it, a strip reading "Glucose  Negative" would land in
+   the fasting blood-sugar series. */
+const URINE_SYN = (()=>{ const m=new Map();
+  for(const code in C) if(code.indexOf("urine_")===0){
+    m.set(deaccent(C[code].n).toLowerCase(), code);
+    (C[code].syn||[]).forEach(x=>{ if(!m.has(x)) m.set(x,code); });
+  }
+  [["glucose","urine_glucose"],["duong","urine_glucose"],
+   ["protein","urine_protein"],["dam","urine_protein"],
+   ["bilirubin","urine_bilirubin"],
+   ["blood","urine_blood"],["hong cau","urine_blood"],["mau","urine_blood"],
+   ["leukocytes","urine_leukocytes"],["leukocyte","urine_leukocytes"],
+   ["leucocytes","urine_leukocytes"],["bach cau","urine_leukocytes"],
+   ["ketones","urine_ketones"],["keton","urine_ketones"],
+   ["nitrite","urine_nitrite"],["urobilinogen","urine_urobilinogen"],
+   ["specific gravity","urine_specific_gravity"],["ty trong","urine_specific_gravity"],
+   ["ph","urine_ph"]].forEach(x=>m.set(x[0],x[1]));
+  return m;
+})();
+/* "" unless the report names urine as its sample. Nothing is inferred from
+   the test names themselves -- that would be the guess this guards against. */
+function specimenOfText(text){
+  return /nuoc tieu|urinalysis|urine|urinary/.test(deaccent(String(text||"")).toLowerCase()) ? "urine" : "";
+}
+
+/* The written-out form of every abbreviation this record carries, matching
+   what migration 0017 seeded server-side. The page needs them too: the
+   reader resolves an incoming report, but re-reading a row already SAVED
+   under a made-up name happens here, and a split like "PBF Percent Body Fat"
+   can only be accepted if both halves are known on this side as well.
+
+   The split rule is why these earn their place twice over -- without
+   "percent body fat" there is nothing for "PBF" to agree with, and the row
+   stays stuck under its invented code forever. */
+const WRITTEN_OUT = {
+  bmi:["body mass index"],
+  body_fat_pct:["pbf","percent body fat"],
+  visceral_fat_cm2:["visceral fat area","vfa"],
+  total_body_water:["tbw"], intracellular_water:["icw","intra cellular water"],
+  extracellular_water:["ecw","extra cellular water"],
+  skeletal_muscle_mass:["smm"], body_cell_mass:["bcm"], fat_free_mass:["ffm"],
+  soft_lean_mass:["slm"], body_fat_mass:["bfm"], bmr:["basal metabolic rate"],
+  phase_angle:["whole body phase angle"],
+  wbc:["white blood cell","white blood cells","white blood cell count"],
+  rbc:["red blood cell","red blood cells","red blood cell count"],
+  platelets:["platelet count"],
+  mcv:["mean corpuscular volume"], mch:["mean corpuscular hemoglobin","mean corpuscular haemoglobin"],
+  mchc:["mean corpuscular hemoglobin concentration","mean corpuscular haemoglobin concentration"],
+  rdw_cv:["red cell distribution width"], mpv:["mean platelet volume"],
+  pdw:["platelet distribution width"],
+  alt:["alanine aminotransferase"], ast:["aspartate aminotransferase"],
+  ggt:["gamma glutamyl transferase"], alp:["alkaline phosphatase"],
+  ldh:["lactate dehydrogenase"], bun:["blood urea nitrogen"],
+  egfr:["estimated glomerular filtration rate"],
+  tsh:["thyroid stimulating hormone"], free_t4:["free thyroxine"],
+  free_t3:["free triiodothyronine"],
+  hba1c_dcct:["glycated hemoglobin","glycated haemoglobin","glycosylated hemoglobin"],
+  psa:["prostate specific antigen"], cea:["carcinoembryonic antigen"],
+  afp:["alpha fetoprotein"],
+  hdl_c:["high density lipoprotein","high density lipoprotein cholesterol"],
+  ldl_c:["low density lipoprotein","low density lipoprotein cholesterol"],
+  cholesterol_total:["total cholesterol"],
+  crp:["c reactive protein","c-reactive protein"],
+  esr:["erythrocyte sedimentation rate"],
+  uric_acid:["uric acid"], smi:["skeletal muscle index"]
+};
+for(const c in WRITTEN_OUT) WRITTEN_OUT[c].forEach(a=>{ if(!SYN.has(a)) SYN.set(a, c); });
+
 const UNIT_MAP = {
   "mmol/l":"mmol/L","mg/dl":"mg/dL","umol/l":"µmol/L","µmol/l":"µmol/L","g/l":"g/L","g/dl":"g/dL",
   "u/l":"U/L","iu/l":"U/L","ui/l":"U/L","ng/ml":"ng/mL","pg/ml":"pg/mL","pmol/l":"pmol/L","nmol/l":"nmol/L",
@@ -423,13 +1010,66 @@ const UNIT_MAP = {
   "mg/l":"mg/L","u/ml":"U/mL","%":"%","fl":"fL","pg":"pg","l/l":"L/L","mm/h":"mm/h","mmhg":"mmHg",
   "bpm":"bpm","lan/phut":"bpm","kg":"kg","cm":"cm","in":"in","lb":"lb","ms":"ms","ratio":"ratio",
   "t/l":"×10¹²/L","g/t":"×10⁹/L","k/ul":"×10⁹/L","10^9/l":"×10⁹/L","x10^9/l":"×10⁹/L",
-  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)"
+  "10^12/l":"×10¹²/L","x10^12/l":"×10¹²/L","ng/dl":"ng/dL","mmol/mol":"mmol/mol","mg/dl (bun)":"mg/dL (BUN)","ph":"pH","l":"L","kcal":"kcal","points":"points"
 };
 function normUnit(raw){
   if(!raw) return "";
   const k = deaccent(raw).toLowerCase().replace(/\s+/g,"").replace(/µ/g,"u");
   return UNIT_MAP[k] || UNIT_MAP[k.replace(/u/g,"µ")] || raw.trim();
 }
+/* ---- re-reading a name the catalogue has since learned -----------------
+
+   A reading saved before the catalogue knew its name is stuck under a
+   made-up code FOREVER, because nothing ever looks at it again. That is why
+   "SMM Skeletal Muscle Mass" was still sitting in Also on your reports after
+   the reader had been taught to resolve it: the fix applied to new uploads
+   and the rows already in the book never heard about it.
+
+   So every made-up code is re-checked against the catalogue on load. The
+   rules are exactly the reader's own -- an exact match on the whole name,
+   then a split where the two halves independently name the SAME test, then a
+   split where what is left over is an instrument setting. Nothing is matched
+   by prefix or by substring, which is how "CA 19-9" once became calcium. */
+
+function exactCode(name){
+  const k = deaccent(String(name==null?"":name)).toLowerCase().replace(/\s+/g," ").trim();
+  return k ? (SYN.get(k) || null) : null;
+}
+/* A frequency describes the machine. An interval describes the measurement,
+   so "2h" is never discardable -- see "Glucose 2h". */
+const NOISE_TOK = /^(?:\d+(?:\.\d+)?(?:k|m)?hz|\d+(?:\.\d+)?(?:ohm|\u03a9)|\u03c6|\u03d5|phi|\u00b0)$/i;
+function inertPart(t){
+  const toks = String(t).replace(/(\d)\s+([a-z\u03a9\u00b0]+)/gi,"$1$2")
+    .replace(/[()\[\]\u00b0\u00b1*\u00b7:,]/g," ").split(/\s+/).filter(Boolean);
+  return toks.every(x=>NOISE_TOK.test(x));
+}
+function nameForms(raw){
+  const out=[], push=v=>{ const t=String(v).replace(/\s+/g," ").trim(); if(t && out.indexOf(t)<0) out.push(t); };
+  push(raw);
+  const nb = String(raw).replace(/\[[^\]]*\]/g," "); push(nb);
+  const np = nb.replace(/\([^)]*\)/g," "); push(np);
+  const tight = v=>v.replace(/([A-Za-z0-9])\s*[-\u2013\u2014]\s*([A-Za-z0-9])/g,"$1-$2");
+  push(tight(np)); push(tight(nb));
+  const loose = v=>v.replace(/\s+[-\u2013\u2014]\s+/g," ");
+  push(loose(np)); push(loose(nb));
+  return out;
+}
+function resolveName(raw){
+  const cands = nameForms(raw);
+  for(const c of cands){ const h=exactCode(c); if(h) return h; }
+  for(const c of cands){
+    const w = c.split(/\s+/).filter(Boolean);
+    for(let i=1;i<w.length;i++){
+      const head=w.slice(0,i).join(" "), tail=w.slice(i).join(" ");
+      const a=exactCode(head), b=exactCode(tail);
+      if(a&&b&&a===b) return a;
+      if(a&&!b&&inertPart(tail)) return a;
+      if(b&&!a&&inertPart(head)) return b;
+    }
+  }
+  return null;
+}
+
 function matchCode(nameRaw){
   let n = deaccent(nameRaw).toLowerCase()
     .replace(/[()\[\]:*#]/g," ").replace(/^\s*\d+[.)]\s*/,"").replace(/\s+/g," ").trim();
@@ -446,7 +1086,18 @@ function matchCode(nameRaw){
 /* Match the LONGEST synonym the line begins with. Splitting on the first
    digit fails on "1. Glucose" and on names that contain digits themselves
    ("Vitamin D (25-OH)", "CA 19-9", "Vitamin B12"), so we anchor on the name. */
-function matchAtStart(norm){
+function matchAtStart(norm, specimen){
+  if(specimen==="urine"){
+    let ub=null, ul=0;
+    for(const [k,v] of URINE_SYN){
+      if(k.length<2 || k.length<=ul) continue;
+      if(norm.lastIndexOf(k,0)===0){
+        const nx=norm.charAt(k.length);
+        if(nx==="" || !/[a-z0-9]/.test(nx)){ ub=v; ul=k.length; }
+      }
+    }
+    if(ub) return {code:ub,len:ul};
+  }
   let best=null,len=0;
   for(const [k,v] of SYN){
     if(k.length<2 || k.length<=len) continue;
@@ -459,6 +1110,7 @@ function matchAtStart(norm){
 }
 function parseReport(text){
   const rows=[], skipped=[];
+  const specimen=specimenOfText(text);
   for(const rawLine of String(text||"").split(/\r?\n/)){
     const line=rawLine.replace(/\t/g,"  ").trim();
     if(!line || line.length<3) continue;
@@ -466,8 +1118,17 @@ function parseReport(text){
     if(/^(ten xet nghiem|ten xn|chi tieu xet nghiem|tri so binh thuong|tri so tham chieu|gia tri tham chieu|khoang tham chieu|test name|reference range|result\s+unit|stt\s)/i.test(D)) continue;
     D=D.replace(/^\s*\d{1,3}\s*[.)]\s+/,"");          /* leading row number */
     D=D.replace(/(\d),(\d{1,2})(?!\d)/g,"$1.$2");      /* Vietnamese decimal comma */
+    /* "CA 19 - 9" has to read as one name. Printed with spaces around the
+       hyphen it did not match the synonym, so the two-letter synonym "ca"
+       won instead and CA 19-9 was filed as CALCIUM 19 mmol/L -- a value that
+       looks entirely plausible and is not a calcium at all. Ranges are
+       unaffected: their pattern already allows no space. */
+    D=D.replace(/([A-Za-z0-9])\s*[\-\u2013\u2014]\s*([A-Za-z0-9])/g,"$1-$2");
+    /* "PSA total [blood-SERUM]" puts the tag after the second word, so
+       stripping it only where it follows the name missed that row. */
+    D=D.replace(/\[[^\]]*\]/g," ").replace(/\s+/g," ");
     const norm=D.toLowerCase();
-    const hit=matchAtStart(norm);
+    const hit=matchAtStart(norm, specimen);
     let code, newName="";
     if(hit){ code=hit.code; }
     else {
@@ -480,9 +1141,24 @@ function parseReport(text){
       code = slug(nm); newName = nm;
       if(!code || code==="c-"){ skipped.push(D.slice(0,34).trim()); continue; }
     }
+    /* A result printed as a word rather than a number. Read the cells off the
+       ORIGINAL line, not the deaccented copy, so "Âm tính" is stored the way
+       the report printed it (hard rule 7 -- never discard the source). */
+    if(hit && isQual(code)){
+      const cells = line.replace(/^\s*\d{1,3}\s*[.)]\s*/,"").split(/\s{2,}|\t|\|/)
+        .map(x=>x.trim()).filter(Boolean).slice(1).filter(x=>qualState(x));
+      if(!cells.length){ skipped.push(D.slice(0,34).trim()); continue; }
+      rows.push({code, value:cells[0], unit:"", refLow:"", refHigh:"",
+        refLabel:cells[1]?("expected "+cells[1]):"", refText:cells[1]||"",
+        confirmed:false, src:line.slice(0,90), newName:""});
+      continue;
+    }
     let rest = hit ? D.slice(hit.len) : D.slice(D.search(/\d/));
     rest=rest.replace(/^\s*\([^)]*\)/,"");              /* "(GOT)", "(25-OH)" */
-    rest=rest.replace(/^[\s:.|\-\u2013\u2014]+/,"");
+    /* "Glucose [blood-HEPARIN]   6.1" -- the whole Kusumi biochemistry panel,
+       all ten rows, was dropped because nothing consumed this tag. */
+    rest=rest.replace(/^\s*\[[^\]]*\]/,"");
+    rest=rest.replace(/^[\s:.|%\-\u2013\u2014]+/,"");
     const vm=rest.match(/^-?\d+(?:\.\d+)?/);
     if(!vm){ continue; }
     const value=vm[0];
@@ -497,11 +1173,21 @@ function parseReport(text){
          its report printed, because there is nothing to check it against */
       if(newName || unitsFor(code).some(x=>x[0]===cand)){ unit=cand; after=after.slice(um[0].length); }
     }
-    if(!unit) unit=meta(code).u;
     let lo="",hi="",lab="",m;
     if((m=after.match(/(-?\d+(?:\.\d+)?)\s*[\-\u2013\u2014]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; hi=m[2]; lab=m[1]+"\u2013"+m[2]; }
-    else if((m=after.match(/[<\u2264]\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
-    else if((m=after.match(/[>\u2265]\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    else if((m=after.match(/[<\u2264]=?\s*(-?\d+(?:\.\d+)?)/))){ hi=m[1]; lab="\u2264 "+m[1]; }
+    else if((m=after.match(/[>\u2265]=?\s*(-?\d+(?:\.\d+)?)/))){ lo=m[1]; lab="\u2265 "+m[1]; }
+    /* The column order here is Result | Reference Range | Units, so the unit
+       is at the END of the line rather than beside the number. Without this,
+       HCT "46.8 ... 41-53 ... %" kept the catalogue unit L/L and its range
+       was read as 41-53 L/L -- a hundredfold out, and silent. Only a unit
+       this test actually uses is accepted, so nothing is guessed. */
+    if(!unit){
+      const tail=after.match(/([A-Za-z\u00b5%^/0-9.\-]{1,14})\s*$/);
+      if(tail){ const cand=normUnit(tail[1]);
+        if(unitsFor(code).some(x=>x[0]===cand)) unit=cand; }
+    }
+    if(!unit) unit=meta(code).u;
     if(newName){
       const META=/(^|\s)(ngay|date|thoi gian|time|so dien thoai|dien thoai|phone|tel|dia chi|address|ma so|ma benh nhan|patient|benh nhan|bac si|doctor|ho ten|ho va ten|full name|gioi tinh|sex|tuoi|age|stt|barcode|so phieu)(\s|$)/;
       const looksMeta = META.test(deaccent(newName).toLowerCase());
@@ -519,7 +1205,7 @@ function parseReport(text){
 }
 
 /* ------------------------------------------------------------- state */
-let S=null, who=null, tab="overview", detail=null, draft=null, trendCode=null;
+let S=null, who=null, tab="today", detail=null, draft=null, trendCode=null;
 
 let _sn=0;
 function seed(){
@@ -531,7 +1217,7 @@ function seed(){
     refHigh:refHigh===null?null:toCanonical(refHigh,code,unit),
     refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
     origin:"",sample:true});
-  return {v:2, members:[
+  return {v:2, meds:[], allergies:[], conditions:[], shots:[], visits:[], members:[
       {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam",sample:true},
       {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam",sample:true}],
     observations:[
@@ -562,7 +1248,46 @@ function seed(){
 }
 /* Books seeded before the ids were made stable carry examples with random ids,
    which is what let 20 become 40. Drop those; keep every real record. */
+/* ---- the other half of a health record --------------------------------
+
+   Until now this book held results and nothing else. Every intake form in
+   America asks four things before it asks for a lab value: what do you take,
+   what are you allergic to, what conditions do you have, what have you been
+   vaccinated for. A record without them is not a record a doctor can read,
+   and allergies in particular are the single highest-consequence field in
+   any chart.
+
+   Each list is the same shape -- id, memberId, its own fields, mtime -- so
+   they sync, tombstone, export and merge through the machinery that already
+   exists rather than five new special cases. The two-letter key is its
+   tombstone bucket. */
+const LISTS = [
+  ["meds",       "md", "Medicines"],
+  ["allergies",  "al", "Allergies"],
+  ["conditions", "cd", "Conditions"],
+  ["shots",      "sh", "Vaccinations"],
+  ["visits",     "vs", "Visits"]
+];
+function listOf(key, mid){
+  return (S[key]||[]).filter(x=>x.memberId===mid)
+    .sort((a,b)=>String(b.date||b.since||"").localeCompare(String(a.date||a.since||"")));
+}
+/* Blood group is a reading like any other, so it is not stored twice -- the
+   card reads it back out of the record. */
+function bloodOf(mid){
+  const g=latest(mid).find(o=>o.code==="blood_group_abo"),
+        r=latest(mid).find(o=>o.code==="rh_factor");
+  if(!g && !r) return "";
+  return [(g&&g.valueRaw)||"", (r&&r.valueRaw)||""].filter(Boolean).join(" ");
+}
 function isSample(x){ return !!(x && x.sample); }
+/* Records that arrived in someone else's hand-off file. The page promises
+   they stay on this machine, and until now the sync uploaded them with
+   everything else -- which quietly rebuilt the single shared place the page
+   warns against, inside one account. Marked at import, excluded from the
+   sync document, and labelled on screen so the promise is visible. */
+function isLocal(x){ return !!(x && x.local); }
+function syncable(a){ return (a||[]).filter(x=>!isSample(x) && !isLocal(x)); }
 function repairLegacy(p){
   const legacy = (p.observations||[]).some(o=>isSample(o) && String(o.id).indexOf("smp-")!==0)
               || (p.actions||[]).some(a=>isSample(a) && String(a.id).indexOf("smp-")!==0)
@@ -582,8 +1307,12 @@ function load(){
   try{
     const raw = localStorage.getItem(LS);
     if(raw){ const p = JSON.parse(raw); if(p && p.members && p.members.length) return repairLegacy(p); }
-    const old = localStorage.getItem(LS_OLD);
-    if(old){ const p = JSON.parse(old); if(p && p.members && p.members.length) return repairLegacy(migrate(p)); }
+    for(const key of LS_LEGACY){
+      const old = localStorage.getItem(key);
+      if(!old) continue;
+      const p = JSON.parse(old);
+      if(p && p.members && p.members.length){ _cameFrom = key; return repairLegacy(migrate(p)); }
+    }
   }catch(e){ console.warn("read failed", e); }
   return seed();
 }
@@ -592,26 +1321,94 @@ function migrate(p){
     if(o.valueRaw===undefined){ o.valueRaw = String(o.value); o.unit = meta(o.code).u; }
     if(o.fasting===undefined) o.fasting = "";
   });
+  /* A panel saved before these codes existed would never show them, so the
+     check-up list is re-unioned on load. A code deliberately removed stays
+     removed -- that is what the p tombstones are for. */
+  p.panel = p.panel || DEFAULT_PANEL.slice();
+  const gone = (p.tomb && p.tomb.p) || [];
+  DEFAULT_PANEL.forEach(c=>{ if(p.panel.indexOf(c)<0 && gone.indexOf(c)<0) p.panel.push(c); });
+  /* Rows saved under a made-up code before the catalogue learned the name.
+     Nothing else re-reads them, so this is the only chance they get. */
+  const cc = p.customCodes || {};
+  const moved = {};
+  for(const code in cc){
+    const hit = resolveName(cc[code].n || code);
+    if(hit && hit !== code) moved[code] = hit;
+  }
+  if(Object.keys(moved).length){
+    (p.observations||[]).forEach(o=>{
+      const to = moved[o.code]; if(!to) return;
+      o.code = to;
+      const n = parseFloat(o.valueRaw);
+      if(isFinite(n)) o.value = toCanonical(n, to, o.unit);
+      o.mtime = Date.now();
+    });
+    (p.actions||[]).forEach(a=>{ a.codes = (a.codes||[]).map(c=>moved[c]||c); });
+    p.panel = [...new Set((p.panel||[]).map(c=>moved[c]||c))];
+    for(const from in moved) delete cc[from];
+    p.customCodes = cc;
+  }
+  LISTS.forEach(l=>{ if(!Array.isArray(p[l[0]])) p[l[0]] = []; });
   p.v = 2; return p;
 }
 let warned=false;
 function save(){
   try{ if(typeof queueSync==="function") queueSync(); }catch(e){}
-  try{ localStorage.setItem(LS, JSON.stringify(S)); }
+  try{
+    localStorage.setItem(LS, JSON.stringify(S));
+    /* Copy first, verify, then delete -- the same order the file-safety rule
+       demands, for the same reason: a half-written move is worse than none. */
+    if(_cameFrom && localStorage.getItem(LS)){ localStorage.removeItem(_cameFrom); _cameFrom = null; }
+  }
   catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Settings and copy the backup out now."); } }
 }
-const TEXT_KEY="famrec-text";
-function bigText(){ try{ return localStorage.getItem(TEXT_KEY)==="large"; }catch(e){ return false; } }
-function applyText(){ try{ document.body.setAttribute("data-text", bigText()?"large":"normal"); }catch(e){} }
+const TEXT_KEY="passbook-text";
+function bigText(){ return pref(TEXT_KEY, ["famrec-text"])==="large"; }
+function applyText(){ try{ document.body.setAttribute("data-text", (bigText()||simple())?"large":"normal");
+  document.body.setAttribute("data-simple", simple()?"on":"off"); }catch(e){} }
 function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actions||[]).some(a=>a.sample); }
 
 /* --------------------------------------------------- attachments */
 let _db=null;
-function idb(){ if(_db) return _db;
-  _db = new Promise((res,rej)=>{ let r; try{ r = indexedDB.open("vitals-journal-files",1);}catch(e){return rej(e);}
+const IDB = "passbook-files", IDB_OLD = "vitals-journal-files";
+function openIdb(name){
+  return new Promise((res,rej)=>{ let r; try{ r = indexedDB.open(name,1);}catch(e){return rej(e);}
     r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("f")) r.result.createObjectStore("f"); };
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
-  return _db; }
+}
+function idb(){ if(_db) return _db; _db = openIdb(IDB); return _db; }
+
+/* Report images are the largest thing here and the only part that cannot be
+   re-derived from anything. So the move copies, counts both sides, and only
+   then deletes -- and if the counts disagree it leaves the old database
+   exactly where it is and says nothing, because getFile still reads it. */
+let _dbOld = null;
+function idbOld(){ if(_dbOld) return _dbOld; _dbOld = openIdb(IDB_OLD); return _dbOld; }
+function allKeys(d){ return new Promise((res,rej)=>{
+  const r=d.transaction("f","readonly").objectStore("f").getAllKeys();
+  r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error); }); }
+async function moveFiles(){
+  try{
+    if(localStorage.getItem("passbook-files-moved")==="1") return;
+    const oldDb = await idbOld();
+    const keys = await allKeys(oldDb);
+    if(keys.length){
+      const neu = await idb();
+      for(const k of keys){
+        const blob = await new Promise((res,rej)=>{ const r=oldDb.transaction("f","readonly").objectStore("f").get(k);
+          r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+        if(blob==null) continue;
+        await new Promise((res,rej)=>{ const t=neu.transaction("f","readwrite");
+          t.objectStore("f").put(blob,k); t.oncomplete=res; t.onerror=()=>rej(t.error); });
+      }
+      const after = await allKeys(neu);
+      if(after.length < keys.length) return;     /* leave the old alone */
+    }
+    oldDb.close(); _dbOld = null;
+    try{ indexedDB.deleteDatabase(IDB_OLD); }catch(e){}
+    localStorage.setItem("passbook-files-moved","1");
+  }catch(e){ /* the old database stays; getFile still finds everything */ }
+}
 async function putFile(id,blob){ try{ const d=await idb(); await new Promise((res,rej)=>{
     const t=d.transaction("f","readwrite"); t.objectStore("f").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); });
   return true; }catch(e){ return false; } }
@@ -621,9 +1418,15 @@ async function delFile(id){
     const t=d.transaction("f","readwrite"); t.objectStore("f").delete(id);
     t.oncomplete=res; t.onerror=()=>rej(t.error); }); }catch(e){}
 }
-async function getFile(id){ try{ const d=await idb(); return await new Promise((res,rej)=>{
-    const r=d.transaction("f","readonly").objectStore("f").get(id); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
-  }catch(e){ return null; } }
+async function getFile(id){
+  const from = async d => new Promise((res,rej)=>{
+    const r=d.transaction("f","readonly").objectStore("f").get(id);
+    r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
+  try{ const hit = await from(await idb()); if(hit) return hit; }catch(e){}
+  /* Not in the new store: either the move has not run yet or it was left
+     alone on purpose. Either way the image is still there to be found. */
+  try{ return await from(await idbOld()); }catch(e){ return null; }
+}
 
 /* --------------------------------------------------- computation */
 function person(id){ return (S.members||[]).find(m=>m.id===id) || (S.members||[])[0] || {id:"none",name:"\u2014",sex:"",dob:"",population:"asian_pacific"}; }
@@ -650,6 +1453,27 @@ function statusOf(o){
   if(o.manualStatus) return o.manualStatus;
   if(o.code==="bmi"){ const std = BMI_STD[person(o.memberId).population]||BMI_STD.general, c=std.cuts;
     return o.value<c[0]?"discuss": o.value<c[1]?"in_range": o.value<c[2]?"watch":"discuss"; }
+  if(isQual(o.code)){
+    const got = qualState(o.valueRaw);
+    const want = qualState(o.refText);
+    /* An ECG line reading "Within normal limit" needs no reference column:
+       a clinician already did the comparing and wrote down the answer. So
+       the result stands as its own verdict. This is not the app inventing a
+       threshold (hard rule 8) -- it is quoting the issuing clinician, which
+       is the same authority a printed range carries. A comment this book
+       cannot read still falls through to unknown and says so. */
+    if(!want && meta(o.code).self) return got ? (got.r===0?"in_range":got.r===1?"watch":"discuss") : "unknown";
+    /* hard rule 8 -- with nothing printed to compare against, this is
+       unknown, not "probably fine". Unknown renders louder than in range. */
+    if(!want || !got) return "unknown";
+    if(got.r <= want.r) return "in_range";
+    return (got.r - want.r) === 1 ? "watch" : "discuss";
+  }
+  if(o.code==="body_fat_pct" && (o.refLow==null||o.refLow==="") && (o.refHigh==null||o.refHigh==="")){
+    const std=bfStd(person(o.memberId)); if(!std) return "unknown";
+    const c=std.cuts, v=Number(o.value);
+    return v<c[0]?"discuss": v<c[1]?"in_range": v<c[2]?"watch":"discuss";
+  }
   const lo = o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi = o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "unknown";
@@ -664,6 +1488,22 @@ function why(o){
   if(o.code==="bmi"){ const m=person(o.memberId), std=BMI_STD[m.population]||BMI_STD.general, c=std.cuts, v=o.value;
     const b = v<c[0]?std.names[0]:v<c[1]?std.names[1]:v<c[2]?std.names[2]:std.names[3];
     return b+" on "+std.label+". Worked out from height and weight — not measured."; }
+  if(isQual(o.code)){
+    const got=qualState(o.valueRaw), want=qualState(o.refText);
+    if(!got) return "This report printed \u201C"+(o.valueRaw||"")+"\u201D, which is not a result this book recognises. It is kept exactly as printed, unchanged \u2014 read it on the report itself.";
+    if(!want && meta(o.code).self) return "\u201C"+esc(o.valueRaw)+"\u201D is the issuing clinician\u2019s own wording on this report. There is no separate reference column because the comparison was already made by the person who signed it.";
+    if(!want) return "No expected result is printed on this report for this test, so there is nothing to measure it against. Type what the report expects and the status resolves.";
+    if(got.r<=want.r) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D, which is the expected \u201C"+esc(o.refText)+"\u201D on this report.";
+    if(got.r-want.r===1) return "Printed as \u201C"+esc(o.valueRaw)+"\u201D where this report expects \u201C"+esc(o.refText)+"\u201D. A trace is the step between nothing and something \u2014 worth watching across the next report rather than reading anything into one.";
+    return "Printed as \u201C"+esc(o.valueRaw)+"\u201D where this report expects \u201C"+esc(o.refText)+"\u201D. Mang k\u1EBFt qu\u1EA3 n\u00E0y \u0111i kh\u00E1m.";
+  }
+  if(o.code==="body_fat_pct" && (o.refLow==null||o.refLow==="") && (o.refHigh==null||o.refHigh==="")){
+    const std=bfStd(person(o.memberId));
+    if(!std) return "No sex recorded for this person, and the body-fat bands differ by sex. Set it in Settings and the status resolves \u2014 nothing is assumed in the meantime.";
+    const c=std.cuts, v=Number(o.value);
+    const b = v<c[0]?std.names[0]:v<c[1]?std.names[1]:v<c[2]?std.names[2]:std.names[3];
+    return b+" on "+std.label+". This report printed no range of its own, so a published standard is used and named \u2014 other bodies band by age as well and do not agree with it.";
+  }
   const lo=o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi=o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "No reference range on file. Type the range printed on this report and the status resolves.";
@@ -679,6 +1519,12 @@ function latest(mid){ const m=new Map();
   return [...m.values()]; }
 function series(mid,code){ return obsOf(mid).filter(o=>o.code===code&&isFinite(o.value))
   .sort((a,b)=>(a.observedAt||"").localeCompare(b.observedAt||"")); }
+/* A word result has no number, so it cannot be a point on a line -- but
+   Negative, Negative, Trace, Trace IS a direction, and it is the one a urine
+   strip is read for. This is the series behind that. */
+function qSeries(mid,code){ return obsOf(mid).filter(o=>o.code===code&&isQual(o.code)&&String(o.valueRaw||"").trim()!=="")
+  .sort((a,b)=>(a.observedAt||"").localeCompare(b.observedAt||"")); }
+function anySeries(mid,code){ return isQual(code) ? qSeries(mid,code) : series(mid,code); }
 
 /* ------------------------------------- safety checks (the clinical pass) */
 function checksFor(mid){
@@ -706,6 +1552,16 @@ function checksFor(mid){
 }
 
 /* ------------------------------------------------------- components */
+/* A blood group has no range and never will -- it is neither in one nor out
+   of one, and showing "no range on file" on it (which renders LOUDER than in
+   range, by hard rule 17) reads as a warning about something that is simply
+   a fact. Those get a neutral pill and are left out of a panel's worst-case
+   roll-up. */
+function obsBadge(o){
+  return meta(o.code).fact
+    ? '<span class="badge" style="background:var(--sunk);color:var(--ink-muted)"><span class="dot"></span>On file</span>'
+    : badge(statusOf(o));
+}
 function badge(st){ return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(ST[st]||st)+'</span>'; }
 function bandHTML(o, cuts, names){
   const M=meta(o.code);
@@ -738,9 +1594,282 @@ function obsCard(o){
     '<div class="nm">'+icon(o.code)+' '+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
     '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
-    '<div style="margin-top:var(--s2)">'+badge(st)+'</div>'+
+    '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
     '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
+      (agoText(o.observedAt)?' · '+esc(agoText(o.observedAt)):'')+
+      (isLocal(o)?' · on this device only':'')+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
+}
+
+/* ---- how long ago, stated as a fact and never as advice ---------------
+
+   "Last measured 14 months ago" is arithmetic. "You are due for a lipid
+   panel" is a recommendation, and a recommendation is the one thing this
+   record does not make. The difference is the whole reason this is safe to
+   ship without a clinician: it reports the gap and lets the person and
+   their doctor decide what it means. */
+function monthsSince(iso){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(String(iso||""))) return null;
+  const d=new Date(iso+"T00:00:00"); if(isNaN(d)) return null;
+  return Math.max(0, Math.round((Date.now()-d.getTime())/(1000*60*60*24*30.44)));
+}
+function agoText(iso){
+  const n=monthsSince(iso);
+  if(n===null) return "";
+  if(n<1)  return "this month";
+  if(n<2)  return "last month";
+  if(n<24) return n+" months ago";
+  const y=Math.floor(n/12), r=n%12;
+  return y+" year"+(y>1?"s":"")+(r?" "+r+" months":"")+" ago";
+}
+
+/* ---- simple mode ------------------------------------------------------
+
+   Not a different app: the same record with less of it on screen. Core
+   metrics only, the archive hidden, type a step up, and three tabs instead
+   of six. Per device and never per account, because the person who needs it
+   is not always the person who set it up. */
+const SIMPLE_KEY="passbook-simple";
+function simple(){ return pref(SIMPLE_KEY, ["famrec-simple"])==="on"; }
+function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
+  applyText(); render(); }
+
+/* ---- the emergency card ------------------------------------------------
+
+   The highest-value page in the book and the cheapest to build, because
+   everything on it is already stored. In an emergency department nobody
+   reads a trend chart: they ask what you take, what you react to, what you
+   have, and who to call. One page, printable, readable at arm's length.
+
+   It deliberately says nothing clinical. It is a transcript of what the
+   person has told it, which is exactly what makes it safe to hand over. */
+
+/* ---- pick from a list rather than spell it ----------------------------
+
+   Typing "Atorvastatin" or "Penicillin" correctly, on a phone, at 78, is not
+   a reasonable thing to ask, and a misspelling here is not a cosmetic fault:
+   an allergy nobody can match is an allergy nobody will act on.
+
+   So the common answers are offered and anything else can still be typed.
+   Two kinds of control, chosen by how long the list is:
+
+     select  -- a short, closed set (how bad, how often). On iOS this is the
+               full-screen wheel, which is the easiest control there is to
+               operate with imprecise hands.
+     list    -- a long set (every common medicine). An input with a datalist:
+               tap for the whole list, type to narrow it, and a name that is
+               not on the list is still accepted verbatim.
+
+   Nothing here is clinical advice. It is a spelling aid: the same words a
+   pharmacy label or a vaccination card already prints. */
+
+const PICK = {
+  allergyWhat: [
+    ["Medicines", ["Penicillin","Amoxicillin","Cephalosporin","Sulfa drugs","Aspirin",
+      "Ibuprofen / NSAIDs","Codeine","Morphine","Contrast dye (X-ray)","Local anaesthetic",
+      "Statins","Metformin","Iodine"]],
+    ["Foods", ["Peanut","Tree nuts","Shellfish","Crab","Shrimp","Fish","Egg","Cow\u2019s milk",
+      "Soy","Wheat / gluten","Sesame","Monosodium glutamate (MSG)"]],
+    ["Around you", ["Pollen","House dust mite","Cat","Dog","Mould","Latex","Bee or wasp sting",
+      "Nickel","Fragrance"]]
+  ],
+  allergyReaction: ["Rash or hives","Itching","Swelling of the face, lips or tongue",
+    "Trouble breathing","Wheezing","Runny nose or sneezing","Watery eyes","Stomach pain",
+    "Nausea or vomiting","Diarrhoea","Dizziness or fainting","Anaphylaxis"],
+  allergySeverity: ["Mild","Moderate","Severe","Life-threatening"],
+
+  medName: [
+    ["Heart and blood pressure", ["Amlodipine","Lisinopril","Losartan","Valsartan","Metoprolol",
+      "Bisoprolol","Atenolol","Hydrochlorothiazide","Furosemide","Spironolactone","Nifedipine"]],
+    ["Cholesterol", ["Atorvastatin","Rosuvastatin","Simvastatin","Ezetimibe","Fenofibrate"]],
+    ["Blood thinners", ["Aspirin (low dose)","Clopidogrel","Warfarin","Apixaban","Rivaroxaban"]],
+    ["Diabetes", ["Metformin","Gliclazide","Glipizide","Sitagliptin","Empagliflozin",
+      "Dapagliflozin","Insulin (long acting)","Insulin (fast acting)"]],
+    ["Stomach", ["Omeprazole","Esomeprazole","Pantoprazole","Famotidine","Domperidone"]],
+    ["Thyroid", ["Levothyroxine","Carbimazole","Methimazole"]],
+    ["Pain and inflammation", ["Paracetamol / Acetaminophen","Ibuprofen","Naproxen","Diclofenac",
+      "Tramadol","Prednisone","Prednisolone"]],
+    ["Gout", ["Allopurinol","Febuxostat","Colchicine"]],
+    ["Breathing", ["Salbutamol inhaler","Budesonide inhaler","Montelukast"]],
+    ["Prostate", ["Tamsulosin","Finasteride","Dutasteride"]],
+    ["Mood and sleep", ["Sertraline","Escitalopram","Fluoxetine","Amitriptyline","Melatonin"]],
+    ["Supplements", ["Vitamin D","Calcium","Vitamin B12","Folic acid","Iron","Fish oil",
+      "Multivitamin","Magnesium","Probiotic"]]
+  ],
+  medDose: ["2.5 mg","5 mg","10 mg","20 mg","25 mg","40 mg","50 mg","75 mg","81 mg","100 mg",
+    "250 mg","500 mg","850 mg","1000 mg","1 tablet","2 tablets","Half a tablet","1 puff","2 puffs"],
+  medFreq: ["Once a day, morning","Once a day, evening","Once a day, at night","Twice a day",
+    "Three times a day","Four times a day","Every other day","Once a week","With meals",
+    "Before meals","Only when needed"],
+
+  conditionName: [
+    ["Heart and circulation", ["High blood pressure","High cholesterol","Heart disease",
+      "Atrial fibrillation","Heart failure","Stroke","Deep vein thrombosis"]],
+    ["Metabolic", ["Type 2 diabetes","Type 1 diabetes","Prediabetes","Gout","Obesity",
+      "Underactive thyroid","Overactive thyroid"]],
+    ["Digestive and liver", ["Fatty liver","Hepatitis B","Hepatitis C","Acid reflux (GERD)",
+      "Stomach ulcer","Irritable bowel","Gallstones"]],
+    ["Kidney and urinary", ["Chronic kidney disease","Kidney stones","Enlarged prostate"]],
+    ["Breathing", ["Asthma","COPD","Sleep apnoea","Chronic sinusitis"]],
+    ["Bones and joints", ["Osteoarthritis","Rheumatoid arthritis","Osteoporosis","Back pain"]],
+    ["Eyes and ears", ["Cataract","Glaucoma","Macular degeneration","Hearing loss"]],
+    ["Mind", ["Depression","Anxiety","Insomnia","Migraine"]],
+    ["Blood", ["Anaemia","Iron deficiency","Thalassaemia trait"]]
+  ],
+  shotName: ["Influenza (flu)","COVID-19","Tetanus (Td or Tdap)","Shingles (zoster)",
+    "Pneumococcal","Hepatitis A","Hepatitis B","MMR (measles, mumps, rubella)","Chickenpox",
+    "HPV","RSV","Typhoid","Japanese encephalitis","Rabies","Yellow fever","Meningococcal"],
+  visitWhy: ["Annual check-up","Follow-up","New symptom","Test results","Vaccination",
+    "Prescription refill","Specialist referral","Emergency","Dental","Eye test"]
+};
+
+/* label · field · control · which list */
+const FIELDS = {
+  meds:       [["name","Medicine","list","medName"],["dose","Dose","list","medDose"],
+               ["freq","How often","select","medFreq"],["since","Started","month"],["note","Note","text"]],
+  allergies:  [["what","Allergic to","list","allergyWhat"],["reaction","What happens","select","allergyReaction"],
+               ["severity","How bad","select","allergySeverity"],["note","Note","text"]],
+  conditions: [["name","Condition","list","conditionName"],["since","Since","month"],["note","Note","text"]],
+  shots:      [["name","Vaccination","list","shotName"],["date","Date","date"],["note","Note","text"]],
+  visits:     [["date","Date","date"],["who","Doctor","text"],["place","Where","text"],
+               ["why","Why","list","visitWhy"],["said","What was said","text"]]
+};
+
+/* A datalist is written once per list and shared by every row that uses it. */
+function pickOptions(key){
+  const v = PICK[key] || [];
+  if(!v.length) return "";
+  if(Array.isArray(v[0]))
+    return v.map(g=>'<optgroup label="'+esc(g[0])+'">'+
+      g[1].map(o=>'<option value="'+esc(o)+'"></option>').join("")+'</optgroup>').join("");
+  return v.map(o=>'<option value="'+esc(o)+'"></option>').join("");
+}
+function pickFlat(key){
+  const v = PICK[key] || [];
+  return Array.isArray(v[0]) ? v.reduce((a,g)=>a.concat(g[1]), []) : v.slice();
+}
+function dataLists(){
+  return Object.keys(PICK).map(k=>'<datalist id="dl-'+k+'">'+pickOptions(k)+'</datalist>').join("");
+}
+const BLANK = {
+  meds:{name:"",dose:"",freq:"",since:"",note:""},
+  allergies:{what:"",reaction:"",severity:"",note:""},
+  conditions:{name:"",since:"",note:""},
+  shots:{name:"",date:"",note:""},
+  visits:{date:today(),who:"",place:"",why:"",said:""}
+};
+
+/* One control per field, chosen by the shape of its answer. */
+function control(key, row, f){
+  const [name, label, kind, list] = f;
+  const v = row[name] || "";
+  const at = 'data-lk="'+key+'" data-lid="'+esc(row.id)+'" data-lf="'+name+'"';
+  if(kind === "select"){
+    const opts = pickFlat(list);
+    const known = !v || opts.indexOf(v) >= 0;
+    return '<select class="inp" '+at+'>'+
+      '<option value=""'+(v?"":" selected")+'>\u2014</option>'+
+      opts.map(o=>'<option'+(o===v?" selected":"")+'>'+esc(o)+'</option>').join("")+
+      (known?"":'<option selected>'+esc(v)+'</option>')+
+      '</select>';
+  }
+  if(kind === "list")
+    return '<input class="inp" '+at+' list="dl-'+list+'" value="'+esc(v)+'" '+
+      'placeholder="tap to choose, or type" autocapitalize="sentences" autocomplete="off">';
+  if(kind === "date")
+    return '<input class="inp" type="date" '+at+' value="'+esc(v)+'">';
+  if(kind === "month")
+    return '<input class="inp" type="month" '+at+' value="'+esc(String(v).slice(0,7))+'">';
+  return '<input class="inp" '+at+' value="'+esc(v)+'" placeholder="\u2014">';
+}
+
+/* The one line a person reads without opening anything. */
+function entrySummary(key, r){
+  if(key==="meds")       return [r.name||"New medicine", [r.dose,r.freq].filter(Boolean).join(" \u00b7 ")];
+  if(key==="allergies")  return [r.what||"New allergy", [r.reaction,r.severity].filter(Boolean).join(" \u00b7 ")];
+  if(key==="conditions") return [r.name||"New condition", r.since?("since "+r.since):""];
+  if(key==="shots")      return [r.name||"New vaccination", r.date||""];
+  return [r.date||"New visit", [r.who,r.place,r.why].filter(Boolean).join(" \u00b7 ")];
+}
+
+function listRows(key, mid){
+  const rows = listOf(key, mid), F = FIELDS[key];
+  const add = '<button class="gadd" data-ladd="'+key+'">+ Add'+
+    (key==="meds"?" a medicine":key==="allergies"?" an allergy":key==="conditions"?" a condition":
+     key==="shots"?" a vaccination":" a visit")+'</button>';
+  if(!rows.length)
+    return '<div class="glist"><div class="gempty">Nothing written down yet.</div>'+add+'</div>';
+  return '<div class="glist">'+rows.map(r=>{
+    const [title, sub] = entrySummary(key, r);
+    return '<details class="gentry"><summary><span>'+esc(title)+
+      (sub?'<span class="sub">'+esc(sub)+'</span>':'')+'</span><span class="chev"></span></summary>'+
+      '<div class="gbody">'+
+        F.map(f=>'<label class="gfield"><span>'+esc(f[1])+'</span>'+control(key,r,f)+'</label>').join("")+
+        '<div style="padding-top:var(--s3)"><button class="btn sm warn" data-ldel="'+key+'|'+esc(r.id)+'">Remove this entry</button></div>'+
+      '</div></details>';
+  }).join("")+add+'</div>';
+}
+
+function vCard(){
+  const m = person(who), blood = bloodOf(m.id);
+  const al = listOf("allergies", m.id), md = listOf("meds", m.id), cd = listOf("conditions", m.id);
+  const age = ageOf(m);
+
+  let h = '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
+    '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
+    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div>'+
+    '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
+
+  /* the card itself, styled to print on its own page */
+  h += '<div class="card cardsheet" style="margin-bottom:var(--s5)">'+
+    '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Emergency information</div>'+
+      '<h2 style="margin:var(--s1) 0 0">'+esc(m.name)+'</h2>'+
+      '<div class="cap">'+(m.dob?esc(m.dob)+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
+        (m.sex?" \u00b7 "+esc(m.sex):"")+'</div></div>'+
+      (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">Blood group</div>'+
+        '<div style="font-size:30px;font-weight:600;line-height:1.1">'+esc(blood)+'</div></div>':'')+
+    '</div>'+
+    '<div class="grid g240" style="margin-top:var(--s4)">'+
+      '<div><div class="kick" style="color:var(--red-ink)">Allergies</div>'+
+        (al.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+al.map(a=>
+            '<li><b>'+esc(a.what)+'</b>'+(a.reaction?' \u2014 '+esc(a.reaction):"")+
+            (a.severity?' ('+esc(a.severity)+')':"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded. If that is right, say so below &mdash; blank reads as unknown to a stranger.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Medicines</div>'+
+        (md.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+md.filter(x=>!x.stopped).map(x=>
+            '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">Conditions</div>'+
+        (cd.length ? '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+cd.map(c=>
+            '<li>'+esc(c.name)+(c.since?' (since '+esc(c.since)+')':"")+'</li>').join("")+'</ul>'
+          : '<p class="cap" style="margin-top:var(--s2)">None recorded.</p>')+'</div>'+
+      '<div><div class="kick" style="color:var(--ink-muted)">In an emergency, call</div>'+
+        (m.ecName ? '<p style="margin:var(--s2) 0 0"><b>'+esc(m.ecName)+'</b>'+(m.ecRel?" ("+esc(m.ecRel)+")":"")+
+            (m.ecPhone?'<br>'+esc(m.ecPhone):"")+'</p>'
+          : '<p class="cap" style="margin-top:var(--s2)">No contact set.</p>')+
+        (m.insurer?'<p class="cap" style="margin-top:var(--s2)">'+esc(m.insurer)+(m.policy?" \u00b7 "+esc(m.policy):"")+'</p>':"")+'</div>'+
+    '</div>'+
+    '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
+      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+today()+'.</p>'+
+  '</div>';
+
+  /* who to call, and the insurer -- edited in place */
+  const pf = (f,label,ph) => '<div><label class="fl">'+esc(label)+'</label>'+
+    '<input class="inp" data-mf="'+f+'" data-mid="'+esc(m.id)+'" value="'+esc(m[f]||"")+'" placeholder="'+esc(ph||"")+'"></div>';
+  h += '<details class="sec"><summary><span>Emergency contact and insurance</span></summary>'+
+    '<div class="card" style="margin-top:var(--s3)"><div class="grid g180">'+
+      pf("ecName","Who to call")+pf("ecRel","Relationship","daughter, son, spouse")+
+      pf("ecPhone","Their phone")+pf("phone","This person\u2019s phone")+
+      pf("insurer","Insurance")+pf("policy","Member or policy number")+
+    '</div></div></details>';
+
+  /* the five lists, each its own grouped inset list */
+  LISTS.forEach(l=>{
+    const key=l[0], title=l[2], n=listOf(key,m.id).length;
+    h += '<div class="ghdr">'+esc(title)+(n?' &middot; '+n:'')+'</div>'+listRows(key, m.id);
+  });
+  return h + dataLists();
 }
 
 /* ============================================================== views */
@@ -835,6 +1964,73 @@ function pairCard(ca, cb, label, L){
       (half?' <span class="badge st-unknown"><span class="dot"></span>'+esc(a?meta(cb).n:meta(ca).n)+' not measured</span>':'')+'</div>'+
     '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt||"no date")+'</div></button>';
 }
+/* ---- Today ------------------------------------------------------------
+
+   The book used to open on the full record, which is the least useful
+   screen to land on: it answers "what do I have" when the question is
+   "what changed". One card, three answers, one button. */
+function vToday(){
+  const m=person(who), L=latest(m.id);
+  const flagged = L.filter(o=>{ const st=statusOf(o); return st==="act"||st==="discuss"||st==="watch"; })
+                   .sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]);
+  const newest = obsOf(m.id).map(o=>o.observedAt).filter(Boolean).sort().pop() || "";
+  const crossings = [];
+  [...new Set(obsOf(m.id).map(o=>o.code))].forEach(code=>{
+    const pts=anySeries(m.id,code); if(pts.length<2) return;
+    const a=statusOf(pts[pts.length-2]), b=statusOf(pts[pts.length-1]);
+    if(a!==b && RANK[b]<RANK[a]) crossings.push({code:code, from:a, to:b, o:pts[pts.length-1]});
+  });
+  const gaps = CORE.filter(c=>!L.some(o=>o.code===c));
+  const stale = CORE.map(c=>{ const o=L.find(x=>x.code===c); const n=o?monthsSince(o.observedAt):null;
+      return (n!==null && n>=12) ? {code:c,o:o,n:n} : null; }).filter(Boolean)
+    .sort((a,b)=>b.n-a.n);
+
+  let h='<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)">'+
+    '<h2>'+esc(m.name)+'</h2>'+
+    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>';
+
+  if(!obsOf(m.id).length)
+    return h+'<div class="empty"><b>Nothing on file yet</b>Photograph a lab report or a health check and it will be read into this book.</div>';
+
+  h+='<div class="card" style="margin-bottom:var(--s4)">'+
+    '<div class="kick" style="color:var(--ink-muted)">Where things stand</div>'+
+    '<p style="margin-top:var(--s2)">'+
+      '<b>'+L.length+'</b> measurement'+(L.length===1?"":"s")+' on file'+
+      (newest?', the newest from <b>'+esc(newest)+'</b> ('+esc(agoText(newest))+')':"")+'. '+
+      (flagged.length
+        ? '<b>'+flagged.length+'</b> sit'+(flagged.length===1?"s":"")+' outside or near the range printed on its own report.'
+        : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
+    '</p></div>';
+
+  if(crossings.length)
+    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Changed since the report before</div>'+
+      '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+crossings.map(c=>
+        '<li><b>'+esc(meta(c.code).n)+'</b> went from <i>'+esc(ST[c.from]).toLowerCase()+'</i> to <i>'+
+        esc(ST[c.to]).toLowerCase()+'</i> \u2014 '+esc(c.o.valueRaw||fmt(c.o.value))+' '+esc(c.o.unit||"")+
+        ' on '+esc(c.o.observedAt||"an undated report")+'</li>').join("")+'</ul></div>';
+
+  if(flagged.length)
+    h+='<div class="sec"><h3>Worth a look</h3><div class="grid g240">'+
+      flagged.slice(0,6).map(obsCard).join("")+'</div></div>';
+
+  if(stale.length && !simple())
+    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Not measured in over a year</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+stale.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">How long it has been, and nothing more. Whether any of it needs repeating is a conversation with a doctor, not a judgement this book makes.</div>'+
+      '<div class="tw" style="margin-top:var(--s3)"><table><tbody>'+stale.map(x=>
+        '<tr><td>'+esc(meta(x.code).n)+'</td><td class="n cap">'+esc(agoText(x.o.observedAt))+'</td>'+
+        '<td class="n">'+esc(x.o.valueRaw||fmt(x.o.value))+' '+esc(x.o.unit||"")+'</td></tr>').join("")+
+      '</tbody></table></div></details>';
+
+  if(gaps.length && !simple())
+    h+='<details class="sec" style="margin-top:var(--s3)"><summary><span>Never measured</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+gaps.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">On the standard check-up list and never on any report you have uploaded. A test nobody has done is invisible otherwise.</div>'+
+      '<p style="margin-top:var(--s2)">'+gaps.map(c=>esc(meta(c).n)).join(" \u00b7 ")+'</p></details>';
+
+  return h;
+}
+
 function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
@@ -855,27 +2051,64 @@ function vRecord(){
     '<div class="row" style="margin-bottom:var(--s4)">'+
       badge("in_range")+badge("watch")+badge("discuss")+badge("unknown")+'</div>';
 
+  /* One flat grid stopped working somewhere past a hundred metrics. A report
+     is not read as one list either -- it is read panel by panel, and a
+     clinician looks at the liver panel together or not at all. So the book
+     follows the panels, in the order a check-up is usually laid out.
+
+     A section opens if it holds a reading and closes if it does not, which
+     means a book with four reports in it shows four open sections and keeps
+     the rest as a quiet checklist of what has never been done. That is the
+     panel doing its job: a test you have never had is invisible otherwise. */
   const consumed = new Set();
-  const cards = [];
+  const byGroup = new Map();
+  const put = (g, html, st, fact) => {
+    const b = byGroup.get(g) || {cards:[], on:0, n:0, worst:"in_range"};
+    b.cards.push(html); b.n++;
+    if(st){ b.on++; if(!fact && RANK[st] < RANK[b.worst]) b.worst = st; }
+    byGroup.set(g, b);
+  };
   for(const code of panel){
     if(consumed.has(code)) continue;
+    const g = meta(code).g || "Also on your reports";
     const pair = PAIRS[code];
     if(pair && panel.indexOf(pair.mate)>=0){
       consumed.add(code); consumed.add(pair.mate);
-      cards.push(pairCard(code, pair.mate, pair.label, L));
+      const a = L.find(x=>x.code===code);
+      put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
       continue;
     }
     const o = L.find(x=>x.code===code);
-    cards.push(o ? obsCard(o) : ghostCard(code));
+    put(g, o ? obsCard(o) : ghostCard(code), o ? statusOf(o) : null, !!meta(code).fact);
   }
-  h += '<div class="grid g240">'+cards.join("")+'</div>';
+  /* Anything measured that is not on the panel keeps its own group too, so a
+     one-off from a specialist still lands beside the panel it belongs to. */
+  L.filter(o => panel.indexOf(o.code) < 0)
+   .sort((a,b) => RANK[statusOf(a)] - RANK[statusOf(b)])
+   .forEach(o => put(tierOf(o.code) === "sec" ? "Secondary"
+                                              : (meta(o.code).g || "Also on your reports"),
+                     obsCard(o), statusOf(o), !!meta(o.code).fact));
 
-  const extra = L.filter(o=>panel.indexOf(o.code)<0);
-  if(extra.length){
-    h += '<div class="sec" style="margin-top:var(--s6)"><h2>Also on your reports</h2>'+
-      '<div class="cap" style="margin-bottom:var(--s3)">Recorded, but not on your standard panel. Add any of them to the panel in Settings so a missing one shows up as a gap.</div>'+
-      '<div class="grid g240">'+extra.sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]).map(obsCard).join("")+'</div></div>';
-  }
+  const order = GROUPS.filter(g => byGroup.has(g))
+    .concat([...byGroup.keys()].filter(g => GROUPS.indexOf(g) < 0));
+  h += order.map(g => {
+    const b = byGroup.get(g);
+    /* Secondary stays shut even when it holds readings -- it is an archive,
+       and opening it by default is what made the record feel like a wall. */
+    const open = b.on > 0 && g !== "Secondary";
+    const flag = (b.on && b.worst !== "in_range" && b.worst !== "unknown") ? badge(b.worst) : "";
+    return '<details class="sec" '+(open?"open":"")+' style="margin-top:var(--s4)">'+
+      '<summary><span>'+esc(g)+'</span>'+
+        '<span class="cap" style="margin-left:auto;white-space:nowrap">'+
+          '<span class="num">'+b.on+'</span> of <span class="num">'+b.n+'</span></span>'+
+        (flag ? '<span style="margin-left:var(--s2)">'+flag+'</span>' : '')+
+      '</summary>'+
+      (g === "Secondary"
+        ? '<p class="cap" style="margin-top:var(--s3)">Recorded and kept, but not followed. Most of it is one machine describing the same measurement several ways &mdash; a body-composition scan derives lean mass, fat-free mass and cell mass from a single reading, and twenty-five limb rows from the same. Five views of one number is not five pieces of information.</p>'
+        : '')+
+      '<div class="grid g240" style="margin-top:var(--s3)">'+b.cards.join("")+'</div>'+
+      '</details>';
+  }).join("");
   if(!panel.length && !L.length)
     h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel in Settings, or add a report.</div>';
   return h;
@@ -907,18 +2140,80 @@ function panelGaps(L){
   }
   return h+'</div>';
 }
+/* A sparkline, not a chart: no axis, no grid, no numbers. It answers one
+   question -- which way has this gone -- and the full chart below answers
+   the rest. Drawn from the canonical value so a reading in mg/dL and one in
+   mmol/L sit on the same line. */
+function spark(pts, st){
+  const v = pts.map(p=>Number(p.value)).filter(isFinite);
+  if(v.length < 2) return "";
+  const lo = Math.min.apply(null,v), hi = Math.max.apply(null,v), span = (hi-lo)||1;
+  const W = 120, H = 30;
+  const d = v.map((y,i)=>(i*(W/(v.length-1))).toFixed(1)+","+(H-((y-lo)/span)*(H-6)-3).toFixed(1)).join(" ");
+  const last = d.split(" ").pop().split(",");
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="30" preserveAspectRatio="none" aria-hidden="true">'+
+    '<polyline points="'+d+'" fill="none" stroke="'+stColor(st)+'" stroke-width="2" '+
+      'stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="3" fill="'+stColor(st)+'"/></svg>';
+}
+
+/* The indicators a clinician actually follows year on year: blood pressure
+   and lipids, glucose and HbA1c, kidney function, liver enzymes, a blood
+   count, thyroid, and the deficiencies worth catching. Anything with two
+   readings gets a direction; anything with one says so rather than being
+   hidden, because "we have this once" is itself worth seeing. */
+function vKeyTrends(mid){
+  const rows = CORE.map(code=>{
+    const pts = anySeries(mid, code);
+    return pts.length ? {code:code, pts:pts} : null;
+  }).filter(Boolean);
+  if(!rows.length) return "";
+  const withTrend = rows.filter(r=>r.pts.length>1), single = rows.filter(r=>r.pts.length===1);
+  let h = '<h3 style="margin-bottom:var(--s2)">What your doctor follows</h3>'+
+    '<div class="cap" style="margin-bottom:var(--s3)">The measurements that change what happens next, over time. Tap one for the full chart and the readings behind it.</div>';
+  const card = r => {
+    const M = meta(r.code), last = r.pts[r.pts.length-1], first = r.pts[0], st = statusOf(last);
+    const q = isQual(r.code);
+    let move = "";
+    if(!q && r.pts.length>1 && isFinite(last.value) && isFinite(first.value)){
+      const d = Number(last.value)-Number(first.value);
+      const arrow = Math.abs(d) < 1e-9 ? "\u2192" : (d>0 ? "\u2191" : "\u2193");
+      move = arrow+" "+fmt(Math.abs(toUnit(d, r.code, last.unit||M.u)))+" "+esc(last.unit||M.u)+
+        " since "+esc((first.observedAt||"").slice(0,7));
+    }
+    return '<button class="obs" data-trend="'+esc(r.code)+'">'+
+      '<div class="nm">'+icon(r.code)+' '+esc(M.n)+'</div>'+
+      '<div class="vl">'+esc(last.valueRaw||fmt(last.value))+'<span>'+esc(last.unit||M.u)+'</span></div>'+
+      (q?"":spark(r.pts, st))+
+      '<div style="margin-top:var(--s2)">'+obsBadge(last)+'</div>'+
+      '<div class="ft">'+(move || (r.pts.length>1 ? r.pts.length+" readings" : "one reading \u2014 a second shows a direction"))+'</div>'+
+      '</button>';
+  };
+  h += '<div class="grid g240">'+withTrend.map(card).join("")+'</div>';
+  if(single.length)
+    h += '<details class="sec" style="margin-top:var(--s4)"><summary><span>Measured once</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+single.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">One reading is a fact, not a trend. These need a second report before they can show a direction.</div>'+
+      '<div class="grid g240" style="margin-top:var(--s3)">'+single.map(card).join("")+'</div></details>';
+  return h;
+}
+
 function vTrends(){
   const m=person(who);
-  const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>series(m.id,c).length>1)
+  const key = vKeyTrends(m.id);
+  const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>anySeries(m.id,c).length>1)
     .sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
-  if(!codes.length) return '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
+  if(!codes.length) return key || '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   if(!trendCode||codes.indexOf(trendCode)<0) trendCode=codes[0];
   const pts=series(m.id,trendCode), M=meta(trendCode);
+  if(!pts.length) return h+'<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   const units=[...new Set(pts.map(p=>p.unit))];
   const labs=[...new Set(pts.map(p=>(p.source||"").trim()).filter(Boolean))];
-  let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
+  let h = key ? key+'<div style="height:var(--s6)"></div>' : "";
+  h+='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
     '<select class="inp" id="trendSel" style="width:auto;min-width:220px">'+
-    codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+series(m.id,c).length+')</option>').join("")+'</select></div>';
+    codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+anySeries(m.id,c).length+')</option>').join("")+'</select></div>';
+  if(isQual(trendCode)) return h + qualTrend(m, trendCode);
   if(units.length>1) h+='<div class="callout c-blue" style="margin-bottom:var(--s3)"><div class="kick">Converted to '+esc(M.u)+'</div>'+
     '<p>These readings were reported in '+esc(units.join(" and "))+'. The line is plotted in '+esc(M.u)+' so the points are comparable; the table below shows each reading in the unit its own report used.</p></div>';
   if(labs.length>1) h+='<div class="callout c-amber" style="margin-bottom:var(--s3)"><div class="kick">'+labs.length+' different laboratories</div>'+
@@ -930,6 +2225,34 @@ function vTrends(){
       '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit)+'</td>'+
       '<td class="n">'+fmt(o.value)+'</td><td>'+badge(statusOf(o))+'</td>'+
       '<td class="cap">'+esc(o.refLabel||"none on file")+'</td><td class="cap">'+esc(o.source||"—")+'</td></tr>').join("")+
+    '</tbody></table></div></div></div>';
+  return h;
+}
+/* No line, no axis, no invented numbers -- a row of what each report said,
+   oldest first, so the eye reads the run. The point of the view is the
+   transition: three Negatives and then a Trace. */
+function qualTrend(m, code){
+  const pts=qSeries(m.id,code), M=meta(code);
+  const moves=[];
+  for(let i=1;i<pts.length;i++){
+    const a=qualState(pts[i-1].valueRaw), b=qualState(pts[i].valueRaw);
+    if(a&&b&&a.k!==b.k) moves.push(esc(pts[i].observedAt||"an undated report")+": "+esc(a.n.toLowerCase())+" \u2192 "+esc(b.n.toLowerCase()));
+  }
+  let h='<div class="card"><div class="row" style="flex-wrap:wrap;gap:var(--s2);align-items:flex-end">'+
+    pts.map(o=>'<div style="text-align:center;min-width:92px">'+
+      badge(statusOf(o))+
+      '<div style="margin-top:var(--s2);font-weight:600">'+esc(o.valueRaw||"\u2014")+'</div>'+
+      '<div class="cap">'+esc(o.observedAt||"no date")+'</div></div>').join("")+
+    '</div>'+
+    '<p class="cap" style="margin-top:var(--s4)">This test is reported as words, not a number, so there is no line to draw. '+
+    (moves.length
+      ? 'It changed '+moves.length+' time'+(moves.length>1?'s':'')+': '+moves.join(' \u00B7 ')+'.'
+      : 'It has read the same on every report here.')+'</p></div>'+
+    '<div class="sec" style="margin-top:var(--s4)"><h2>The readings behind it</h2><div class="card"><div class="tw">'+
+    '<table><thead><tr><th>Date</th><th>Printed</th><th>Expected on that report</th><th>Status</th><th>Lab</th></tr></thead><tbody>'+
+    pts.slice().reverse().map(o=>'<tr><td class="n">'+esc(o.observedAt||"\u2014")+'</td>'+
+      '<td>'+esc(o.valueRaw||"\u2014")+'</td><td class="cap">'+esc(o.refText||"none on file")+'</td>'+
+      '<td>'+badge(statusOf(o))+'</td><td class="cap">'+esc(o.source||"\u2014")+'</td></tr>').join("")+
     '</tbody></table></div></div></div>';
   return h;
 }
@@ -973,7 +2296,7 @@ function line(pts,M){
 
 /* ------------------------------------------------------- add report */
 function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
-  rows:[],files:[],busy:"",notes:[],skipped:[]}; }
+  rows:[],files:[],busy:"",prog:null,notes:[],skipped:[]}; }
 function kb(n){ return n>=1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
 function codeOpts(sel){
   const G={};
@@ -1053,10 +2376,17 @@ function doubtRow(r, i){
       '<button class="btn sm warn" data-rm="'+i+'">Not a result</button></div>'+
       '<div class="cap" style="margin-top:2px">'+esc(r.why || "not matched to a known test")+'</div>'+
       '<div class="cg" style="margin-top:var(--s3)">'+
-        '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
-        '<div><label class="fl" for="u'+i+'">Unit</label><input class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'"></div>'+
-        '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
-        '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+      (isQual(r.code)
+        /* a dipstick line has no number and no unit: what it printed, and
+           what it said to expect. Two fields instead of four. */
+        ? '<div><label class="fl" for="v'+i+'">What the report printed</label>'+
+            '<input class="inp" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" placeholder="Negative / Trace / 1+"></div>'+
+          '<div><label class="fl" for="rt'+i+'">What it says to expect</label>'+
+            '<input class="inp" id="rt'+i+'" data-f="refText" data-i="'+i+'" value="'+esc(r.refText||"")+'" placeholder="Âm tính / Negative"></div>'
+        : '<div><label class="fl" for="v'+i+'">Value</label><input class="inp num" id="v'+i+'" data-f="value" data-i="'+i+'" value="'+esc(r.value)+'" inputmode="decimal"></div>'+
+          '<div><label class="fl" for="u'+i+'">Unit</label><input class="inp" id="u'+i+'" data-f="unit" data-i="'+i+'" value="'+esc(r.unit)+'"></div>'+
+          '<div><label class="fl" for="lo'+i+'">Range low</label><input class="inp num" id="lo'+i+'" data-f="refLow" data-i="'+i+'" value="'+esc(r.refLow)+'" inputmode="decimal" placeholder="from sheet"></div>'+
+          '<div><label class="fl" for="hi'+i+'">Range high</label><input class="inp num" id="hi'+i+'" data-f="refHigh" data-i="'+i+'" value="'+esc(r.refHigh)+'" inputmode="decimal" placeholder="from sheet"></div>')+
       '</div>'+
       '<div class="row" style="margin-top:var(--s3)">'+
         '<button class="btn '+(r.confirmed?'':'pri')+'" data-keep="'+i+'">'+(r.confirmed?'Will be saved':'Looks right, keep it')+'</button>'+
@@ -1090,17 +2420,18 @@ function vAdd(){
     '<p>Reading a report runs under your own account, so it needs you signed in. Open <b>Settings</b> and sign in, then come back. '+
     'You can still type values in by hand without signing in.</p></div>':'')+
     (IS_ARTIFACT?'<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Reading does not work in this copy</div>'+
-    '<p>The claude.ai viewer blocks this page from reaching your database. Open <b>ttrng3.github.io/famrec</b> to read a document. Typing values in works here.</p></div>':'')+
+    '<p>The claude.ai viewer blocks this page from reaching your database. Open <b>ttrng3.github.io/passbook</b> to read a document. Typing values in works here.</p></div>':'')+
     '<div class="card"><h3>1 · Get the report in</h3>'+
     '<button class="dropz big" id="pickFile2" style="width:100%;margin-top:var(--s3)">'+
       '<svg viewBox="0 0 16 16" width="20" height="20" aria-hidden="true" style="margin-right:var(--s2)"><path d="M8 11V2.5M4.6 5.9 8 2.5l3.4 3.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M2.2 10.6v1.8a1.6 1.6 0 0 0 1.6 1.6h8.4a1.6 1.6 0 0 0 1.6-1.6v-1.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>'+
       'Drop a PDF, photo or CSV here, or click to choose'+
     '</button>'+
     '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
-      '<span class="mono">⌘V</span>. Photos and PDFs are both read by the Vitals extractor, which resolves every test name through your alias table rather than guessing. '+
-      'It reads Vietnamese and English equally well — on the bench, Vietnamese scored slightly higher. Pages go to your own Supabase and on to the model; nothing is read in this browser.</div>'+
-    (draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
-      '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
+      '<span class="mono">⌘V</span>. Photos and PDFs are both read on the server, and every test name is matched against a list of known names rather than guessed. '+
+      'It reads Vietnamese and English. The page goes to the server and on to the model to be read; nothing is read in this browser.</div>'+
+    (draft.prog ? '<div id="progHost">'+progressHTML()+'</div>'
+      : draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
+        '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
     ((draft.notes&&draft.notes.length)?'<div class="callout c-amber" style="margin-bottom:var(--s4)">'+
       '<div class="kick">Note</div><p>'+esc(draft.notes.join(" · "))+'</p></div>':'')+
     '<details><summary>Or paste the text of a report</summary><div>'+
@@ -1131,8 +2462,8 @@ function vActions(){
   const done=mine.filter(a=>a.done);
   let h='<h2 style="margin-bottom:var(--s3)">Questions for the doctor</h2>';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">You write these, not the app</div>'+
-    '<p>Vitals had a &ldquo;suggest next step&rdquo; feature and it was deliberately cut — it was the one thing that turned a record into a recommendation. '+
-    'The list and its ordering survive; the medical judgement stays with you and your doctor. Ordered by the worst status among the tests each item touches.</p></div>';
+    '<p>Passbook never suggests what to ask or which test to have &mdash; that judgement stays with you and your doctor. '+
+    'Write your own questions here. They are ordered by the worst result among the tests each one touches.</p></div>';
   h+='<div class="card"><div class="row">'+
     '<input class="inp" id="aT" placeholder="e.g. Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
     '<select class="inp" id="aB" style="width:auto">'+Object.keys(BUCKET).map(b=>'<option value="'+b+'">'+esc(BUCKET[b])+'</option>').join("")+'</select>'+
@@ -1148,43 +2479,125 @@ function vActions(){
   if(done.length) h+='<div class="sec"><h2>Done</h2>'+done.map(a=>aRow(a,L)).join("")+'</div>';
   return h;
 }
+/* The Leverage Graph, as the original blueprint defined it: for each item,
+   count how many of THIS person's flagged results it touches, and sort by
+   the worst status first, the count second. It is a join and a COUNT -- the
+   judgement about what to do is still the person's and their doctor's, and
+   the items are ones they wrote themselves. Nothing here is seeded advice. */
+function leverage(a, L){
+  return (a.codes||[]).filter(c=>{ const o=L.find(x=>x.code===c);
+    return o && statusOf(o)!=="in_range"; }).length;
+}
 function aRow(a,L){
   const chips=(a.codes||[]).map(c=>{ const o=L.find(x=>x.code===c), st=o?statusOf(o):"unknown";
     return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(meta(c).n)+'</span>'; }).join("");
   return '<div class="card" style="margin-bottom:var(--s3);padding:var(--s4)"><div class="row" style="align-items:flex-start;flex-wrap:nowrap">'+
     '<input type="checkbox" class="ck" data-act="'+esc(a.id)+'"'+(a.done?" checked":"")+' aria-label="Mark done">'+
     '<div style="flex:1;min-width:0"><div'+(a.done?' class="muted" style="text-decoration:line-through"':'')+'>'+esc(a.title)+'</div>'+
-    (chips?'<div class="row" style="margin-top:var(--s2)">'+chips+'</div>':'')+'</div>'+
+    (chips?'<div class="row" style="margin-top:var(--s2)">'+chips+'</div>':'')+
+    (leverage(a,L)>1?'<div class="cap" style="margin-top:var(--s2)">Covers <b>'+leverage(a,L)+'</b> of the results currently flagged</div>':'')+'</div>'+
     '<button class="btn sm warn" data-dela="'+esc(a.id)+'">Delete</button></div></div>';
+}
+
+/* ---- the sheet you take to the appointment ----------------------------
+
+   A US visit is about twelve minutes and the doctor has not seen any of
+   this. One page: who you are, what you take, what you react to, what is
+   flagged and what changed, and the questions you wrote. No interpretation
+   and no advice -- it is a transcript of the record, laid out so somebody
+   can read it in ninety seconds. */
+function vSheet(){
+  const m=person(who), L=latest(m.id);
+  const flagged=L.filter(o=>statusOf(o)!=="in_range" && !meta(o.code).fact)
+                 .sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]);
+  const md=listOf("meds",m.id).filter(x=>!x.stopped), al=listOf("allergies",m.id),
+        cd=listOf("conditions",m.id), qs=S.actions.filter(a=>a.memberId===m.id&&!a.done);
+  const labs=[...new Set(obsOf(m.id).map(o=>(o.source||"").trim()).filter(Boolean))];
+  const line = o => '<tr><td>'+esc(meta(o.code).n)+'</td>'+
+    '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit||meta(o.code).u)+'</td>'+
+    '<td class="cap">'+esc(o.refLabel||o.refText||"no range on report")+'</td>'+
+    '<td>'+esc(ST[statusOf(o)])+'</td>'+
+    '<td class="cap">'+esc(o.observedAt||"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
+
+  let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
+    '<h2>Sheet for the appointment</h2>'+
+    '<button class="btn pri" id="printSheet" style="font-size:16px;padding:12px 20px">Print it</button></div>'+
+    '<div class="cap" style="margin-bottom:var(--s4)">Everything a doctor who has never met you would ask for, on one page, in the order they ask.</div>';
+
+  h+='<div class="card cardsheet">'+
+    '<h2 style="margin:0">'+esc(m.name)+'</h2>'+
+    '<div class="cap">'+(m.dob?esc(m.dob):"date of birth not set")+
+      (ageOf(m)!==null?" \u00b7 "+ageOf(m)+" years":"")+(m.sex?" \u00b7 "+esc(m.sex):"")+
+      (bloodOf(m.id)?" \u00b7 blood group "+esc(bloodOf(m.id)):"")+'</div>'+
+
+    '<h3>Medicines</h3>'+(md.length?'<ul style="margin:0;padding-left:18px">'+md.map(x=>
+      '<li><b>'+esc(x.name)+'</b>'+(x.dose?" "+esc(x.dose):"")+(x.freq?", "+esc(x.freq):"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded.</p>')+
+
+    '<h3>Allergies</h3>'+(al.length?'<ul style="margin:0;padding-left:18px">'+al.map(a=>
+      '<li><b>'+esc(a.what)+'</b>'+(a.reaction?" \u2014 "+esc(a.reaction):"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded \u2014 blank means unrecorded, not none.</p>')+
+
+    '<h3>Conditions</h3>'+(cd.length?'<ul style="margin:0;padding-left:18px">'+cd.map(c=>
+      '<li>'+esc(c.name)+(c.since?" (since "+esc(c.since)+")":"")+'</li>').join("")+'</ul>'
+      :'<p class="cap">None recorded.</p>')+
+
+    '<h3>Results outside or near their range</h3>'+
+    (flagged.length?'<div class="tw"><table><thead><tr><th>Test</th><th class="n">Result</th>'+
+      '<th>Range on that report</th><th>Status</th><th>When and where</th></tr></thead><tbody>'+
+      flagged.map(line).join("")+'</tbody></table></div>'
+      :'<p class="cap">Every result on file sits inside the range printed on its own report.</p>')+
+
+    (qs.length?'<h3>What I wanted to ask</h3><ul style="margin:0;padding-left:18px">'+
+      qs.map(a=>'<li>'+esc(a.title)+'</li>').join("")+'</ul>':'')+
+
+    '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
+      L.length+' measurements on file'+(labs.length>1?' from '+labs.length+' laboratories ('+esc(labs.join(", "))+')':"")+
+      '. Each result is shown against the range printed on its own report, not against a common one. '+
+      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+today()+'.</p>'+
+  '</div>';
+  return h;
 }
 
 /* -------------------------------------------------------- hand-off */
 function exportPayload(memberId){
   const mem = memberId ? S.members.filter(m=>m.id===memberId) : S.members;
   const ids = mem.map(m=>m.id);
-  return {kind:"vitals-journal", v:2, exported:today(),
+  const out = {kind:"passbook", v:2, exported:today(),
     members:mem,
     observations:S.observations.filter(o=>ids.indexOf(o.memberId)>=0),
     actions:S.actions.filter(a=>ids.indexOf(a.memberId)>=0)};
+  LISTS.forEach(l=>{ out[l[0]] = (S[l[0]]||[]).filter(x=>ids.indexOf(x.memberId)>=0); });
+  return out;
 }
 function mergeIn(p, label){
-  if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Vitals Journal file");
+  /* Files exported before the rename carry the old stamp and must keep
+     importing forever -- they are already sitting in people's messages. */
+  const known = p && (p.kind==="passbook" || p.kind==="vitals-journal");
+  if(!known || !Array.isArray(p.members)) throw new Error("not a Passbook file");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
-  p.members.forEach(m=>{ if(!haveM.has(m.id)){ S.members.push(m); haveM.add(m.id); addedM++; } });
+  p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
   const haveO=new Set(S.observations.map(o=>o.id));
   (p.observations||[]).forEach(o=>{ if(haveO.has(o.id)){ dupO++; return; }
-    o.origin = label || ("imported "+today()); o.sample=false; S.observations.push(o); haveO.add(o.id); addedO++; });
+    o.origin = label || ("imported "+today()); o.sample=false; o.local=true;
+    S.observations.push(o); haveO.add(o.id); addedO++; });
   const haveA=new Set(S.actions.map(a=>a.id));
-  (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; S.actions.push(a); haveA.add(a.id); addedA++; } });
-  return {addedM, addedO, addedA, dupO};
+  (p.actions||[]).forEach(a=>{ if(!haveA.has(a.id)){ a.sample=false; a.local=true; S.actions.push(a); haveA.add(a.id); addedA++; } });
+  let addedL=0;
+  LISTS.forEach(l=>{
+    S[l[0]] = S[l[0]] || [];
+    const have = new Set(S[l[0]].map(x=>x.id));
+    (p[l[0]]||[]).forEach(x=>{ if(!have.has(x.id)){ x.sample=false; x.local=true; S[l[0]].push(x); have.add(x.id); addedL++; } });
+  });
+  return {addedM, addedO, addedA, dupO, addedL};
 }
 let pendingEmail="", codeSent=false;
 function syncCard(){
   if(IS_ARTIFACT)
     return '<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Sync runs on your own site, not here</div>'+
       '<p>The claude.ai viewer blocks a page from reaching an outside server, so this copy cannot sync &mdash; a platform rule, not a choice. '+
-      'Open the same book at <b>ttrng3.github.io/famrec</b> and it will. Everything else works identically in both.</p></div>';
+      'Open the same book at <b>ttrng3.github.io/passbook</b> and it will. Everything else works identically in both.</p></div>';
   let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between"><h3>Sync</h3>'+
     (S.lastSync?'<span class="cap">Last synced '+esc(new Date(S.lastSync).toLocaleString())+'</span>':'<span class="cap">Never synced</span>')+'</div>';
   if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-top:var(--s3)"><div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
@@ -1236,7 +2649,7 @@ function syncCard(){
         '<button class="btn" id="verifyCode">Sign in</button></div></div></details>';
   }
   h+='<div class="hint" style="margin-top:var(--s3)"><b>What syncs:</b> readings, people, ranges, follow-ups. '+
-     '<b>What does not:</b> attached report photos &mdash; they stay on the device that took them, being the largest and most identifying thing in the book.</div>';
+     '<b>What does not:</b> attached report photos. They are the largest and most identifying thing in the book, and they stay in the browser that took them.</div>';
   return h+'</div>';
 }
 function vHandoff(){
@@ -1266,22 +2679,36 @@ function vHandoff(){
     '<div id="impMsg"></div></div>';
 
   h+='<div class="card"><h3>Family in other countries</h3>'+
-    '<div class="hint">The workable shape, and it is the only one that does not build the thing that was killed:</div>'+
+    '<div class="hint">How it works when family live in other countries:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
-    '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. Their records never leave their device unless they choose.</li>'+
+    '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
     '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
     '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
     '</ol>'+
     '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
-    '<p>A single place everyone uploads to is one person holding a household&rsquo;s medical records on someone else&rsquo;s server, across borders. '+
-    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1. Copies that people choose to send you are a different thing, and they stay on your machine.</p></div></div>';
+    '<p>One place everyone uploads to would mean one person holding a whole family&rsquo;s medical records on a server, across borders. Passbook does not do that.</p>'+
+    '<p>Copies people choose to send you are a different thing, and they stay on this machine &mdash; merged records are marked <b>on this device only</b> and are excluded from the sync, so a relative&rsquo;s readings never reach the server through your account. That is enforced in the code, not just promised here.</p></div></div>';
   return h;
 }
 
 /* -------------------------------------------------------- settings */
 function vSettings(){
-  let h=vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
+  let h=
+    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+    '<div><h3 style="margin:0">Simple mode</h3>'+
+    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
+    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
+    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
+      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
+    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+    '<div><h3 style="margin:0">Sheet for an appointment</h3>'+
+    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">One printable page: medicines, allergies, conditions, whatever is flagged, and the questions you wrote.</div></div>'+
+    '<button class="btn" data-tab="sheet">Open it</button></div></div>'+
+    vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
+    (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
+      '<span class="dot"></span>On this device only</span>'+
+      '<div class="cap" style="margin-top:var(--s2)">'+esc(m.name)+' arrived in a copy somebody sent you. Their records stay in this browser and are left out of the sync, so they never reach the server through your account. Delete them here and they are gone from this device.</div></div>':'')+
     '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
     '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
       ["female","male"].map(x=>'<option'+(m.sex===x?" selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
@@ -1313,7 +2740,13 @@ function vSettings(){
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
-    '<p><b>There is no server.</b> No account, no sync, no upload, no AI reading your documents. Nothing crosses a border because nothing leaves the machine.</p>'+
+    '<p><b>Where your records actually go.</b> The book lives in this browser. Three things leave it, and nothing else does:</p>'+
+    '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body);margin-bottom:var(--s3)">'+
+    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs.</li>'+
+    '<li><b>Reading a report sends that page off the device.</b> The photo goes to that same Supabase project and on to Anthropic in the United States to be read, then the stored copy is deleted as soon as the read finishes. The original stays in your phone&rsquo;s camera roll; this book keeps its own copy only in this browser.</li>'+
+    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not yours to put on a server.</li>'+
+    '</ul>'+
+    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance.</p>'+
     '<details><summary>What a clinician would want you to know</summary><div>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body)">'+
     '<li><b>This is not your medical record.</b> It is a patient-held copy. Hand a clinician the original report — that is the document with the lab&rsquo;s method, its accreditation and its own flags on it.</li>'+
@@ -1324,7 +2757,9 @@ function vSettings(){
     '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
     '</ul></div></details></div></div>';
 
-  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">There is no cloud copy. Take a hand-off first.</div>'+
+  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">'+(AUTH
+      ? 'This clears this device only. Your synced copy stays on the server and comes back the next time you sign in here. Take a hand-off first if you want a copy you hold.'
+      : 'Nothing on this device is synced, so there is no other copy. Take a hand-off first.')+'</div>'+
     '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
   return h;
 }
@@ -1346,6 +2781,10 @@ function drawer(){
     const A=cat(mine,o.value), B=cat(other,o.value);
     if(A!==B) dis='<div class="callout c-amber" style="margin-top:var(--s4)"><div class="kick">The two standards disagree here</div>'+
       '<p>'+esc(mine.label)+' calls this <b>'+esc(A)+'</b>. '+esc(other.label)+' calls it <b>'+esc(B)+'</b>. Same body, same day, different word — worth asking which one your clinic uses.</p></div>';
+  } else if(o.code==="body_fat_pct" && (o.refLow==null||o.refLow==="") && bfStd(m)){
+    const std=bfStd(m);
+    bands='<div class="kick muted" style="margin-top:var(--s4)">'+esc(std.label)+' \u2014 no range printed on this report</div>'+
+      bandHTML(o,std.cuts,std.names);
   } else bands=bandHTML(o,null,null);
   host.innerHTML='<div class="scrim" data-x="1"></div><aside class="drawer" role="dialog" aria-modal="true" aria-label="'+esc(M.n)+'">'+
     '<div class="dh"><div style="flex:1;min-width:0"><div class="cap">'+esc(M.g)+' · '+esc(m.name)+'</div><h3>'+esc(M.n)+'</h3></div>'+
@@ -1353,12 +2792,13 @@ function drawer(){
     '<div class="row" style="align-items:baseline"><span class="big">'+esc(o.valueRaw||fmt(o.value))+'</span>'+
       '<span class="muted" style="font-size:15px">'+esc(o.unit||M.u)+'</span></div>'+
     (o.unit!==M.u?'<div class="cap num" style="margin-top:var(--s1)">= '+fmt(o.value)+' '+esc(M.u)+' after conversion</div>':'')+
-    '<div style="margin:var(--s3) 0">'+badge(st)+'</div>'+
+    '<div style="margin:var(--s3) 0">'+obsBadge(o)+'</div>'+
     '<div class="callout c-blue"><p>'+esc(why(o))+'</p></div>'+bands+dis+
     '<dl class="kv">'+
       '<dt>Laboratory</dt><dd>'+esc(o.source||"not recorded")+'</dd>'+
       '<dt>Collected</dt><dd>'+esc(o.observedAt||"not recorded")+'</dd>'+
-      '<dt>Range used</dt><dd>'+esc(o.refLabel||(o.code==="bmi"?(BMI_STD[m.population]||BMI_STD.general).label:"none on file"))+'</dd>'+
+      '<dt>Range used</dt><dd>'+esc(o.refLabel||(o.code==="bmi"?(BMI_STD[m.population]||BMI_STD.general).label
+        :(o.code==="body_fat_pct"&&bfStd(m)?bfStd(m).label:"none on file")))+'</dd>'+
       (o.fasting?'<dt>Fasting</dt><dd>'+esc(o.fasting)+'</dd>':'')+
       (o.specimen?'<dt>Specimen</dt><dd>'+esc(o.specimen)+'</dd>':'')+
       (o.origin?'<dt>Came from</dt><dd>'+esc(o.origin)+'</dd>':'')+
@@ -1387,11 +2827,11 @@ function drawer(){
    This only runs on the real site. The claude.ai artifact viewer blocks
    cross-origin requests, so there the panel explains that instead. */
 const SUPA = {url:"https://uoncyxguauemrqupqxto.supabase.co", key:"sb_publishable_DOg4mmkTXCZP5cb2COAG5g_GBnsWU6K"};
-const AUTH_KEY = "famrec-auth";
+const AUTH_KEY = "passbook-auth";
 const IS_ARTIFACT = !!(window.claude && typeof window.claude.use === "function");
 let AUTH = null, syncMsg = null, syncing = false;
 
-function loadAuth(){ try{ const r=localStorage.getItem(AUTH_KEY); if(r) AUTH=JSON.parse(r); }catch(e){} }
+function loadAuth(){ try{ const r=pref(AUTH_KEY, ["famrec-auth"]); if(r) AUTH=JSON.parse(r); }catch(e){} }
 function saveAuth(){ try{ AUTH?localStorage.setItem(AUTH_KEY,JSON.stringify(AUTH)):localStorage.removeItem(AUTH_KEY); }catch(e){} }
 function syncConfigured(){ return SUPA.url.indexOf("http")===0 && SUPA.key.length>10; }
 
@@ -1437,7 +2877,7 @@ async function setPassword(password){
 }
 async function sendCode(email){
   const r = await supa("/auth/v1/otp?redirect_to="+encodeURIComponent(returnTo()),
-    {method:"POST", noAuth:true, body:{email, create_user:true}});
+    {method:"POST", noAuth:true, body:{email, create_user:false}});
   if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
     || ("Could not send the code (HTTP "+r.status+")."));
   return true;
@@ -1471,7 +2911,7 @@ function syncMerge(a, b){
                 a:uniq((ta.a||[]).concat(tb.a||[])),
                 m:uniq((ta.m||[]).concat(tb.m||[])),
                 p:uniq((ta.p||[]).concat(tb.p||[]))};
-  return {v:2,
+  const out = {v:2,
     members:      pickById(a.members,      b.members,      tomb.m),
     observations: pickById(a.observations, b.observations, tomb.o),
     actions:      pickById(a.actions,      b.actions,      tomb.a),
@@ -1479,9 +2919,15 @@ function syncMerge(a, b){
     customCodes:  Object.assign({}, b.customCodes||{}, a.customCodes||{}),
     panel:        uniq((a.panel||[]).concat(b.panel||[])).filter(c=>tomb.p.indexOf(c)<0),
     tomb:tomb};
+  LISTS.forEach(l=>{
+    tomb[l[1]] = uniq((ta[l[1]]||[]).concat(tb[l[1]]||[]));
+    out[l[0]] = pickById(a[l[0]], b[l[0]], tomb[l[1]]);
+  });
+  return out;
 }
 function tombstone(kind, id){
   S.tomb = S.tomb || {o:[],a:[],m:[]};
+  S.tomb[kind] = S.tomb[kind] || [];
   if(S.tomb[kind].indexOf(id)<0) S.tomb[kind].push(id);
 }
 function touch(rec){ if(rec) rec.mtime = Date.now(); return rec; }
@@ -1559,6 +3005,24 @@ function dropExamples(){
 
 /* Keep the account copy current without anyone pressing a button. */
 let syncTimer=null;
+/* The sync table is being renamed famrec_state -> passbook_state. The page
+   ships BEFORE the migration runs, so it has to work on either side of it:
+   it asks for the new name once, and if Postgres says no such table it uses
+   the old one for the rest of the session. That removes the window where a
+   deployed page queries a table that does not exist yet and sync fails
+   silently, which is the whole risk in renaming a live table. */
+let STATE_TABLE = null;
+async function stateTable(){
+  if(STATE_TABLE) return STATE_TABLE;
+  try{
+    const r = await supa("/rest/v1/passbook_state?select=user_id&limit=1");
+    const missing = r.status === 404 ||
+      (r.body && (r.body.code === "PGRST205" || /passbook_state/.test(r.body.message||"")));
+    STATE_TABLE = missing ? "famrec_state" : "passbook_state";
+  }catch(e){ STATE_TABLE = "famrec_state"; }
+  return STATE_TABLE;
+}
+
 function queueSync(){
   if(!AUTH || IS_ARTIFACT || syncing) return;
   clearTimeout(syncTimer);
@@ -1569,7 +3033,7 @@ async function syncNow(quiet){
   if(syncing) return;
   if(IS_ARTIFACT){
     syncMsg = {t:"amber", k:"Sync does not run in this copy",
-      x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/famrec to sync."};
+      x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/passbook to sync."};
     render(); return;
   }
   if(!syncConfigured()){
@@ -1582,7 +3046,8 @@ async function syncNow(quiet){
   }
   syncing = true;
   if(!quiet){ syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."}; render(); }
-  const q = "/rest/v1/famrec_state?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
+  const TBL = await stateTable();
+  const q = "/rest/v1/" + TBL + "?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
   let changed = false;
   try{
     let r = await supa(q);
@@ -1592,8 +3057,8 @@ async function syncNow(quiet){
     }
     if(!r.ok){
       const code = r.body && r.body.code;
-      if(code==="PGRST205" || (r.body && /famrec_state/.test(r.body.message||"")))
-        throw new Error("The sync table does not exist yet. Run 0010_famrec_sync.sql in the Supabase SQL editor, then try again.");
+      if(code==="PGRST205" || (r.body && /_state/.test(r.body.message||"")))
+        throw new Error("The sync table is missing on the server, so nothing could be synced. Your records on this device are untouched.");
       throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
     }
     let remote = (r.body && r.body[0] && r.body[0].doc) || null;
@@ -1616,13 +3081,18 @@ async function syncNow(quiet){
     if(dedupePeople()) changed = true;
     ensurePerson();
     save();
-    const keptMembers = S.members.filter(m=>!isSample(m));
-    const up = await supa("/rest/v1/famrec_state", {method:"POST",
+    /* Everything the account is allowed to hold. A record someone else sent
+       is theirs, kept here as a copy, and not mine to put on a server. */
+    const keptMembers = syncable(S.members);
+    const up = await supa("/rest/v1/" + TBL, {method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:[{user_id:AUTH.uid, device:(navigator.platform||"device"),
              doc:{v:2, members:keptMembers,
-                  observations:S.observations.filter(o=>!isSample(o)),
-                  actions:S.actions.filter(a=>!isSample(a)),
+                  observations:syncable(S.observations),
+                  actions:syncable(S.actions),
+                  meds:syncable(S.meds), allergies:syncable(S.allergies),
+                  conditions:syncable(S.conditions), shots:syncable(S.shots),
+                  visits:syncable(S.visits),
                   reports:S.reports||[], customCodes:S.customCodes||{},
                   panel:S.panel||[], tomb:S.tomb}}]});
     if(!up.ok) throw new Error((up.body&&(up.body.message||up.body.hint))
@@ -1742,33 +3212,54 @@ function extFor(f){
   return m?m[1].toLowerCase():"jpg";
 }
 
+/* fetch() reports nothing until it is finished, and on a phone a 4 MB photo
+   is most of the wait. XMLHttpRequest is the only way to see bytes leaving,
+   so the one honest number in the whole operation comes from here. */
+function putWithProgress(url, file, mime, onFrac){
+  return new Promise(function(resolve){
+    var x = new XMLHttpRequest();
+    x.open("POST", url, true);
+    x.setRequestHeader("apikey", SUPA.key);
+    x.setRequestHeader("Authorization", "Bearer " + AUTH.tok);
+    x.setRequestHeader("Content-Type", mime);
+    x.setRequestHeader("x-upsert", "true");
+    if(x.upload) x.upload.onprogress = function(e){
+      if(e.lengthComputable && onFrac) onFrac(e.loaded / e.total); };
+    x.onload  = function(){ resolve({ok: x.status>=200 && x.status<300, status: x.status, text: x.responseText}); };
+    x.onerror = function(){ resolve({ok:false, status:0, text:""}); };
+    x.send(file);
+  });
+}
+
+/* How long a read actually takes, measured on this device rather than
+   guessed. The median of the last dozen is what the estimate is built from;
+   until there are any, the read shows no estimate at all. */
+const READ_MS_KEY = "passbook-readms";
+function readTimes(){ try{ var a=JSON.parse(pref(READ_MS_KEY, ["famrec-readms"])||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function noteReadTime(ms){ try{ localStorage.setItem(READ_MS_KEY, JSON.stringify(readTimes().concat(ms).slice(-12))); }catch(e){} }
+function typicalRead(){ var a=readTimes().slice().sort(function(x,y){return x-y;}); return a.length ? a[Math.floor(a.length/2)] : 0; }
+
 async function extractViaVitals(file, say){
-  if(IS_ARTIFACT) throw new Error("this copy cannot reach the extractor — open ttrng3.github.io/famrec");
+  if(IS_ARTIFACT) throw new Error("this copy cannot reach the extractor — open ttrng3.github.io/passbook");
   if(!AUTH || !AUTH.uid) throw new Error("sign in first — extraction runs under your own account");
 
-  const path = AUTH.uid + "/famrec-" + Date.now() + "-" + uid() + "." + extFor(file);
+  const path = AUTH.uid + "/passbook-" + Date.now() + "-" + uid() + "." + extFor(file);
   const mime = file.type || "application/octet-stream";
 
-  say && say("Uploading the page");
-  let up = await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
-    method: "POST",
-    headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok,
-              "Content-Type": mime, "x-upsert": "true"},
-    body: file
-  });
+  const dest = SUPA.url + "/storage/v1/object/documents/" + path;
+  const onFrac = function(f){ say && say("upload", f); };
+  say && say("upload", 0);
+  let up = await putWithProgress(dest, file, mime, onFrac);
   if(up.status === 401 && await renewSession()){
-    up = await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
-      method: "POST",
-      headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok,
-                "Content-Type": mime, "x-upsert": "true"},
-      body: file });
+    say && say("upload", 0);
+    up = await putWithProgress(dest, file, mime, onFrac);
   }
   if(!up.ok){
-    let why = ""; try{ const j = await up.json(); why = j.message || j.error || ""; }catch(e){}
+    let why = ""; try{ const j = JSON.parse(up.text||"{}"); why = j.message || j.error || ""; }catch(e){}
     throw new Error("the page could not be uploaded (HTTP " + up.status + (why ? ": " + why : "") + ")");
   }
 
-  say && say("Registering it");
+  say && say("register");
   const ins = await supa("/rest/v1/documents", {method: "POST",
     headers: {Prefer: "return=representation"},
     body: [{storage_path: path, mime_type: mime}]});
@@ -1776,15 +3267,46 @@ async function extractViaVitals(file, say){
     throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created");
   const documentId = ins.body[0].id;
 
-  say && say("Reading it — this takes a few seconds");
-  const r = await fetch(SUPA.url + "/functions/v1/extract-document", {
-    method: "POST",
-    headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok, "Content-Type": "application/json"},
-    body: JSON.stringify({documentId: documentId})
-  });
+  say && say("read");
+  const readStarted = Date.now();
+  /* The page said scanned reports stay on the device. They did not: the
+     image was uploaded so the reader could fetch it and was never removed,
+     so every page ever scanned was still sitting in storage. It is deleted
+     as soon as the read finishes, whether it succeeded or failed -- the
+     upload is a courier, not a filing cabinet. */
+  const dropStored = async () => {
+    try{ await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
+      method:"DELETE",
+      headers:{apikey:SUPA.key, Authorization:"Bearer "+AUTH.tok}}); }catch(e){}
+  };
+  let r;
+  try{
+    r = await fetch(SUPA.url + "/functions/v1/extract-document", {
+      method: "POST",
+      headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok, "Content-Type": "application/json"},
+      body: JSON.stringify({documentId: documentId})
+    });
+  } finally {
+    /* finally, not afterwards: a dropped connection is exactly the case
+       where a page would otherwise be left sitting in storage. */
+    noteReadTime(Date.now() - readStarted);
+    await dropStored();
+  }
   let out = null; try{ out = await r.json(); }catch(e){}
-  if(!r.ok) throw new Error((out && out.error) || ("the extractor refused it (HTTP " + r.status + ")"));
-  return {rows: (out && out.rows) || [], documentId: documentId, path: path};
+  if(!r.ok){
+    /* 504 is the gateway giving up while the reader is still working, and it
+       arrives with no body at all -- so the page has to supply the meaning. */
+    if(r.status === 504 || r.status === 524)
+      throw new Error("this page took longer to read than the reader is allowed to run. "+
+        "It is unusually dense \u2014 photograph it in two halves, top and bottom, and each half will go through.");
+    throw new Error((out && out.error) || ("the extractor refused it (HTTP " + r.status + ")"));
+  }
+  /* notice is set when the page held more rows than one read could return.
+     It is carried through and shown, because a page that quietly gave up
+     two thirds of its results is the silent failure this book exists to
+     avoid -- better a visible "photograph it in two halves". */
+  return {rows: (out && out.rows) || [], documentId: documentId, path: path,
+          notice: (out && out.notice) || ""};
 }
 
 /* Model rows -> the shape this book stores. The range comes back as a pair
@@ -1798,7 +3320,10 @@ function rowsFromVitals(vrows, fileName){
     const known = !!v.canonicalCode;
     const name  = v.sourceTestName || "";
     const code  = known ? v.canonicalCode : slug(name || "unknown");
-    const unit  = normUnit(v.unitRaw || "") || (known ? meta(code).u : (v.unitRaw || ""));
+    const q     = known && isQual(code);
+    /* A word result carries no unit. Falling back to the catalogue unit here
+       would print "Negative mmol/L". */
+    const unit  = q ? "" : (normUnit(v.unitRaw || "") || (known ? meta(code).u : (v.unitRaw || "")));
     const op    = v.refOperator;
     let lo = v.refLow, hi = v.refHigh, label = "";
     const has = x => x !== null && x !== undefined && isFinite(x);
@@ -1813,9 +3338,13 @@ function rowsFromVitals(vrows, fileName){
       code: code,
       value: String(v.valueRaw).trim(),
       unit: unit,
-      refLow:  has(lo) ? String(lo) : "",
-      refHigh: has(hi) ? String(hi) : "",
-      refLabel: label ? label + (unit ? " " + unit : "") : "",
+      refLow:  !q && has(lo) ? String(lo) : "",
+      refHigh: !q && has(hi) ? String(hi) : "",
+      /* the reference printed as words ("Âm tính") rather than numbers. This
+         is what decides a qualitative status -- see statusOf(). */
+      refText: q ? String(v.refText || "").trim() : "",
+      refLabel: q ? (v.refText ? "expected " + String(v.refText).trim() : "")
+                  : (label ? label + (unit ? " " + unit : "") : ""),
       newName: known ? "" : name,
       src: name + (v.unitRaw ? "  " + v.unitRaw : ""),
       from: fileName,
@@ -1865,17 +3394,87 @@ async function addOneFile(f){
   return {entry:entry, file:f, kind:kind, name:f.name};
 }
 
+/* ------------------------------------------------- the waiting indicator
+
+   Three stages per page, and only two of them can honestly be measured: the
+   upload knows its bytes, and the queue knows how many pages are finished.
+   The read cannot be measured at all -- the reader answers when it answers --
+   so it is estimated from how long reads have actually taken on THIS device,
+   and the estimate is labelled as one. It stops at 92% and stays there rather
+   than sliding to full and sitting at "100%" while nothing has happened,
+   which is the thing that makes a progress bar feel like a lie.
+
+   Before there is any history, the read gets a moving bar with no number,
+   which is the honest picture of "we do not know yet". */
+
+const STAGES = [["upload","Uploading"],["register","Filing"],["read","Reading"]];
+
+function readFrac(P){
+  if(!P.typical || !P.t0) return null;
+  return Math.min(0.92, (Date.now() - P.t0) / P.typical);
+}
+function secs(ms){ return Math.max(0, Math.round(ms/1000)); }
+
+function progressHTML(){
+  const P = draft && draft.prog; if(!P) return "";
+  const si = STAGES.findIndex(x => x[0] === P.stage);
+  /* This page's own share of one page: upload is the long part on a phone,
+     the read is the long part on a laptop, so they get similar weight. */
+  const own = si < 0 ? 0 : si === 0 ? 0.40 * (P.up || 0)
+            : si === 1 ? 0.45
+            : 0.50 + 0.50 * (readFrac(P) === null ? 0 : readFrac(P));
+  const overall = P.n ? Math.min(99, Math.round(((P.i + own) / P.n) * 100)) : 0;
+
+  let detail = "", ind = false;
+  if(si === 0) detail = Math.round((P.up || 0) * 100) + "% sent";
+  else if(si === 1) detail = "a moment";
+  else {
+    const f = readFrac(P), el = secs(Date.now() - P.t0);
+    if(f === null){ ind = true; detail = el + "s so far \u2014 first page on this device, so there is nothing to compare it to yet"; }
+    else if(f >= 0.92) detail = el + "s \u2014 longer than the usual " + secs(P.typical) + "s, still reading";
+    else detail = el + "s of about " + secs(P.typical) + "s";
+  }
+
+  return '<div class="callout c-blue" style="margin-bottom:var(--s4)">'+
+    '<div class="row" style="justify-content:space-between;align-items:baseline">'+
+      '<div class="kick">'+(P.n>1 ? 'Page '+(P.i+1)+' of '+P.n : 'Working')+'</div>'+
+      '<div class="cap num">'+overall+'%</div></div>'+
+    '<div class="pbar"><i style="width:'+overall+'%"></i></div>'+
+    '<div class="stg">'+STAGES.map(function(x,k){
+        return '<b class="'+(k<si?"did":k===si?"on":"")+'">'+x[1]+'</b>'; }).join("")+'</div>'+
+    '<p class="cap" style="margin-top:var(--s2)">'+esc(detail)+'</p>'+
+    (ind ? '<div class="pbar ind"><i></i></div>' : '')+
+    '</div>';
+}
+
+let progTimer = null;
+function paintProg(){
+  /* Discarding the report mid-read leaves the ticker with nothing to draw,
+     so it stops itself rather than firing four times a second forever. */
+  if(!draft || !draft.prog){ progTick(false); return; }
+  const host = document.getElementById("progHost");
+  if(host) host.innerHTML = progressHTML();
+}
+function progTick(on){
+  if(on && !progTimer) progTimer = setInterval(paintProg, 300);
+  if(!on && progTimer){ clearInterval(progTimer); progTimer = null; }
+}
+
 /* Every page goes to the extractor; nothing is read in this browser. */
 async function readQueue(pending){
+  draft.prog = {n: pending.length, i: 0, stage: "", up: 0, t0: 0, typical: typicalRead()};
+  draft.busy = " ";
+  render(); progTick(true);
   for(let i = 0; i < pending.length; i++){
     const p = pending[i];
     if(!p.entry) continue;
-    const where = pending.length > 1 ? " (" + (i+1) + " of " + pending.length + ")" : "";
+    draft.prog.i = i;
     try{
-      const res = await extractViaVitals(p.file, msg => {
-        draft.busy = msg + where + "\u2026";
-        const el = document.getElementById("busyline"); if(el) el.textContent = draft.busy;
-        render();
+      const res = await extractViaVitals(p.file, (stage, frac) => {
+        const P = draft.prog; if(!P) return;
+        if(stage !== P.stage){ P.stage = stage; P.t0 = Date.now(); }
+        if(stage === "upload") P.up = frac || 0;
+        paintProg();
       });
       const rows = rowsFromVitals(res.rows, p.name);
       draft.rows = draft.rows.concat(rows);
@@ -1885,6 +3484,8 @@ async function readQueue(pending){
       p.entry.note = rows.length
         ? rows.length + " value" + (rows.length===1?"":"s") + " read" + (flagged ? ", " + flagged + " to check" : "")
         : "no test results found on this page";
+      if(res.notice) p.entry.note += " \u2014 " + res.notice;
+      p.entry.partial = !!res.notice;
       const d = rows.map(r=>r.collectedAt).find(x=>/^\d{4}-\d{2}-\d{2}$/.test(x||""));
       if(d && draft.date === today()) draft.date = d;
     }catch(e){
@@ -1895,6 +3496,8 @@ async function readQueue(pending){
     }
     render();
   }
+  progTick(false);
+  draft.prog = null;
   draft.busy = "";
   render();
 }
@@ -1953,9 +3556,13 @@ function docGallery(){
    report" was both a tab and a button on the same screen, which is one way of
    doing a thing too many; it is a screen you enter and leave, not a place. */
 function tabList(){
-  const t=[];
+  /* Simple mode is three tabs, not six. The record does not get smaller;
+     the number of decisions on screen does. */
+  if(simple()) return [["today","Today"],["record","Results"],["card","Card"]];
+  const t=[["today","Today"]];
   if((S.members||[]).length>1) t.push(["overview","Family"]);
-  t.push(["record","Results"],["trends","Trends"],["actions","Questions"],["settings","Settings"]);
+  t.push(["record","Results"],["trends","Trends"],["card","Card"],
+         ["actions","Questions"],["settings","Settings"]);
   return t;
 }
 function paintTabs(){
@@ -1965,15 +3572,40 @@ function paintTabs(){
     '<button class="tab" role="tab" data-tab="'+t[0]+'" aria-selected="'+(tab===t[0])+'">'+esc(t[1])+
     (c[t[0]]?'<span class="c">'+c[t[0]]+'</span>':'')+'</button>').join("");
 }
+/* The header badge said "On this device \u2014 no server, no account" on every
+   screen, in green, from before sync existed. It was the most visible of the
+   four places that claim had gone stale, and the only one a person sees
+   without scrolling. It now reports the state the book is actually in. */
+function paintSyncBadge(){
+  const el=document.getElementById("syncBadge"); if(!el) return;
+  let cls, txt, tip;
+  if(IS_ARTIFACT){
+    cls="st-unknown"; txt="Preview copy";
+    tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/passbook for the working one.";
+  } else if(AUTH && AUTH.email){
+    cls="st-in_range"; txt="Syncing";
+    tip="Signed in as "+AUTH.email+". Your own records sync to a row only this account can read. Records merged from someone else stay on this device.";
+  } else {
+    cls="st-watch"; txt="This device only";
+    tip="Not signed in, so nothing syncs and nothing leaves this browser. Reading a report still sends that page to be read \u2014 see Settings.";
+  }
+  el.className="badge "+cls;
+  el.title=tip;
+  el.innerHTML='<span class="dot"></span>'+esc(txt);
+}
 function paintPeople(){
   document.getElementById("people").innerHTML=S.members.map(m=>
-    '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'">'+
-    (m.id===who?'<span class="dot"></span>':'')+esc(m.name)+'</button>').join("");
+    '<button class="pbtn" data-p="'+esc(m.id)+'" aria-pressed="'+(m.id===who)+'"'+
+    (isLocal(m)?' title="Kept on this device only \u2014 never uploaded"':'')+'>'+
+    (m.id===who?'<span class="dot"></span>':'')+esc(m.name)+
+    (isLocal(m)?'<span class="onlyhere" aria-label="on this device only">\u25CF</span>':'')+
+    '</button>').join("");
 }
 function render(){
-  paintPeople(); paintTabs();
+  paintPeople(); paintTabs(); paintSyncBadge();
   document.getElementById("view").innerHTML =
-    tab==="overview"?vOverview(): tab==="record"?vRecord(): tab==="trends"?vTrends():
+    tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
+    tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
     tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings();
   drawer();
   if(tab==="trends") wireChart();
@@ -1996,7 +3628,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -2040,8 +3672,20 @@ document.addEventListener("click", async e=>{
       '<div style="position:fixed;inset:var(--s5);z-index:41;display:grid;place-items:center;pointer-events:none">'+
       '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
       '</div>'; return; }
+  if(t.dataset.trend){ trendCode=t.dataset.trend; tab="trends"; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.ladd){ const k=t.dataset.ladd;
+    S[k]=S[k]||[]; S[k].push(Object.assign({id:uid(),memberId:who,sample:false,mtime:Date.now()}, BLANK[k]));
+    save(); render(); return; }
+  if(t.dataset.ldel){ const [k,id]=t.dataset.ldel.split("|");
+    const key = (LISTS.find(l=>l[0]===k)||[])[1];
+    S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
+    save(); render(); return; }
+  if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
+  if(t.id==="simpleOn"){ setSimple(true); return; }
+  if(t.id==="simpleOff"){ setSimple(false); return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
-    draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
+    draft.rows.push({code:c,value:"",unit:isQual(c)?"":meta(c).u,refLow:"",refHigh:"",refLabel:"",
+      refText:isQual(c)?"Negative":"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
   if(t.dataset.rm!==undefined){ draft.rows.splice(+t.dataset.rm,1); render(); return; }
   if(t.id==="killDraft"){ if((draft.rows.length||draft.files.length)&&!confirm("Discard this report and everything attached to it?")) return;
     for(const f of draft.files){ if(f.url){ try{ URL.revokeObjectURL(f.url); }catch(e){} } await delFile(f.id); }
@@ -2050,18 +3694,21 @@ document.addEventListener("click", async e=>{
     const rid=uid();
     draft.files.forEach(f=>S.reports.push({id:uid(),reportId:rid,memberId:draft.memberId,
       date:draft.date,source:draft.source,fileId:f.id,fileName:f.name}));
-    draft.rows.filter(r=>r.confirmed && isFinite(parseFloat(r.value))).forEach(r=>{
+    draft.rows.filter(r=>r.confirmed && rowHasValue(r)).forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
       }
       if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
         S.panel.push(r.code);
-      const v=parseFloat(r.value);
-      S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:r.unit,
-        value:toCanonical(v,r.code,r.unit),
-        refLow:r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
-        refHigh:r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
-        refLabel:r.refLabel||((r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
+      const q=isQual(r.code), v=parseFloat(r.value);
+      S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:q?"":r.unit,
+        /* a word result has no number: value stays null and every numeric
+           path (the line chart, the range band) skips it by that test */
+        value:q?null:toCanonical(v,r.code,r.unit),
+        refLow:q||r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
+        refHigh:q||r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
+        refText:q?(r.refText||""):"",
+        refLabel:r.refLabel||((!q&&r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
         note:"",manualStatus:null,origin:"",reportId:draft.files.length?rid:null,sample:false,mtime:Date.now()});
     });
@@ -2134,7 +3781,7 @@ document.addEventListener("click", async e=>{
     t.textContent=ok?"Copied":"Select it and copy"; setTimeout(()=>{t.textContent="Copy";},2200); return; }
   if(t.id==="expFile"){
     const data=JSON.stringify(exportPayload(document.getElementById("expWho").value||null));
-    const ok=await saveFile("famrec-"+today()+".json", data);
+    const ok=await saveFile("passbook-"+today()+".json", data);
     if(!ok) alert("This browser would not save the file. Use Copy instead — the text is the same thing.");
     return; }
   if(t.id==="syncBtn"){ await syncNow(); return; }
@@ -2143,7 +3790,7 @@ document.addEventListener("click", async e=>{
     if(!confirm("Delete what the database currently holds and replace it with this device?\n\nNothing on this device is removed.")) return;
     syncMsg={t:"blue",k:"Resetting",x:"Clearing the stored copy."}; render();
     try{
-      const d = await supa("/rest/v1/famrec_state?user_id=eq."+encodeURIComponent(AUTH.uid), {method:"DELETE"});
+      const d = await supa("/rest/v1/" + (await stateTable()) + "?user_id=eq."+encodeURIComponent(AUTH.uid), {method:"DELETE"});
       if(!d.ok && d.status!==404) throw new Error((d.body&&(d.body.message||d.body.hint))||("HTTP "+d.status));
       S.lastSync=null; save();
       await syncNow();
@@ -2154,7 +3801,7 @@ document.addEventListener("click", async e=>{
     if(!confirm("Last check. Anything on this device that was never synced will be gone for good.")) return;
     AUTH=null; saveAuth(); codeSent=false;
     try{ localStorage.removeItem(LS); localStorage.removeItem(LS_OLD); }catch(e){}
-    try{ indexedDB.deleteDatabase("vitals-journal-files"); _db=null; }catch(e){}
+    try{ indexedDB.deleteDatabase(IDB); _db=null; indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
     S=seed(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
     who=S.members[0].id; detail=null; draft=null;
     syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
@@ -2196,7 +3843,7 @@ document.addEventListener("click", async e=>{
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
-    if(!confirm("Last check — there is no cloud copy and this cannot be undone.")) return;
+    if(!confirm(AUTH ? "Last check — this clears this device. Your synced copy stays on the server." : "Last check — there is no other copy and this cannot be undone.")) return;
     try{ localStorage.removeItem(LS); }catch(e){}
     S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
 });
@@ -2221,7 +3868,7 @@ function doImport(raw){
   const label=(document.getElementById("impFrom").value||"").trim();
   if(!raw||!raw.trim()){ return; }
   let p; try{ p=JSON.parse(raw); }catch(e){
-    msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Could not read that</div><p>It is not a Vitals Journal hand-off. Copy the whole block, from the first <span class="mono">{</span> to the last <span class="mono">}</span>.</p></div>'; return; }
+    msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Could not read that</div><p>It is not a Passbook hand-off. Copy the whole block, from the first <span class="mono">{</span> to the last <span class="mono">}</span>.</p></div>'; return; }
   let r; try{ r=mergeIn(p,label?("from "+label+", "+today()):""); }
   catch(e){ msg.innerHTML='<div class="callout c-red" style="margin-top:var(--s3)"><div class="kick">Not a hand-off file</div><p>'+esc(e.message)+'</p></div>'; return; }
   save();
@@ -2238,11 +3885,16 @@ document.addEventListener("input", e=>{
   if(draft && el.dataset && el.dataset.f!==undefined){
     const r=draft.rows[+el.dataset.i]; if(!r) return;
     r[el.dataset.f]=el.value;
-    if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
+    if(el.dataset.f==="refText"){ r.refLabel = r.refText ? "expected "+r.refText : ""; }
+    else if(el.dataset.f==="refLow"||el.dataset.f==="refHigh"||el.dataset.f==="unit"){
       r.refLabel=(r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:(r.refHigh!==""?"≤ "+r.refHigh+" "+r.unit:(r.refLow!==""?"≥ "+r.refLow+" "+r.unit:""));
     }
     r.confirmed = true;  /* a value you just typed is one you have looked at */
     return;
+  }
+  if(el.dataset && el.dataset.lk!==undefined){
+    const row=(S[el.dataset.lk]||[]).find(x=>x.id===el.dataset.lid); if(!row) return;
+    row[el.dataset.lf]=el.value; touch(row); save(); return;
   }
   if(el.dataset && el.dataset.mf){ const m=person(el.dataset.mid); if(!m) return;
     m[el.dataset.mf]=el.value; touch(m); save(); paintPeople(); return; }
@@ -2257,9 +3909,15 @@ document.addEventListener("input", e=>{
 
 document.addEventListener("change", async e=>{
   const el=e.target;
+  if(el.dataset && el.dataset.lk!==undefined){
+    const row=(S[el.dataset.lk]||[]).find(x=>x.id===el.dataset.lid); if(!row) return;
+    row[el.dataset.lf]=el.value; touch(row); save(); render(); return;
+  }
   if(draft && el.dataset && el.dataset.ck!==undefined){
     const r=draft.rows[+el.dataset.ck]; if(!r) return;
-    if(el.checked && !isFinite(parseFloat(r.value))){ el.checked=false; alert("Type the value before confirming it."); return; }
+    if(el.checked && !rowHasValue(r)){ el.checked=false;
+      alert(isQual(r.code) ? "Type what the report printed \u2014 Negative, Trace, or 1+ \u2014 before confirming it."
+                           : "Type the value before confirming it."); return; }
     r.confirmed=el.checked; el.closest(".crow").classList.toggle("ok",el.checked);
     const ready=draft.rows.length>0&&draft.rows.every(x=>x.confirmed);
     const b=document.getElementById("saveDraft"); if(b) b.disabled=!ready;

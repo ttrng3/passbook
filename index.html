@@ -6,9 +6,9 @@
 <meta name="theme-color" content="#F2F2F7">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="Vitals">
+<meta name="apple-mobile-web-app-title" content="Passbook">
 <meta name="robots" content="noindex,nofollow">
-<meta name="description" content="A local-only personal and family medical record book. No server, no account.">
+<meta name="description" content="A patient-held medical record for you and your family. Records stay in your browser unless you sign in.">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
 html,body{margin:0}
@@ -283,7 +283,7 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
 <div id="dropveil" hidden><div>Drop the report here<small>A PDF has its values read out of it. A photo is attached to check against.</small></div></div>
 <input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" multiple hidden>
-<footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
+<footer class="fix"><b>For reference, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
 
 <script>
 "use strict";
@@ -2445,8 +2445,8 @@ function vAdd(){
       'Drop a PDF, photo or CSV here, or click to choose'+
     '</button>'+
     '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
-      '<span class="mono">⌘V</span>. Photos and PDFs are both read by the Vitals extractor, which resolves every test name through your alias table rather than guessing. '+
-      'It reads Vietnamese and English equally well — on the bench, Vietnamese scored slightly higher. Pages go to your own Supabase and on to the model; nothing is read in this browser.</div>'+
+      '<span class="mono">⌘V</span>. Photos and PDFs are both read on the server, and every test name is matched against a list of known names rather than guessed. '+
+      'It reads Vietnamese and English. The page goes to the server and on to the model to be read; nothing is read in this browser.</div>'+
     (draft.prog ? '<div id="progHost">'+progressHTML()+'</div>'
       : draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
         '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
@@ -2480,8 +2480,8 @@ function vActions(){
   const done=mine.filter(a=>a.done);
   let h='<h2 style="margin-bottom:var(--s3)">Questions for the doctor</h2>';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">You write these, not the app</div>'+
-    '<p>Vitals had a &ldquo;suggest next step&rdquo; feature and it was deliberately cut — it was the one thing that turned a record into a recommendation. '+
-    'The list and its ordering survive; the medical judgement stays with you and your doctor. Ordered by the worst status among the tests each item touches.</p></div>';
+    '<p>Passbook never suggests what to ask or which test to have &mdash; that judgement stays with you and your doctor. '+
+    'Write your own questions here. They are ordered by the worst result among the tests each one touches.</p></div>';
   h+='<div class="card"><div class="row">'+
     '<input class="inp" id="aT" placeholder="e.g. Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
     '<select class="inp" id="aB" style="width:auto">'+Object.keys(BUCKET).map(b=>'<option value="'+b+'">'+esc(BUCKET[b])+'</option>').join("")+'</select>'+
@@ -2697,76 +2697,21 @@ function vHandoff(){
     '<div id="impMsg"></div></div>';
 
   h+='<div class="card"><h3>Family in other countries</h3>'+
-    '<div class="hint">The workable shape, and it is the only one that does not build the thing that was killed:</div>'+
+    '<div class="hint">How it works when family live in other countries:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
     '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
     '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
     '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
     '</ol>'+
     '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
-    '<p>A single place everyone uploads to is one person holding a household&rsquo;s medical records on someone else&rsquo;s server, across borders. '+
-    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1.</p>'+
+    '<p>One place everyone uploads to would mean one person holding a whole family&rsquo;s medical records on a server, across borders. Passbook does not do that.</p>'+
     '<p>Copies people choose to send you are a different thing, and they stay on this machine &mdash; merged records are marked <b>on this device only</b> and are excluded from the sync, so a relative&rsquo;s readings never reach the server through your account. That is enforced in the code, not just promised here.</p></div></div>';
   return h;
 }
 
 /* -------------------------------------------------------- settings */
-/* ---- inviting a family member, from here rather than a dashboard -------
-
-   The usual way to invite somebody needs the privileged service key and the
-   admin API, and that key appears nowhere in this project by rule. So the
-   invitation is inverted: their address goes on a family list that only
-   people already signed in can write to, and a trigger on the database's own
-   user table refuses any signup that is not on it. They then just visit the
-   site and sign up like anyone would.
-
-   No privileged key, no admin API, and the front door opens only to
-   addresses somebody inside deliberately wrote down. */
-let inviteRows = null, inviteMsg = null;
-
-async function loadInvites(){
-  if(!AUTH) return;
-  const r = await supa("/rest/v1/family_invites?select=email,note,created_at,used_at&order=created_at");
-  if(r.ok){ inviteRows = r.body || []; inviteMsg = null; }
-  else if(r.status === 404 || (r.body && r.body.code === "PGRST205")){
-    inviteRows = []; inviteMsg = {t:"amber", k:"The family list is not there yet",
-      x:"Apply migration 0019_family_invites.sql, then reload. Until it exists, nobody can be invited and nobody can sign up."};
-  } else {
-    inviteRows = []; inviteMsg = {t:"red", k:"Could not read the family list",
-      x:(r.body && (r.body.message||r.body.hint)) || ("HTTP "+r.status)};
-  }
-  render();
-}
-
-function inviteCard(){
-  if(IS_ARTIFACT) return "";
-  if(!AUTH) return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
-    '<div class="cap">Sign in below first. Only someone already inside can add an address to the family list.</div></div>';
-  if(inviteRows === null){ loadInvites();
-    return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3><div class="cap">Reading the family list&hellip;</div></div>'; }
-
-  let h='<div class="card" style="margin-bottom:var(--s4)">'+
-    '<h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
-    '<div class="cap" style="margin-bottom:var(--s3);max-width:60ch">Write their email address here and they can sign up on this site themselves, set their own password, and keep their own book. '+
-    'Anyone whose address is not on this list is refused by the database, not by a checkbox &mdash; so the page can stay public without the front door being open.</div>';
-  if(inviteMsg) h+='<div class="callout c-'+inviteMsg.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(inviteMsg.k)+'</div><p>'+esc(inviteMsg.x)+'</p></div>';
-  h+='<div class="row"><input class="inp" id="invEmail" type="email" placeholder="their email address" style="flex:1;min-width:200px">'+
-     '<input class="inp" id="invNote" placeholder="who they are (optional)" style="flex:1;min-width:140px">'+
-     '<button class="btn pri" id="invAdd">Add them</button></div>';
-  if(inviteRows.length) h+='<div class="tw" style="margin-top:var(--s3)"><table><thead><tr>'+
-    '<th>Address</th><th>Who</th><th>Signed up</th><th style="width:1%"></th></tr></thead><tbody>'+
-    inviteRows.map(r=>'<tr><td class="mono">'+esc(r.email)+'</td><td class="cap">'+esc(r.note||"\u2014")+'</td>'+
-      '<td>'+(r.used_at
-        ? '<span class="badge st-in_range"><span class="dot"></span>yes</span>'
-        : '<span class="badge st-watch"><span class="dot"></span>not yet</span>')+'</td>'+
-      '<td>'+(r.used_at?'':'<button class="btn sm warn" data-invdel="'+esc(r.email)+'">Remove</button>')+'</td></tr>').join("")+
-    '</tbody></table></div>';
-  h+='<div class="cap" style="margin-top:var(--s3)">Each person gets their own private book. Nobody sees anybody else&rsquo;s records by signing in &mdash; sharing is still a copy you choose to send.</div>';
-  return h+'</div>';
-}
-
 function vSettings(){
-  let h=inviteCard()+
+  let h=
     '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
     '<div><h3 style="margin:0">Simple mode</h3>'+
     '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
@@ -2817,9 +2762,9 @@ function vSettings(){
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body);margin-bottom:var(--s3)">'+
     '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs.</li>'+
     '<li><b>Reading a report sends that page off the device.</b> The photo goes to that same Supabase project and on to Anthropic in the United States to be read, then the stored copy is deleted as soon as the read finishes. The original stays in your phone&rsquo;s camera roll; this book keeps its own copy only in this browser.</li>'+
-    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not mine to put on a server.</li>'+
+    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not yours to put on a server.</li>'+
     '</ul>'+
-    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance, and it is the question the record calls Gate 1.</p>'+
+    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance.</p>'+
     '<details><summary>What a clinician would want you to know</summary><div>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body)">'+
     '<li><b>This is not your medical record.</b> It is a patient-held copy. Hand a clinician the original report — that is the document with the lab&rsquo;s method, its accreditation and its own flags on it.</li>'+
@@ -2830,7 +2775,9 @@ function vSettings(){
     '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
     '</ul></div></details></div></div>';
 
-  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">There is no cloud copy. Take a hand-off first.</div>'+
+  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">'+(AUTH
+      ? 'This clears this device only. Your synced copy stays on the server and comes back the next time you sign in here. Take a hand-off first if you want a copy you hold.'
+      : 'Nothing on this device is synced, so there is no other copy. Take a hand-off first.')+'</div>'+
     '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
   return h;
 }
@@ -2948,7 +2895,7 @@ async function setPassword(password){
 }
 async function sendCode(email){
   const r = await supa("/auth/v1/otp?redirect_to="+encodeURIComponent(returnTo()),
-    {method:"POST", noAuth:true, body:{email, create_user:true}});
+    {method:"POST", noAuth:true, body:{email, create_user:false}});
   if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
     || ("Could not send the code (HTTP "+r.status+")."));
   return true;
@@ -3129,7 +3076,7 @@ async function syncNow(quiet){
     if(!r.ok){
       const code = r.body && r.body.code;
       if(code==="PGRST205" || (r.body && /_state/.test(r.body.message||"")))
-        throw new Error("The sync table does not exist yet. Apply the migrations in ~/Projects/vitals-app/supabase/migrations, then try again.");
+        throw new Error("The sync table is missing on the server, so nothing could be synced. Your records on this device are untouched.");
       throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
     }
     let remote = (r.body && r.body[0] && r.body[0].doc) || null;
@@ -3751,23 +3698,6 @@ document.addEventListener("click", async e=>{
     const key = (LISTS.find(l=>l[0]===k)||[])[1];
     S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
     save(); render(); return; }
-  if(t.id==="invAdd"){
-    const em=(document.getElementById("invEmail")||{}).value||"";
-    const nt=(document.getElementById("invNote")||{}).value||"";
-    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){
-      inviteMsg={t:"amber",k:"That is not an email address",x:"Check the spelling and try again."}; render(); return; }
-    const r=await supa("/rest/v1/family_invites",{method:"POST",
-      body:[{email:em.trim().toLowerCase(), note:nt.trim()||null, invited_by:AUTH.uid}]});
-    inviteMsg = r.ok
-      ? {t:"blue",k:"Added",x:em.trim()+" can now sign up at this address and keep their own book."}
-      : {t:"red",k:"Could not add them",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
-    inviteRows=null; render(); return;
-  }
-  if(t.dataset.invdel){
-    const r=await supa("/rest/v1/family_invites?email=eq."+encodeURIComponent(t.dataset.invdel),{method:"DELETE"});
-    inviteMsg = r.ok ? null : {t:"red",k:"Could not remove that",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
-    inviteRows=null; render(); return;
-  }
   if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
   if(t.id==="simpleOn"){ setSimple(true); return; }
   if(t.id==="simpleOff"){ setSimple(false); return; }
@@ -3931,7 +3861,7 @@ document.addEventListener("click", async e=>{
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
-    if(!confirm("Last check — there is no cloud copy and this cannot be undone.")) return;
+    if(!confirm(AUTH ? "Last check — this clears this device. Your synced copy stays on the server." : "Last check — there is no other copy and this cannot be undone.")) return;
     try{ localStorage.removeItem(LS); }catch(e){}
     S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
 });
