@@ -2141,7 +2141,7 @@ function vRecord(){
   let h = hasSamples()?sampleNote():"";
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>'+quickDisplay();
+    '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">Add a report</button></div>';
   const chk=checksFor(m.id);
   if(chk.length) h += chk.map(c=>'<div class="callout c-'+c.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(c.k)+'</div><p>'+esc(c.x)+'</p></div>').join("");
 
@@ -2892,17 +2892,6 @@ const SET_PAGES={
   h+='<button class="btn" id="addP">Add a person</button>'; return h; }},
   sync:    {t:"Account and sync",        f:()=>syncCard()},
   copies:  {t:"Send or receive a copy",  f:()=>vHandoff()},
-  display: {t:"Text size and simple mode",f:()=>
-    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
-    '<div><h3 style="margin:0">Simple mode</h3>'+
-    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
-    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
-    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
-      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
-    '<div class="card">'+
-    '<div class="row" style="justify-content:space-between"><div><b>Larger text</b>'+
-    '<div class="hint" style="margin-top:2px">Bigger type and bigger buttons throughout. Kept on this device.</div></div>'+
-    '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div>'},
   about:   {t:"How this book works",     f:()=>'<div class="card">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
@@ -2941,14 +2930,12 @@ function vSettings(){
       '<h2 style="margin-bottom:var(--s4)">'+esc(SET_PAGES[setPage].t)+'</h2>'+SET_PAGES[setPage].f();
   const names=S.members.map(m=>m.name).join(", ");
   const acct=IS_ARTIFACT?"Not available in this preview":AUTH&&AUTH.email?(S.lastSync?"Synced "+fmtWhen(S.lastSync):"Signed in"):"Not signed in";
-  const disp=[simple()?"Simple mode on":"", bigText()?"Larger text on":""].filter(Boolean).join(" \u00b7 ")||"Standard";
   let h='<h2 style="margin-bottom:var(--s2)">Settings</h2>';
   h+='<div class="ghdr">Family</div><div class="glist">'+
     (IS_ARTIFACT?'':setRow("invite","Give a relative their own private book"))+
     setRow("people",names)+'</div>';
   h+='<div class="ghdr">Your records</div><div class="glist">'+
     setRow("sync",acct)+setRow("copies","Pass records between phones or people")+'</div>';
-  h+='<div class="ghdr">Display</div><div class="glist">'+setRow("display",disp)+'</div>';
   h+='<div class="ghdr">About</div><div class="glist">'+setRow("about","What it never does, and where records go")+'</div>';
   h+='<div class="glist" style="margin-top:var(--s5)">'+setRow("wipe","",true)+'</div>';
   return h;
