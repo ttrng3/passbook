@@ -2,8 +2,8 @@
 <style>
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --sunk:#F2F2F7; --line:#E5E5EA; --line-soft:#EFEFF2;
-  --ink:#1C1C1E; --ink-body:#3C3C43; --ink-muted:#8E8E93;
-  --blue:#007AFF;  --blue-bg:#E8F1FE;  --blue-ink:#0060DF;  --blue-line:#CFE3FD;
+  --ink:#1C1C1E; --ink-body:#3C3C43; --ink-muted:#6E6E73;
+  --blue:#007AFF;  --blue-bg:#E8F1FE;  --blue-ink:#0040DD;  --blue-line:#CFE3FD;
   --green:#34C759; --green-bg:#E6F7EB; --green-ink:#1E7F3C; --green-line:#BFE9CC;
   --amber:#FF9500; --amber-bg:#FFF4E5; --amber-ink:#8A5200; --amber-line:#F6DFBC;
   --red:#FF3B30;   --red-bg:#FFEBE9;   --red-ink:#C4271D;   --red-line:#F7D2CE;
@@ -13,11 +13,11 @@
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
-body{background:var(--bg); color:var(--ink-body); font-family:var(--sans); font-size:14px; line-height:1.5; margin:0; -webkit-text-size-adjust:100%}
+body{background:var(--bg); color:var(--ink-body); font-family:var(--sans); font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums; margin:0; -webkit-text-size-adjust:100%}
 h1,h2,h3{margin:0; color:var(--ink); text-wrap:balance}
-h1{font-size:28px; font-weight:600; letter-spacing:-.021em}
-h2{font-size:20px; font-weight:500; letter-spacing:-.012em}
-h3{font-size:16px; font-weight:600}
+h1{font-size:28px; font-weight:700; letter-spacing:-.021em}
+h2{font-size:22px; font-weight:600; letter-spacing:-.012em}
+h3{font-size:17px; font-weight:600}
 p{margin:0}
 button{font:inherit; color:inherit}
 input,select,textarea{font:inherit; color:var(--ink)}
@@ -25,21 +25,21 @@ input,select,textarea{font:inherit; color:var(--ink)}
 .num{font-variant-numeric:tabular-nums}
 .mono{font-family:var(--mono)}
 .muted{color:var(--ink-muted)}
-.cap{font-size:12px; color:var(--ink-muted)}
-.kick{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase}
+.cap{font-size:13px; color:var(--ink-muted)}
+.kick{font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase}
 
 /* shell */
 .wrap{max-width:1080px; margin:0 auto; padding-inline:var(--s4); padding-block:0 96px}
 header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:var(--bg); border-bottom:1px solid var(--line)}
 .top-in{max-width:1080px; margin:0 auto; padding:var(--s3) var(--s4); display:flex; gap:var(--s3); align-items:center; flex-wrap:wrap}
-.top-in h1{font-size:19px; margin-right:auto}
+.top-in h1{font-size:22px; font-weight:700; margin-right:auto}
 .people{display:flex; gap:var(--s1); flex-wrap:wrap}
 .pbtn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-pill); padding:5px 10px; cursor:pointer; font-size:13px; display:inline-flex; align-items:center; gap:6px}
 .pbtn[aria-pressed="true"]{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue-ink); font-weight:600}
 .pbtn .dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
 nav.tabs{display:flex; gap:var(--s1); overflow-x:auto; border-bottom:1px solid var(--line); margin-bottom:var(--s5); scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
-.tab{border:0; background:none; padding:var(--s3) var(--s3) 10px; cursor:pointer; white-space:nowrap; font-size:14px; color:var(--ink-muted); border-bottom:2px solid transparent; margin-bottom:-1px}
+.tab{border:0; background:none; padding:var(--s3) var(--s3) 10px; cursor:pointer; white-space:nowrap; font-size:15px; color:var(--ink-muted); border-bottom:2px solid transparent; margin-bottom:-1px}
 .tab[aria-selected="true"]{color:var(--blue-ink); border-bottom-color:var(--blue); font-weight:600}
 .tab .c{font-size:12px; margin-left:5px; opacity:.75}
 
@@ -53,10 +53,10 @@ nav.tabs::-webkit-scrollbar{display:none}
 .g240{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .g300{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .row{display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center}
-.btn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-inner); padding:8px 14px; cursor:pointer; font-size:14px; font-weight:500; color:var(--ink)}
+.btn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-inner); padding:8px 14px; cursor:pointer; font-size:15px; font-weight:600; color:var(--ink)}
 .btn:hover{background:var(--sunk)}
-.btn.pri{background:var(--blue); border-color:var(--blue); color:#fff}
-.btn.pri:hover{background:var(--blue-ink)}
+.btn.pri{background:var(--blue-ink); border-color:var(--blue-ink); color:#fff}
+.btn.pri:hover{background:#0033B0; border-color:#0033B0}
 .btn.warn{color:var(--red-ink); border-color:var(--red-line)}
 .btn.warn:hover{background:var(--red-bg)}
 .btn:disabled{opacity:.4; cursor:not-allowed}
@@ -66,7 +66,7 @@ label.fl{display:block; font-size:12px; font-weight:600; color:var(--ink-muted);
 .inp{width:100%; border:1px solid var(--line); border-radius:var(--r-inner); padding:9px 10px; background:var(--card); font-size:15px}
 .inp:focus{border-color:var(--blue); outline:none}
 textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
-.hint{font-size:12px; color:var(--ink-muted); margin-top:var(--s1); line-height:1.45}
+.hint{font-size:13px; color:var(--ink-muted); margin-top:var(--s1); line-height:1.45}
 .empty{border:1px dashed var(--line); border-radius:var(--r-card); padding:var(--s5); text-align:center; color:var(--ink-muted); background:var(--card)}
 .empty b{display:block; color:var(--ink); font-size:16px; font-weight:600; margin-bottom:var(--s1)}
 
@@ -117,7 +117,7 @@ textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
 
 /* table */
 .tw{overflow-x:auto}
-table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px}
+table{border-collapse:collapse; width:100%; font-size:15px; min-width:520px}
 th{text-align:left; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-muted); padding:var(--s2) var(--s3); border-bottom:1px solid var(--line); white-space:nowrap}
 td{padding:var(--s3); border-bottom:1px solid var(--line-soft); vertical-align:top}
 tbody tr:last-child td{border-bottom:0}
@@ -173,14 +173,14 @@ body[data-text="large"] .tab{font-size:16px; padding:15px 16px 13px}
 body[data-text="large"] .obs .nm{font-size:15px}
 body[data-text="large"] .obs .vl{font-size:27px}
 body[data-text="large"] table{font-size:16px}
-body[data-text="large"] h1{font-size:30px}
-body[data-text="large"] h2{font-size:22px}
-body[data-text="large"] h3{font-size:18px}
+body[data-text="large"] h1{font-size:32px}
+body[data-text="large"] h2{font-size:26px}
+body[data-text="large"] h3{font-size:20px}
 footer.fix{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--card); border-top:1px solid var(--line); padding:10px var(--s4); padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); font-size:12px; color:var(--ink-muted); text-align:center}
 footer.fix b{color:var(--ink)}
 @media (max-width:560px){
-  h1{font-size:24px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
-  .top-in h1{font-size:17px; width:100%; margin-bottom:var(--s1)}
+  h1{font-size:24px} h2{font-size:20px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
+  .top-in h1{font-size:20px; width:100%; margin-bottom:var(--s1)}
 }
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
@@ -224,6 +224,22 @@ footer.fix b{color:var(--ink)}
 .inp.bare{border:0;background:transparent;padding:6px 4px;border-radius:6px}
 .inp.bare:focus{background:var(--sunk)}
 @media print{ .cardsheet{break-inside:avoid;break-after:page} }
+/* Quick switches: the two display settings an older reader needs, on the
+   screens they land on, instead of four taps deep in Settings. */
+.qbar{display:flex;flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s4)}
+.qsw{display:flex;align-items:center;gap:var(--s3);min-height:48px;padding:var(--s2) var(--s3) var(--s2) var(--s4);
+  background:var(--card);border:1px solid var(--line);border-radius:var(--r-card);cursor:pointer;
+  font:inherit;font-size:17px;font-weight:600;color:var(--ink);flex:1 1 200px;text-align:left}
+.qsw .qs{font-size:13px;font-weight:400;color:var(--ink-muted);display:block}
+.qsw .tr{margin-left:auto;flex:none;width:51px;height:31px;border-radius:16px;background:#E9E9EB;position:relative;transition:background 160ms ease}
+.qsw .tr::after{content:"";position:absolute;top:2px;left:2px;width:27px;height:27px;border-radius:50%;background:#fff;
+  box-shadow:0 2px 4px rgba(0,0,0,.2);transition:transform 160ms ease}
+.qsw[aria-checked="true"] .tr{background:var(--green-ink)}
+.qsw[aria-checked="true"] .tr::after{transform:translateX(20px)}
+.qsw:disabled{cursor:default;opacity:.75}
+.qsw:focus-visible{outline:3px solid var(--blue-ink);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){ .qsw .tr,.qsw .tr::after{transition:none} }
+@media print{ .qbar{display:none} }
 details.sec>summary{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
   list-style:none;padding:var(--s3) 0;border-bottom:1px solid var(--line);
   font-size:16px;font-weight:600;color:var(--ink)}
@@ -265,7 +281,7 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
 <div class="wrap"><nav class="tabs" id="tabs" role="tablist"></nav><main id="view"></main></div>
 <div id="dropveil" hidden><div>Drop the report here<small>A PDF has its values read out of it. A photo is attached to check against.</small></div></div>
 <input type="file" id="globalPick" accept="image/*,application/pdf,.txt,.csv,.tsv" multiple hidden>
-<footer class="fix"><b>Decision-support only, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
+<footer class="fix"><b>For reference, not a diagnosis.</b> A patient-held copy — give your clinician the original report, not this.</footer>
 
 <script>
 "use strict";
@@ -323,6 +339,29 @@ function pref(key, legacy){
 }
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
+/* One way to write a date on screen: 24 Sep 2026. Stored values stay ISO. */
+function fmtDate(iso){ if(!iso) return ""; const d=new Date(String(iso).length===10?iso+"T00:00:00":iso);
+  return isNaN(d)?String(iso):d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}); }
+function fmtWhen(t){ const d=new Date(t); if(isNaN(d)) return "";
+  const hm=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  return d.toDateString()===new Date().toDateString()?hm:fmtDate(d.toISOString())+", "+hm; }
+/* Vietnamese labs print "5,3" for 5.3, and parseFloat stops at the comma and
+   returns 5 -- a high result read as in range. A comma followed by one, two,
+   or four or more digits is a decimal mark; exactly three ("10,500") is a US
+   thousands separator or a European 10.5, so it is not guessed. A leading
+   comparator ("<0.5", ">90") is kept on the raw text and read here as its
+   bound; statusOf decides whether the bound alone settles the status. */
+function num(raw){
+  if(raw==null) return NaN;
+  if(typeof raw==="number") return raw;
+  let t=String(raw).trim().replace(/\s/g,"").replace(/^(<=?|>=?|\u2264|\u2265)/,"");
+  if(/^-?\d{1,3},\d{3}$/.test(t)) return NaN;
+  if(/^-?\d*,\d+$/.test(t)) t=t.replace(",",".");
+  if(!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
+  return Number(t);
+}
+function cmpOf(raw){ const m=/^\s*(<=?|>=?|\u2264|\u2265)/.exec(String(raw==null?"":raw));
+  return m ? (m[1][0]==="<"||m[1]==="\u2264" ? "<" : ">") : ""; }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* --------------------------------------------------------------- catalog
@@ -852,51 +891,6 @@ const BUCKET = {do_first:"Ask about this first", lever:"Affects several results"
    number on your sheet, so it becomes a metric of its own rather than being
    dropped. The id is derived from the name, so two devices reading the same
    report invent the SAME code and converge instead of duplicating. */
-/* ---- reading a number off a report, in either convention --------------
-
-   parseFloat("5,3") is 5. On a Vietnamese report the comma IS the decimal
-   point, so a potassium of 5,3 against a printed range of 3,5-5,0 was
-   stored as 5 against 3-5 and shown IN RANGE while it was high. It raises no
-   error and looks entirely plausible, which makes it the worst class of bug
-   this record can have.
-
-   Which separator is the decimal one is decided by position, not by guessing
-   a locale: whichever of "." and "," appears LAST is the decimal mark, and a
-   lone comma followed by exactly three digits in a 1,234 shape is a thousands
-   separator rather than a decimal. */
-function numOf(raw){
-  if(raw === null || raw === undefined) return NaN;
-  let t = String(raw).trim()
-    .replace(/[\u2212\u2013\u2014]/g, "-")        /* unicode minus and dashes */
-    .replace(/^[<>\u2264\u2265~=\s]+/, "")        /* a comparator is kept separately */
-    .replace(/[\s\u00a0']/g, "");
-  const c = t.lastIndexOf(","), d = t.lastIndexOf(".");
-  if(c > -1 && d > -1){
-    t = c > d ? t.replace(/\./g, "").replace(",", ".")   /* 1.234,5 */
-              : t.replace(/,/g, "");                      /* 1,234.5 */
-  } else if(c > -1){
-    /* Exactly three digits after a lone comma is genuinely ambiguous --
-       "10,500" is ten thousand five hundred to an American lab and ten point
-       five to a European one. Refusing it means "no range on file", which is
-       safe. Guessing it wrong is not, so this agrees with the reader's own
-       parseNum rather than differing from it by one case. */
-    if(/^-?\d{1,3},\d{3}$/.test(t)) return NaN;
-    t = /^-?\d{1,3}(,\d{3})+$/.test(t) ? t.replace(/,/g, "") : t.replace(",", ".");
-  }
-  const m = t.match(/-?\d+(\.\d+)?/);
-  const n = m ? parseFloat(m[0]) : NaN;
-  return isFinite(n) ? n : NaN;
-}
-/* "< 0.5" and "> 90" are results, not failures to be a number. The bound and
-   the comparator are stored apart so an eGFR of ">90" is never judged as 90
-   flat, and never as 0. */
-function cmpOf(raw){
-  const m = String(raw === null || raw === undefined ? "" : raw).trim()
-    .match(/^(<=|>=|<|>|\u2264|\u2265)/);
-  if(!m) return "";
-  return m[1] === "\u2264" ? "<=" : m[1] === "\u2265" ? ">=" : m[1];
-}
-
 function slug(name){
   return "c-" + deaccent(String(name||"")).toLowerCase()
     .replace(/[^a-z0-9]+/g,"-").replace(/^-+|-+$/g,"").slice(0,40);
@@ -962,8 +956,8 @@ function isQual(code){ return !!meta(code).q; }
    be isFinite(parseFloat(value)) inline in two places, which silently threw
    away every word result on a urine strip -- nine of its ten rows. */
 function rowHasValue(r){
-  return r && (isQual(r.code) ? String(r.value==null?"":r.value).trim()!==""
-                              : isFinite(numOf(r.value)));
+  return r && (isQual(r.code) ? String(r.value==null?"":r.value).trim()!=="" 
+                              : isFinite(num(r.value)));
 }
 /* null means "printed something this book does not recognise" -- which is
    kept verbatim and shown as unreadable, never guessed into a state. */
@@ -1257,7 +1251,7 @@ function seed(){
   const a="smp-ty", b="smp-me"; _sn=0;
   const O=(memberId,code,valueRaw,unit,observedAt,source,refLow,refHigh,refLabel,fasting)=>({
     id:"smp-o"+(++_sn),memberId,code,valueRaw:String(valueRaw),unit,
-    value:toCanonical(numOf(valueRaw),code,unit),
+    value:toCanonical(parseFloat(valueRaw),code,unit),
     refLow:refLow===null?null:toCanonical(refLow,code,unit),
     refHigh:refHigh===null?null:toCanonical(refHigh,code,unit),
     refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
@@ -1384,7 +1378,7 @@ function migrate(p){
     (p.observations||[]).forEach(o=>{
       const to = moved[o.code]; if(!to) return;
       o.code = to;
-      const n = numOf(o.valueRaw);
+      const n = num(o.valueRaw);
       if(isFinite(n)) o.value = toCanonical(n, to, o.unit);
       o.mtime = Date.now();
     });
@@ -1522,15 +1516,16 @@ function statusOf(o){
   const lo = o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi = o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "unknown";
-  /* "> 90" says the value is at least 90 and no more than that. It can be
-     judged against the far side of the range and nothing else. */
-  if(o.cmp){
-    const b = Number(o.value);
-    if(o.cmp === ">" || o.cmp === ">=") return (hi!==null && b > hi) ? "discuss"
-                                             : (lo!==null && b >= lo) ? "in_range" : "unknown";
-    return (lo!==null && b < lo) ? "discuss" : (hi!==null && b <= hi) ? "in_range" : "unknown";
-  }
+  /* Number(null) is 0: a reading with no number must not be judged as zero. */
+  if(o.value==null||o.value===""||!isFinite(Number(o.value))) return "unknown";
   const v=Number(o.value), inLo=lo===null||v>=lo, inHi=hi===null||v<=hi;
+  /* "<0.5" or ">90": the printed number is a bound, not the result. It
+     settles the status only when every value past the bound falls the same
+     way -- "<0.5" under a 0-1 range, ">90" over a floor of 60. Otherwise the
+     honest answer is unknown. */
+  const cmp=cmpOf(o.valueRaw);
+  if(cmp==="<") return (inHi && (lo===null||lo<=0)) ? "in_range" : (hi!==null&&v<=hi&&lo!==null&&v<=lo ? "discuss" : "unknown");
+  if(cmp===">") return (inLo && hi===null) ? "in_range" : (hi!==null&&v>=hi ? "discuss" : "unknown");
   if(inLo&&inHi) return "in_range";
   const span=(lo!==null&&hi!==null&&hi>lo)?hi-lo:Math.abs(hi!==null?hi:lo)||1;
   return ((!inHi?v-hi:lo-v)/span)<=0.10 ? "watch" : "discuss";
@@ -1645,10 +1640,10 @@ function obsCard(o){
   const alt = o.unit!==M.u ? fmt(o.value)+" "+M.u : "";
   return '<button class="obs" data-obs="'+esc(o.id)+'">'+
     '<div class="nm">'+icon(o.code)+' '+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
-    '<div class="vl">'+esc(o.valueRaw||((o.cmp?o.cmp+" ":"")+fmt(o.value)))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
+    '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
     '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
-    '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
+    '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt?fmtDate(o.observedAt):"no date")+
       (agoText(o.observedAt)?' · '+esc(agoText(o.observedAt)):'')+
       (isLocal(o)?' · on this device only':'')+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
@@ -1682,6 +1677,17 @@ function agoText(iso){
    metrics only, the archive hidden, type a step up, and three tabs instead
    of six. Per device and never per account, because the person who needs it
    is not always the person who set it up. */
+const EMPTY_KEY="passbook-show-empty";
+function showEmpty(){ try{ return localStorage.getItem(EMPTY_KEY)==="on"; }catch(e){ return false; } }
+function qSwitch(id, label, sub, on, disabled){
+  return '<button class="qsw" id="'+id+'" role="switch" aria-checked="'+(on?"true":"false")+'"'+(disabled?" disabled":"")+'>'+
+    '<span>'+esc(label)+(sub?'<span class="qs">'+esc(sub)+'</span>':'')+'</span><span class="tr" aria-hidden="true"></span></button>';
+}
+function quickDisplay(){
+  return '<div class="qbar">'+
+    qSwitch("qText","Larger text", simple()?"On while Simple view is on":"Bigger words and buttons", bigText()||simple(), simple())+
+    qSwitch("qSimple","Simple view","Fewer tabs, main tests only", simple(), false)+'</div>';
+}
 const SIMPLE_KEY="passbook-simple";
 function simple(){ return pref(SIMPLE_KEY, ["famrec-simple"])==="on"; }
 function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
@@ -1870,7 +1876,8 @@ function vCard(){
 
   let h = '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
-    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div>'+
+    '<div class="row"><button class="btn" data-tab="sheet" style="font-size:16px;padding:12px 20px">Sheet for an appointment</button>'+
+    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
 
   /* the card itself, styled to print on its own page */
@@ -1878,7 +1885,7 @@ function vCard(){
     '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
       '<div><div class="kick" style="color:var(--ink-muted)">Emergency information</div>'+
       '<h2 style="margin:var(--s1) 0 0">'+esc(m.name)+'</h2>'+
-      '<div class="cap">'+(m.dob?esc(m.dob)+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
+      '<div class="cap">'+(m.dob?esc(fmtDate(m.dob))+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
         (m.sex?" \u00b7 "+esc(m.sex):"")+'</div></div>'+
       (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">Blood group</div>'+
         '<div style="font-size:30px;font-weight:600;line-height:1.1">'+esc(blood)+'</div></div>':'')+
@@ -1904,7 +1911,7 @@ function vCard(){
         (m.insurer?'<p class="cap" style="margin-top:var(--s2)">'+esc(m.insurer)+(m.policy?" \u00b7 "+esc(m.policy):"")+'</p>':"")+'</div>'+
     '</div>'+
     '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
-      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+today()+'.</p>'+
+      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+fmtDate(today())+'.</p>'+
   '</div>';
 
   /* who to call, and the insurer -- edited in place */
@@ -2015,7 +2022,7 @@ function pairCard(ca, cb, label, L){
     '<div class="vl">'+shown+'<span>'+esc((a||b).unit||meta(ca).u)+'</span></div>'+
     '<div style="margin-top:var(--s2)">'+badge(worst)+
       (half?' <span class="badge st-unknown"><span class="dot"></span>'+esc(a?meta(cb).n:meta(ca).n)+' not measured</span>':'')+'</div>'+
-    '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt||"no date")+'</div></button>';
+    '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt?fmtDate(src.observedAt):"no date")+'</div></button>';
 }
 /* ---- Today ------------------------------------------------------------
 
@@ -2040,7 +2047,7 @@ function vToday(){
 
   let h='<div class="row" style="justify-content:space-between;align-items:baseline;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
-    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>';
+    '<button class="btn pri" data-tab="add" style="font-size:17px;padding:14px 22px">Add a report</button></div>'+quickDisplay();
 
   if(!obsOf(m.id).length)
     return h+'<div class="empty"><b>Nothing on file yet</b>Photograph a lab report or a health check and it will be read into this book.</div>';
@@ -2049,7 +2056,7 @@ function vToday(){
     '<div class="kick" style="color:var(--ink-muted)">Where things stand</div>'+
     '<p style="margin-top:var(--s2)">'+
       '<b>'+L.length+'</b> measurement'+(L.length===1?"":"s")+' on file'+
-      (newest?', the newest from <b>'+esc(newest)+'</b> ('+esc(agoText(newest))+')':"")+'. '+
+      (newest?', the newest from <b>'+esc(fmtDate(newest))+'</b> ('+esc(agoText(newest))+')':"")+'. '+
       (flagged.length
         ? '<b>'+flagged.length+'</b> sit'+(flagged.length===1?"s":"")+' outside or near the range printed on its own report.'
         : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
@@ -2084,6 +2091,32 @@ function vToday(){
   return h;
 }
 
+/* The standard panel, edited where it is used: at the foot of Results.
+   Names the catalogue does not know are listed on their own, so a misread
+   line can be removed instead of sitting in the panel as a test. */
+function panelEditor(){
+  const used=new Set(S.observations.map(o=>o.code));
+  const odd=Object.keys(S.customCodes||{}).sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
+  let h=
+    '<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
+    '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
+    '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
+    'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
+    '<div class="row" style="margin-top:var(--s3)">'+
+      (S.panel||[]).map(c=>'<span class="badge '+(isCustom(c)?"st-watch":"st-unknown")+'"><span class="dot"></span>'+esc(meta(c).n)+
+        ' <button class="btn sm" data-unpanel="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove from panel">&times;</button></span>').join("")+
+      ((S.panel||[]).length?'':'<span class="cap">Empty &mdash; nothing is being looked for.</span>')+
+    '</div>'+
+    '<div class="row" style="margin-top:var(--s4)"><select class="inp" id="panelAdd" style="width:auto;min-width:230px">'+codeOpts(null)+'</select>'+
+    '<button class="btn" id="panelAddBtn">Add to panel</button>'+
+    '<button class="btn" id="panelReset">Restore the default panel</button></div></div></div>';
+  if(odd.length) h+='<div class="card" style="margin-top:var(--s3)"><h3>Names from your reports</h3>'+
+    '<div class="hint" style="margin-bottom:var(--s3)">These came off a report and match no known test. Some are real tests with an unusual name; some are a misread line. Remove any that are not tests. A name with readings cannot be removed until its readings are.</div>'+
+    '<div class="row">'+odd.map(c=>'<span class="badge st-unknown"><span class="dot"></span>'+esc(meta(c).n)+
+      (used.has(c)?' <span class="cap">has readings</span>':' <button class="btn sm" data-dropcode="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove this name">&times;</button>')+
+      '</span>').join("")+'</div></div>';
+  return h;
+}
 function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
@@ -2101,8 +2134,12 @@ function vRecord(){
     '<h3>Latest values &amp; flags</h3>'+
     '<span class="cap"><span class="num">'+onFile+'</span> of <span class="num">'+panel.length+'</span> measured</span></div>'+
     '<div class="cap" style="margin-bottom:var(--s3)">Newest reading for each metric, against the range printed on its own report.</div>'+
-    '<div class="row" style="margin-bottom:var(--s4)">'+
+    '<div class="row" style="margin-bottom:var(--s3)">'+
       badge("in_range")+badge("watch")+badge("discuss")+badge("unknown")+'</div>';
+  const blank = panel.length - onFile;
+  const showE = showEmpty();
+  if(blank>0) h += '<div class="qbar">'+qSwitch("qEmpty","Show tests with no readings",
+      showE ? blank+" not yet measured, shown" : blank+" not yet measured, hidden", showE, false)+'</div>';
 
   /* One flat grid stopped working somewhere past a hundred metrics. A report
      is not read as one list either -- it is read panel by panel, and a
@@ -2128,10 +2165,12 @@ function vRecord(){
     if(pair && panel.indexOf(pair.mate)>=0){
       consumed.add(code); consumed.add(pair.mate);
       const a = L.find(x=>x.code===code);
-      put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
+      const bb = L.find(x=>x.code===pair.mate);
+      if(a || bb || showE) put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
       continue;
     }
     const o = L.find(x=>x.code===code);
+    if(!o && !showE) continue;
     put(g, o ? obsCard(o) : ghostCard(code), o ? statusOf(o) : null, !!meta(code).fact);
   }
   /* Anything measured that is not on the panel keeps its own group too, so a
@@ -2163,7 +2202,8 @@ function vRecord(){
       '</details>';
   }).join("");
   if(!panel.length && !L.length)
-    h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel in Settings, or add a report.</div>';
+    h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel below, or add a report.</div>';
+  h += '<details style="margin-top:var(--s6)"><summary>Edit your standard panel</summary>'+panelEditor()+'</details>';
   return h;
 }
 
@@ -2295,7 +2335,7 @@ function qualTrend(m, code){
     pts.map(o=>'<div style="text-align:center;min-width:92px">'+
       badge(statusOf(o))+
       '<div style="margin-top:var(--s2);font-weight:600">'+esc(o.valueRaw||"\u2014")+'</div>'+
-      '<div class="cap">'+esc(o.observedAt||"no date")+'</div></div>').join("")+
+      '<div class="cap">'+esc(o.observedAt?fmtDate(o.observedAt):"no date")+'</div></div>').join("")+
     '</div>'+
     '<p class="cap" style="margin-top:var(--s4)">This test is reported as words, not a number, so there is no line to draw. '+
     (moves.length
@@ -2480,8 +2520,8 @@ function vAdd(){
       'Drop a PDF, photo or CSV here, or click to choose'+
     '</button>'+
     '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
-      '<span class="mono">⌘V</span>. Photos and PDFs are both read by the Vitals extractor, which resolves every test name through your alias table rather than guessing. '+
-      'It reads Vietnamese and English equally well — on the bench, Vietnamese scored slightly higher. Pages go to your own Supabase and on to the model; nothing is read in this browser.</div>'+
+      '<span class="mono">⌘V</span>. Photos and PDFs are both read on the server, and every test name is matched against a list of known names rather than guessed. '+
+      'It reads Vietnamese and English. The page goes to the server and on to the model to be read; nothing is read in this browser.</div>'+
     (draft.prog ? '<div id="progHost">'+progressHTML()+'</div>'
       : draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
         '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
@@ -2515,8 +2555,8 @@ function vActions(){
   const done=mine.filter(a=>a.done);
   let h='<h2 style="margin-bottom:var(--s3)">Questions for the doctor</h2>';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">You write these, not the app</div>'+
-    '<p>Vitals had a &ldquo;suggest next step&rdquo; feature and it was deliberately cut — it was the one thing that turned a record into a recommendation. '+
-    'The list and its ordering survive; the medical judgement stays with you and your doctor. Ordered by the worst status among the tests each item touches.</p></div>';
+    '<p>Passbook never suggests what to ask or which test to have &mdash; that judgement stays with you and your doctor. '+
+    'Write your own questions here. They are ordered by the worst result among the tests each one touches.</p></div>';
   h+='<div class="card"><div class="row">'+
     '<input class="inp" id="aT" placeholder="e.g. Ask about the uric acid at the next visit" style="flex:1;min-width:200px">'+
     '<select class="inp" id="aB" style="width:auto">'+Object.keys(BUCKET).map(b=>'<option value="'+b+'">'+esc(BUCKET[b])+'</option>').join("")+'</select>'+
@@ -2570,7 +2610,7 @@ function vSheet(){
     '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit||meta(o.code).u)+'</td>'+
     '<td class="cap">'+esc(o.refLabel||o.refText||"no range on report")+'</td>'+
     '<td>'+esc(ST[statusOf(o)])+'</td>'+
-    '<td class="cap">'+esc(o.observedAt||"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
+    '<td class="cap">'+esc(o.observedAt?fmtDate(o.observedAt):"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
 
   let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>Sheet for the appointment</h2>'+
@@ -2579,7 +2619,7 @@ function vSheet(){
 
   h+='<div class="card cardsheet">'+
     '<h2 style="margin:0">'+esc(m.name)+'</h2>'+
-    '<div class="cap">'+(m.dob?esc(m.dob):"date of birth not set")+
+    '<div class="cap">'+(m.dob?esc(fmtDate(m.dob)):"date of birth not set")+
       (ageOf(m)!==null?" \u00b7 "+ageOf(m)+" years":"")+(m.sex?" \u00b7 "+esc(m.sex):"")+
       (bloodOf(m.id)?" \u00b7 blood group "+esc(bloodOf(m.id)):"")+'</div>'+
 
@@ -2607,7 +2647,7 @@ function vSheet(){
     '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
       L.length+' measurements on file'+(labs.length>1?' from '+labs.length+' laboratories ('+esc(labs.join(", "))+')':"")+
       '. Each result is shown against the range printed on its own report, not against a common one. '+
-      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+today()+'.</p>'+
+      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+fmtDate(today())+'.</p>'+
   '</div>';
   return h;
 }
@@ -2628,6 +2668,13 @@ function mergeIn(p, label){
      importing forever -- they are already sitting in people's messages. */
   const known = p && (p.kind==="passbook" || p.kind==="vitals-journal");
   if(!known || !Array.isArray(p.members)) throw new Error("not a Passbook file");
+  /* Every id this book makes is a short plain token. An id carrying quotes or
+     angle brackets can only have been written by hand, and an id is put into
+     the page -- so the whole file is refused rather than any part of it. */
+  const okId = x => x && typeof x.id==="string" && /^[A-Za-z0-9_.:-]{1,80}$/.test(x.id);
+  const all = [p.members, p.observations||[], p.actions||[]].concat(LISTS.map(l=>p[l[0]]||[]));
+  if(!all.every(a=>Array.isArray(a) && a.every(okId)))
+    throw new Error("this file has an entry this book would not have written, so none of it was brought in");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
   p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
@@ -2652,7 +2699,7 @@ function syncCard(){
       '<p>The claude.ai viewer blocks a page from reaching an outside server, so this copy cannot sync &mdash; a platform rule, not a choice. '+
       'Open the same book at <b>ttrng3.github.io/passbook</b> and it will. Everything else works identically in both.</p></div>';
   let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between"><h3>Sync</h3>'+
-    (S.lastSync?'<span class="cap">Last synced '+esc(new Date(S.lastSync).toLocaleString())+'</span>':'<span class="cap">Never synced</span>')+'</div>';
+    (S.lastSync?'<span class="cap">Last synced '+esc(fmtWhen(S.lastSync))+'</span>':'<span class="cap">Never synced</span>')+'</div>';
   if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-top:var(--s3)"><div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
   if(AUTH){
     h+='<div class="row" style="margin-top:var(--s3)">'+
@@ -2662,7 +2709,7 @@ function syncCard(){
       '<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Who can see these records</div>'+
       '<p>Only this account. The page is public, so anyone can open it &mdash; they get an empty book of their own and cannot reach yours. '+
       'Every row in the database is locked to the account that wrote it by a database rule, not by anything this page does, '+
-      'and new accounts are switched off entirely. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
+      'and new accounts open only to addresses on your family list. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
       'If that is a shared machine, use <i>Sign out and erase this device</i> below.</p></div>'+
       '<details><summary>Set or change your password</summary><div>'+
         '<div class="hint">A password signs you in without waiting for an email, which matters because this project allows one auth email a minute. Make it long and used nowhere else &mdash; it opens a medical record.</div>'+
@@ -2706,13 +2753,13 @@ function syncCard(){
   return h+'</div>';
 }
 function vHandoff(){
-  let h='<h2 style="margin-bottom:var(--s3)">Sync and hand-off</h2>'+syncCard();
+  let h='';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Two ways across, and they do different jobs</div>'+
     '<p><b>Sync</b> is for your own devices: one account, your rows only, converging automatically. '+
     '<b>Hand-off</b> is for everyone else &mdash; a file a relative chooses to send you, which you merge in knowingly. '+
     'Both merge rather than overwrite, so you can import the same file twice safely.</p></div>';
 
-  h+='<div class="card"><h3>Send a copy out</h3>'+
+  h+='<div class="card" style="margin-bottom:var(--s4)"><h3>Send a copy out</h3>'+
     '<div class="hint" style="margin-bottom:var(--s3)">Copy the text, then put it wherever you like — AirDrop a note to yourself, message it, email it. Paste it into <b>Bring a copy in</b> on the other device.</div>'+
     '<div class="row"><select class="inp" id="expWho" style="width:auto;min-width:200px">'+
       '<option value="">Everything in this book</option>'+
@@ -2731,16 +2778,19 @@ function vHandoff(){
     '<label class="btn" style="cursor:pointer">Or pick a file<input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden></label></div>'+
     '<div id="impMsg"></div></div>';
 
-  h+='<div class="card"><h3>Family in other countries</h3>'+
-    '<div class="hint">The workable shape, and it is the only one that does not build the thing that was killed:</div>'+
+  return h;
+}
+function familyNoAccount(){
+  let h='';
+  h+='<div class="card"><h3>Without an account</h3>'+
+    '<div class="hint">If they would rather not have an account, this works too:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
     '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
     '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
     '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
     '</ol>'+
-    '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
-    '<p>A single place everyone uploads to is one person holding a household&rsquo;s medical records on someone else&rsquo;s server, across borders. '+
-    'That is the open question the 55 files on Drive already raise, and it is the trigger the record calls Gate 1.</p>'+
+    '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Two ways to keep family records</div>'+
+    '<p>An invited relative gets their own account and their own book. Their records sync to a row on the server in Singapore that only their account can read &mdash; not you, not anyone else in the family. Or they keep a book on their phone only and send you copies, as above.</p>'+
     '<p>Copies people choose to send you are a different thing, and they stay on this machine &mdash; merged records are marked <b>on this device only</b> and are excluded from the sync, so a relative&rsquo;s readings never reach the server through your account. That is enforced in the code, not just promised here.</p></div></div>';
   return h;
 }
@@ -2764,8 +2814,8 @@ async function loadInvites(){
   const r = await supa("/rest/v1/family_invites?select=email,note,created_at,used_at&order=created_at");
   if(r.ok){ inviteRows = r.body || []; inviteMsg = null; }
   else if(r.status === 404 || (r.body && r.body.code === "PGRST205")){
-    inviteRows = []; inviteMsg = {t:"amber", k:"The family list is not there yet",
-      x:"Apply migration 0019_family_invites.sql, then reload. Until it exists, nobody can be invited and nobody can sign up."};
+    inviteRows = []; inviteMsg = {t:"amber", k:"Invites are not switched on yet",
+      x:"The family list is missing on the server, so nobody can be invited yet."};
   } else {
     inviteRows = []; inviteMsg = {t:"red", k:"Could not read the family list",
       x:(r.body && (r.body.message||r.body.hint)) || ("HTTP "+r.status)};
@@ -2776,7 +2826,7 @@ async function loadInvites(){
 function inviteCard(){
   if(IS_ARTIFACT) return "";
   if(!AUTH) return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
-    '<div class="cap">Sign in below first. Only someone already inside can add an address to the family list.</div></div>';
+    '<div class="cap">Sign in first, under Settings &rsaquo; Account and sync. Only someone already signed in can add an address to the family list.</div></div>';
   if(inviteRows === null){ loadInvites();
     return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3><div class="cap">Reading the family list&hellip;</div></div>'; }
 
@@ -2800,61 +2850,40 @@ function inviteCard(){
   return h+'</div>';
 }
 
-function vSettings(){
-  let h=inviteCard()+
-    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
-    '<div><h3 style="margin:0">Simple mode</h3>'+
-    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
-    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
-    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
-      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
-    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
-    '<div><h3 style="margin:0">Sheet for an appointment</h3>'+
-    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">One printable page: medicines, allergies, conditions, whatever is flagged, and the questions you wrote.</div></div>'+
-    '<button class="btn" data-tab="sheet">Open it</button></div></div>'+
-    vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
+/* Settings, laid out the way iOS Settings is: a short list of rows, each
+   opening its own page. One subject per screen, so nobody has to read past
+   sync to find text size. */
+let setPage=null;
+const SET_PAGES={
+  invite:  {t:"Invite family",           f:()=>inviteCard()+familyNoAccount()},
+  people:  {t:"People in this book",     f:()=>{ let h=''; 
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
     (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
       '<span class="dot"></span>On this device only</span>'+
       '<div class="cap" style="margin-top:var(--s2)">'+esc(m.name)+' arrived in a copy somebody sent you. Their records stay in this browser and are left out of the sync, so they never reach the server through your account. Delete them here and they are gone from this device.</div></div>':'')+
-    '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
-    '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
+    '<div><label class="fl" for="n'+esc(m.id)+'">Name</label><input class="inp" id="n'+esc(m.id)+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
+    '<div><label class="fl" for="s'+esc(m.id)+'">Sex at birth</label><select class="inp" id="s'+esc(m.id)+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
       ["female","male"].map(x=>'<option'+(m.sex===x?" selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
-    '<div><label class="fl" for="d'+m.id+'">Date of birth</label><input class="inp" id="d'+m.id+'" type="date" data-mf="dob" data-mid="'+esc(m.id)+'" value="'+esc(m.dob||"")+'"></div>'+
-    '<div><label class="fl" for="c'+m.id+'">Where they are</label><input class="inp" id="c'+m.id+'" data-mf="country" data-mid="'+esc(m.id)+'" value="'+esc(m.country||"")+'" placeholder="Vietnam"></div>'+
-    '<div><label class="fl" for="p'+m.id+'">BMI standard</label><select class="inp" id="p'+m.id+'" data-mf="population" data-mid="'+esc(m.id)+'">'+
+    '<div><label class="fl" for="d'+esc(m.id)+'">Date of birth</label><input class="inp" id="d'+esc(m.id)+'" type="date" data-mf="dob" data-mid="'+esc(m.id)+'" value="'+esc(m.dob||"")+'"></div>'+
+    '<div><label class="fl" for="c'+esc(m.id)+'">Where they are</label><input class="inp" id="c'+esc(m.id)+'" data-mf="country" data-mid="'+esc(m.id)+'" value="'+esc(m.country||"")+'" placeholder="Vietnam"></div>'+
+    '<div><label class="fl" for="p'+esc(m.id)+'">BMI standard</label><select class="inp" id="p'+esc(m.id)+'" data-mf="population" data-mid="'+esc(m.id)+'">'+
       Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
     (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
     '</div>').join("");
-  h+='<button class="btn" id="addP">Add a person</button></div>';
-
-  h+='<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">Display</h2><div class="card">'+
-    '<div class="row" style="justify-content:space-between"><div><b>Larger text</b>'+
-    '<div class="hint" style="margin-top:2px">Bigger type and bigger buttons throughout. Kept on this device.</div></div>'+
-    '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div></div>'+
-    '<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
-    '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
-    '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
-    'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
-    '<div class="row" style="margin-top:var(--s3)">'+
-      (S.panel||[]).map(c=>'<span class="badge '+(isCustom(c)?"st-watch":"st-unknown")+'"><span class="dot"></span>'+esc(meta(c).n)+
-        ' <button class="btn sm" data-unpanel="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove from panel">&times;</button></span>').join("")+
-      ((S.panel||[]).length?'':'<span class="cap">Empty &mdash; nothing is being looked for.</span>')+
-    '</div>'+
-    '<div class="row" style="margin-top:var(--s4)"><select class="inp" id="panelAdd" style="width:auto;min-width:230px">'+codeOpts(null)+'</select>'+
-    '<button class="btn" id="panelAddBtn">Add to panel</button>'+
-    '<button class="btn" id="panelReset">Restore the default panel</button></div></div></div>'+
-    '<div class="sec"><h2>How this book behaves</h2><div class="card">'+
+  h+='<button class="btn" id="addP">Add a person</button>'; return h; }},
+  sync:    {t:"Account and sync",        f:()=>syncCard()},
+  copies:  {t:"Send or receive a copy",  f:()=>vHandoff()},
+  about:   {t:"How this book works",     f:()=>'<div class="card">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
     '<p><b>Where your records actually go.</b> The book lives in this browser. Three things leave it, and nothing else does:</p>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body);margin-bottom:var(--s3)">'+
-    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs.</li>'+
+    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs. The same holds for each relative you invite: their own row, readable only by them.</li>'+
     '<li><b>Reading a report sends that page off the device.</b> The photo goes to that same Supabase project and on to Anthropic in the United States to be read, then the stored copy is deleted as soon as the read finishes. The original stays in your phone&rsquo;s camera roll; this book keeps its own copy only in this browser.</li>'+
-    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not mine to put on a server.</li>'+
+    '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not yours to put on a server.</li>'+
     '</ul>'+
-    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance, and it is the question the record calls Gate 1.</p>'+
+    '<p style="margin-bottom:var(--s3)">Two of those cross a border. That is a fact about the design, not a reassurance.</p>'+
     '<details><summary>What a clinician would want you to know</summary><div>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body)">'+
     '<li><b>This is not your medical record.</b> It is a patient-held copy. Hand a clinician the original report — that is the document with the lab&rsquo;s method, its accreditation and its own flags on it.</li>'+
@@ -2863,10 +2892,33 @@ function vSettings(){
     '<li><b>Different labs are not interchangeable.</b> Analyser and method differ, so a change between labs may be the lab. Trends that cross laboratories are flagged.</li>'+
     '<li><b>Context changes interpretation</b> — fasting state, time of day, acute illness, pregnancy, medicines and supplements. Record what you can; biotin in particular can distort several immunoassays.</li>'+
     '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
-    '</ul></div></details></div></div>';
-
-  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">There is no cloud copy. Take a hand-off first.</div>'+
+    '</ul></div></details></div>'},
+  wipe:    {t:"Delete everything",       f:()=>{ let h='';
+  h+='<div class="card"><div class="hint" style="margin:0 0 var(--s3)">'+(AUTH
+      ? 'This clears this device only. Your synced copy stays on the server and comes back the next time you sign in here. Take a hand-off first if you want a copy you hold.'
+      : 'Nothing on this device is synced, so there is no other copy. Take a hand-off first.')+'</div>'+
     '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
+  return h; }}
+};
+function setRow(id, sub, danger){
+  return '<button class="gadd" data-setpage="'+id+'" style="display:flex;align-items:center;gap:var(--s3);font-weight:400;color:'+(danger?'var(--red-ink)':'var(--ink)')+'">'+
+    '<span style="flex:1;min-width:0">'+esc(SET_PAGES[id].t)+(sub?'<span class="sub" style="display:block;font-size:14px;color:var(--ink-muted);margin-top:2px">'+esc(sub)+'</span>':'')+'</span>'+
+    '<span class="chev" aria-hidden="true" style="width:0;height:0;border-left:6px solid var(--ink-muted);border-top:5px solid transparent;border-bottom:5px solid transparent"></span></button>';
+}
+function vSettings(){
+  if(setPage && SET_PAGES[setPage])
+    return '<button class="btn" data-setpage="" style="margin-bottom:var(--s3)">&larr; Settings</button>'+
+      '<h2 style="margin-bottom:var(--s4)">'+esc(SET_PAGES[setPage].t)+'</h2>'+SET_PAGES[setPage].f();
+  const names=S.members.map(m=>m.name).join(", ");
+  const acct=IS_ARTIFACT?"Not available in this preview":AUTH&&AUTH.email?(S.lastSync?"Synced "+fmtWhen(S.lastSync):"Signed in"):"Not signed in";
+  let h='<h2 style="margin-bottom:var(--s2)">Settings</h2>';
+  h+='<div class="ghdr">Family</div><div class="glist">'+
+    (IS_ARTIFACT?'':setRow("invite","Give a relative their own private book"))+
+    setRow("people",names)+'</div>';
+  h+='<div class="ghdr">Your records</div><div class="glist">'+
+    setRow("sync",acct)+setRow("copies","Pass records between phones or people")+'</div>';
+  h+='<div class="ghdr">About</div><div class="glist">'+setRow("about","What it never does, and where records go")+'</div>';
+  h+='<div class="glist" style="margin-top:var(--s5)">'+setRow("wipe","",true)+'</div>';
   return h;
 }
 
@@ -3016,13 +3068,14 @@ function syncMerge(a, b){
   const tomb = {o:uniq((ta.o||[]).concat(tb.o||[])),
                 a:uniq((ta.a||[]).concat(tb.a||[])),
                 m:uniq((ta.m||[]).concat(tb.m||[])),
-                p:uniq((ta.p||[]).concat(tb.p||[]))};
+                p:uniq((ta.p||[]).concat(tb.p||[])),
+                c:uniq((ta.c||[]).concat(tb.c||[]))};
   const out = {v:2,
     members:      pickById(a.members,      b.members,      tomb.m),
     observations: pickById(a.observations, b.observations, tomb.o),
     actions:      pickById(a.actions,      b.actions,      tomb.a),
     reports:      pickById(a.reports,      b.reports,      []),
-    customCodes:  Object.assign({}, b.customCodes||{}, a.customCodes||{}),
+    customCodes:  Object.fromEntries(Object.entries(Object.assign({}, b.customCodes||{}, a.customCodes||{})).filter(e=>tomb.c.indexOf(e[0])<0)),
     panel:        uniq((a.panel||[]).concat(b.panel||[])).filter(c=>tomb.p.indexOf(c)<0),
     tomb:tomb};
   LISTS.forEach(l=>{
@@ -3164,7 +3217,7 @@ async function syncNow(quiet){
     if(!r.ok){
       const code = r.body && r.body.code;
       if(code==="PGRST205" || (r.body && /_state/.test(r.body.message||"")))
-        throw new Error("The sync table does not exist yet. Apply the migrations in ~/Projects/vitals-app/supabase/migrations, then try again.");
+        throw new Error("The sync table is missing on the server, so nothing could be synced. Your records on this device are untouched.");
       throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
     }
     let remote = (r.body && r.body[0] && r.body[0].doc) || null;
@@ -3365,26 +3418,29 @@ async function extractViaVitals(file, say){
     throw new Error("the page could not be uploaded (HTTP " + up.status + (why ? ": " + why : "") + ")");
   }
 
-  say && say("register");
-  const ins = await supa("/rest/v1/documents", {method: "POST",
-    headers: {Prefer: "return=representation"},
-    body: [{storage_path: path, mime_type: mime}]});
-  if(!ins.ok || !ins.body || !ins.body[0] || !ins.body[0].id)
-    throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created");
-  const documentId = ins.body[0].id;
-
-  say && say("read");
-  const readStarted = Date.now();
   /* The page said scanned reports stay on the device. They did not: the
      image was uploaded so the reader could fetch it and was never removed,
-     so every page ever scanned was still sitting in storage. It is deleted
-     as soon as the read finishes, whether it succeeded or failed -- the
-     upload is a courier, not a filing cabinet. */
+     so every page ever scanned was still sitting in storage. The reader now
+     deletes it the moment it has downloaded it; this is the second lock, and
+     the only one when the read never starts. The upload is a courier, not a
+     filing cabinet. */
   const dropStored = async () => {
     try{ await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
       method:"DELETE",
       headers:{apikey:SUPA.key, Authorization:"Bearer "+AUTH.tok}}); }catch(e){}
   };
+
+  say && say("register");
+  const ins = await supa("/rest/v1/documents", {method: "POST",
+    headers: {Prefer: "return=representation"},
+    body: [{storage_path: path, mime_type: mime}]});
+  if(!ins.ok || !ins.body || !ins.body[0] || !ins.body[0].id){
+    await dropStored();
+    throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created"); }
+  const documentId = ins.body[0].id;
+
+  say && say("read");
+  const readStarted = Date.now();
   let r;
   try{
     r = await fetch(SUPA.url + "/functions/v1/extract-document", {
@@ -3689,7 +3745,8 @@ function paintSyncBadge(){
     cls="st-unknown"; txt="Preview copy";
     tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/passbook for the working one.";
   } else if(AUTH && AUTH.email){
-    cls="st-in_range"; txt="Syncing";
+    cls=syncing?"st-unknown":"st-in_range";
+    txt=syncing?"Syncing\u2026":(S.lastSync?"Synced "+fmtWhen(S.lastSync):"Not synced yet");
     tip="Signed in as "+AUTH.email+". Your own records sync to a row only this account can read. Records merged from someone else stay on this device.";
   } else {
     cls="st-watch"; txt="This device only";
@@ -3734,9 +3791,10 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
-  if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
   if(t.dataset.openp){ who=t.dataset.openp; tab="record"; render(); window.scrollTo(0,0); return; }
   if(t.dataset.obs){ detail=t.dataset.obs; drawer(); return; }
@@ -3755,6 +3813,12 @@ document.addEventListener("click", async e=>{
     return;
   }
   if(t.id==="clearPaste"){ document.getElementById("paste").value=""; return; }
+  if(t.id==="qText"){ if(simple()) return;
+    try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
+    applyText(); render(); return; }
+  if(t.id==="qSimple"){ setSimple(!simple()); return; }
+  if(t.id==="qEmpty"){ try{ showEmpty()?localStorage.removeItem(EMPTY_KEY):localStorage.setItem(EMPTY_KEY,"on"); }catch(e){}
+    render(); return; }
   if(t.id==="textSize"){
     try{ localStorage.setItem(TEXT_KEY, bigText()?"normal":"large"); }catch(e){}
     applyText(); render(); return; }
@@ -3820,17 +3884,17 @@ document.addEventListener("click", async e=>{
     draft.rows.filter(r=>r.confirmed && rowHasValue(r)).forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
+        S.tomb.c=(S.tomb.c||[]).filter(x=>x!==r.code);
       }
       if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
         S.panel.push(r.code);
-      const q=isQual(r.code), v=numOf(r.value), cmp=cmpOf(r.value);
+      const q=isQual(r.code), v=num(r.value);
       S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:q?"":r.unit,
         /* a word result has no number: value stays null and every numeric
            path (the line chart, the range band) skips it by that test */
         value:q?null:toCanonical(v,r.code,r.unit),
-        cmp:q?"":cmp,
-        refLow:q||r.refLow===""?null:toCanonical(numOf(r.refLow),r.code,r.unit),
-        refHigh:q||r.refHigh===""?null:toCanonical(numOf(r.refHigh),r.code,r.unit),
+        refLow:q||r.refLow===""||!isFinite(num(r.refLow))?null:toCanonical(num(r.refLow),r.code,r.unit),
+        refHigh:q||r.refHigh===""||!isFinite(num(r.refHigh))?null:toCanonical(num(r.refHigh),r.code,r.unit),
         refText:q?(r.refText||""):"",
         refLabel:r.refLabel||((!q&&r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
@@ -3856,7 +3920,7 @@ document.addEventListener("click", async e=>{
     S.observations=S.observations.filter(o=>o.id!==t.dataset.delo); detail=null; save(); render(); return; }
   if(t.dataset.fix){ const o=S.observations.find(x=>x.id===t.dataset.fix); if(!o) return;
     const nv=prompt("Corrected value for "+meta(o.code).n+" ("+o.unit+"):",o.valueRaw); if(nv===null) return;
-    const n=numOf(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
+    const n=num(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
     o.valueRaw=String(nv); o.value=toCanonical(n,o.code,o.unit); touch(o);
     o.note=prompt("What does the sheet actually say? (kept as a note)",o.note||"")||o.note;
     save(); render(); return; }
@@ -3872,6 +3936,10 @@ document.addEventListener("click", async e=>{
     if(!draft.rows.some(r=>r.code===c))
       draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"});
     tab="add"; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.dropcode){ const c=t.dataset.dropcode;
+    if(!S.observations.some(o=>o.code===c)){ delete S.customCodes[c]; S.panel=(S.panel||[]).filter(x=>x!==c);
+      S.tomb.c=uniq((S.tomb.c||[]).concat([c])); save(); }
+    render(); return; }
   if(t.dataset.unpanel){
     const c=t.dataset.unpanel;
     S.panel=(S.panel||[]).filter(x=>x!==c);
@@ -3967,7 +4035,7 @@ document.addEventListener("click", async e=>{
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
-    if(!confirm("Last check — there is no cloud copy and this cannot be undone.")) return;
+    if(!confirm(AUTH ? "Last check — this clears this device. Your synced copy stays on the server." : "Last check — there is no other copy and this cannot be undone.")) return;
     try{ localStorage.removeItem(LS); }catch(e){}
     S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
 });
