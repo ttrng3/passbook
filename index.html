@@ -8,6 +8,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Passbook">
 <meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src https://uoncyxguauemrqupqxto.supabase.co; worker-src 'self' blob:; object-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="description" content="A patient-held medical record for you and your family. Records stay in your browser unless you sign in.">
 <style>
 :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
@@ -341,6 +342,23 @@ function pref(key, legacy){
 }
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
+/* Vietnamese labs print "5,3" for 5.3, and parseFloat stops at the comma and
+   returns 5 -- a high result read as in range. A comma followed by one, two,
+   or four or more digits is a decimal mark; exactly three ("10,500") is a US
+   thousands separator or a European 10.5, so it is not guessed. A leading
+   comparator ("<0.5", ">90") is kept on the raw text and read here as its
+   bound; statusOf decides whether the bound alone settles the status. */
+function num(raw){
+  if(raw==null) return NaN;
+  if(typeof raw==="number") return raw;
+  let t=String(raw).trim().replace(/\s/g,"").replace(/^(<=?|>=?|\u2264|\u2265)/,"");
+  if(/^-?\d{1,3},\d{3}$/.test(t)) return NaN;
+  if(/^-?\d*,\d+$/.test(t)) t=t.replace(",",".");
+  if(!/^-?(\d+\.?\d*|\.\d+)$/.test(t)) return NaN;
+  return Number(t);
+}
+function cmpOf(raw){ const m=/^\s*(<=?|>=?|\u2264|\u2265)/.exec(String(raw==null?"":raw));
+  return m ? (m[1][0]==="<"||m[1]==="\u2264" ? "<" : ">") : ""; }
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 
 /* --------------------------------------------------------------- catalog
@@ -936,7 +954,7 @@ function isQual(code){ return !!meta(code).q; }
    away every word result on a urine strip -- nine of its ten rows. */
 function rowHasValue(r){
   return r && (isQual(r.code) ? String(r.value==null?"":r.value).trim()!=="" 
-                              : isFinite(parseFloat(r.value)));
+                              : isFinite(num(r.value)));
 }
 /* null means "printed something this book does not recognise" -- which is
    kept verbatim and shown as unreadable, never guessed into a state. */
@@ -1357,7 +1375,7 @@ function migrate(p){
     (p.observations||[]).forEach(o=>{
       const to = moved[o.code]; if(!to) return;
       o.code = to;
-      const n = parseFloat(o.valueRaw);
+      const n = num(o.valueRaw);
       if(isFinite(n)) o.value = toCanonical(n, to, o.unit);
       o.mtime = Date.now();
     });
@@ -1495,7 +1513,16 @@ function statusOf(o){
   const lo = o.refLow==null||o.refLow===""?null:Number(o.refLow);
   const hi = o.refHigh==null||o.refHigh===""?null:Number(o.refHigh);
   if(lo===null&&hi===null) return "unknown";
+  /* Number(null) is 0: a reading with no number must not be judged as zero. */
+  if(o.value==null||o.value===""||!isFinite(Number(o.value))) return "unknown";
   const v=Number(o.value), inLo=lo===null||v>=lo, inHi=hi===null||v<=hi;
+  /* "<0.5" or ">90": the printed number is a bound, not the result. It
+     settles the status only when every value past the bound falls the same
+     way -- "<0.5" under a 0-1 range, ">90" over a floor of 60. Otherwise the
+     honest answer is unknown. */
+  const cmp=cmpOf(o.valueRaw);
+  if(cmp==="<") return (inHi && (lo===null||lo<=0)) ? "in_range" : (hi!==null&&v<=hi&&lo!==null&&v<=lo ? "discuss" : "unknown");
+  if(cmp===">") return (inLo && hi===null) ? "in_range" : (hi!==null&&v>=hi ? "discuss" : "unknown");
   if(inLo&&inHi) return "in_range";
   const span=(lo!==null&&hi!==null&&hi>lo)?hi-lo:Math.abs(hi!==null?hi:lo)||1;
   return ((!inHi?v-hi:lo-v)/span)<=0.10 ? "watch" : "discuss";
@@ -2593,6 +2620,13 @@ function mergeIn(p, label){
      importing forever -- they are already sitting in people's messages. */
   const known = p && (p.kind==="passbook" || p.kind==="vitals-journal");
   if(!known || !Array.isArray(p.members)) throw new Error("not a Passbook file");
+  /* Every id this book makes is a short plain token. An id carrying quotes or
+     angle brackets can only have been written by hand, and an id is put into
+     the page -- so the whole file is refused rather than any part of it. */
+  const okId = x => x && typeof x.id==="string" && /^[A-Za-z0-9_.:-]{1,80}$/.test(x.id);
+  const all = [p.members, p.observations||[], p.actions||[]].concat(LISTS.map(l=>p[l[0]]||[]));
+  if(!all.every(a=>Array.isArray(a) && a.every(okId)))
+    throw new Error("this file has an entry this book would not have written, so none of it was brought in");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
   p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
@@ -2727,12 +2761,12 @@ function vSettings(){
     (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
       '<span class="dot"></span>On this device only</span>'+
       '<div class="cap" style="margin-top:var(--s2)">'+esc(m.name)+' arrived in a copy somebody sent you. Their records stay in this browser and are left out of the sync, so they never reach the server through your account. Delete them here and they are gone from this device.</div></div>':'')+
-    '<div><label class="fl" for="n'+m.id+'">Name</label><input class="inp" id="n'+m.id+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
-    '<div><label class="fl" for="s'+m.id+'">Sex at birth</label><select class="inp" id="s'+m.id+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
+    '<div><label class="fl" for="n'+esc(m.id)+'">Name</label><input class="inp" id="n'+esc(m.id)+'" data-mf="name" data-mid="'+esc(m.id)+'" value="'+esc(m.name)+'"></div>'+
+    '<div><label class="fl" for="s'+esc(m.id)+'">Sex at birth</label><select class="inp" id="s'+esc(m.id)+'" data-mf="sex" data-mid="'+esc(m.id)+'">'+
       ["female","male"].map(x=>'<option'+(m.sex===x?" selected":"")+'>'+x+'</option>').join("")+'</select></div>'+
-    '<div><label class="fl" for="d'+m.id+'">Date of birth</label><input class="inp" id="d'+m.id+'" type="date" data-mf="dob" data-mid="'+esc(m.id)+'" value="'+esc(m.dob||"")+'"></div>'+
-    '<div><label class="fl" for="c'+m.id+'">Where they are</label><input class="inp" id="c'+m.id+'" data-mf="country" data-mid="'+esc(m.id)+'" value="'+esc(m.country||"")+'" placeholder="Vietnam"></div>'+
-    '<div><label class="fl" for="p'+m.id+'">BMI standard</label><select class="inp" id="p'+m.id+'" data-mf="population" data-mid="'+esc(m.id)+'">'+
+    '<div><label class="fl" for="d'+esc(m.id)+'">Date of birth</label><input class="inp" id="d'+esc(m.id)+'" type="date" data-mf="dob" data-mid="'+esc(m.id)+'" value="'+esc(m.dob||"")+'"></div>'+
+    '<div><label class="fl" for="c'+esc(m.id)+'">Where they are</label><input class="inp" id="c'+esc(m.id)+'" data-mf="country" data-mid="'+esc(m.id)+'" value="'+esc(m.country||"")+'" placeholder="Vietnam"></div>'+
+    '<div><label class="fl" for="p'+esc(m.id)+'">BMI standard</label><select class="inp" id="p'+esc(m.id)+'" data-mf="population" data-mid="'+esc(m.id)+'">'+
       Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
     (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
     '</div>').join("");
@@ -3277,26 +3311,29 @@ async function extractViaVitals(file, say){
     throw new Error("the page could not be uploaded (HTTP " + up.status + (why ? ": " + why : "") + ")");
   }
 
-  say && say("register");
-  const ins = await supa("/rest/v1/documents", {method: "POST",
-    headers: {Prefer: "return=representation"},
-    body: [{storage_path: path, mime_type: mime}]});
-  if(!ins.ok || !ins.body || !ins.body[0] || !ins.body[0].id)
-    throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created");
-  const documentId = ins.body[0].id;
-
-  say && say("read");
-  const readStarted = Date.now();
   /* The page said scanned reports stay on the device. They did not: the
      image was uploaded so the reader could fetch it and was never removed,
-     so every page ever scanned was still sitting in storage. It is deleted
-     as soon as the read finishes, whether it succeeded or failed -- the
-     upload is a courier, not a filing cabinet. */
+     so every page ever scanned was still sitting in storage. The reader now
+     deletes it the moment it has downloaded it; this is the second lock, and
+     the only one when the read never starts. The upload is a courier, not a
+     filing cabinet. */
   const dropStored = async () => {
     try{ await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
       method:"DELETE",
       headers:{apikey:SUPA.key, Authorization:"Bearer "+AUTH.tok}}); }catch(e){}
   };
+
+  say && say("register");
+  const ins = await supa("/rest/v1/documents", {method: "POST",
+    headers: {Prefer: "return=representation"},
+    body: [{storage_path: path, mime_type: mime}]});
+  if(!ins.ok || !ins.body || !ins.body[0] || !ins.body[0].id){
+    await dropStored();
+    throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created"); }
+  const documentId = ins.body[0].id;
+
+  say && say("read");
+  const readStarted = Date.now();
   let r;
   try{
     r = await fetch(SUPA.url + "/functions/v1/extract-document", {
@@ -3718,13 +3755,13 @@ document.addEventListener("click", async e=>{
       }
       if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
         S.panel.push(r.code);
-      const q=isQual(r.code), v=parseFloat(r.value);
+      const q=isQual(r.code), v=num(r.value);
       S.observations.push({id:uid(),memberId:draft.memberId,code:r.code,valueRaw:String(r.value),unit:q?"":r.unit,
         /* a word result has no number: value stays null and every numeric
            path (the line chart, the range band) skips it by that test */
         value:q?null:toCanonical(v,r.code,r.unit),
-        refLow:q||r.refLow===""?null:toCanonical(parseFloat(r.refLow),r.code,r.unit),
-        refHigh:q||r.refHigh===""?null:toCanonical(parseFloat(r.refHigh),r.code,r.unit),
+        refLow:q||r.refLow===""||!isFinite(num(r.refLow))?null:toCanonical(num(r.refLow),r.code,r.unit),
+        refHigh:q||r.refHigh===""||!isFinite(num(r.refHigh))?null:toCanonical(num(r.refHigh),r.code,r.unit),
         refText:q?(r.refText||""):"",
         refLabel:r.refLabel||((!q&&r.refLow!==""&&r.refHigh!=="")?r.refLow+"–"+r.refHigh+" "+r.unit:""),
         observedAt:draft.date,source:draft.source,fasting:draft.fasting,specimen:draft.specimen,
@@ -3750,7 +3787,7 @@ document.addEventListener("click", async e=>{
     S.observations=S.observations.filter(o=>o.id!==t.dataset.delo); detail=null; save(); render(); return; }
   if(t.dataset.fix){ const o=S.observations.find(x=>x.id===t.dataset.fix); if(!o) return;
     const nv=prompt("Corrected value for "+meta(o.code).n+" ("+o.unit+"):",o.valueRaw); if(nv===null) return;
-    const n=parseFloat(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
+    const n=num(nv); if(!isFinite(n)){ alert("That is not a number."); return; }
     o.valueRaw=String(nv); o.value=toCanonical(n,o.code,o.unit); touch(o);
     o.note=prompt("What does the sheet actually say? (kept as a note)",o.note||"")||o.note;
     save(); render(); return; }
