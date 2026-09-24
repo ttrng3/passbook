@@ -213,6 +213,8 @@ footer.fix b{color:var(--ink)}
 .gfield+.gfield{border-top:1px solid var(--line-soft)}
 .gfield>span{font-size:15px;color:var(--ink-body)}
 .gfield .inp{min-height:44px;font-size:17px;background:var(--card)}
+.gfield .inp.note{min-height:76px;line-height:1.45;padding:10px 12px;resize:vertical;font-family:inherit}
+@media (max-width:520px){ .gfield:has(.note){grid-template-columns:1fr} }
 .gadd{display:block;width:100%;text-align:left;background:none;border:0;
   padding:var(--s4);min-height:48px;font:inherit;font-size:17px;font-weight:600;
   color:var(--blue-ink);cursor:pointer;transition:background 90ms ease}
@@ -1779,7 +1781,13 @@ const PICK = {
     "Pneumococcal","Hepatitis A","Hepatitis B","MMR (measles, mumps, rubella)","Chickenpox",
     "HPV","RSV","Typhoid","Japanese encephalitis","Rabies","Yellow fever","Meningococcal"],
   visitWhy: ["Annual check-up","Follow-up","New symptom","Test results","Vaccination",
-    "Prescription refill","Specialist referral","Emergency","Dental","Eye test"]
+    "Prescription refill","Specialist referral","Emergency","Dental","Eye test"],
+  /* What a clinician most often asks to be done again. Their instruction,
+     recorded in their words -- the book adds only the arithmetic of how long
+     it has been. */
+  repeatWhat: ["Blood test","Lipid panel","Fasting glucose","HbA1c","Liver panel",
+    "Kidney function","Thyroid (TSH)","Full blood count","Urine test","Blood pressure check",
+    "Ultrasound","X-ray","ECG","Endoscopy","Eye check","Dental check","Review appointment"]
 };
 
 /* label · field · control · which list */
@@ -1790,8 +1798,17 @@ const FIELDS = {
                ["severity","How bad","select","allergySeverity"],["note","Note","text"]],
   conditions: [["name","Condition","list","conditionName"],["since","Since","month"],["note","Note","text"]],
   shots:      [["name","Vaccination","list","shotName"],["date","Date","date"],["note","Note","text"]],
+  /* A visit is the only place the record meets a person who knows something.
+     What they said is kept VERBATIM and attributed -- never paraphrased,
+     never summarised, never read by a model. The app quotes a clinician; it
+     does not interpret one, and that line is what keeps the most useful
+     feature here from becoming a different kind of product. */
   visits:     [["date","Date","date"],["who","Doctor","text"],["place","Where","text"],
-               ["why","Why","list","visitWhy"],["said","What was said","text"]]
+               ["why","Why","list","visitWhy"],
+               ["said","What they said","note"],
+               ["changed","What changed","note"],
+               ["repeat","Repeat what","list","repeatWhat"],
+               ["repeatBy","Repeat by","date"]]
 };
 
 /* A datalist is written once per list and shared by every row that uses it. */
@@ -1815,7 +1832,7 @@ const BLANK = {
   allergies:{what:"",reaction:"",severity:"",note:""},
   conditions:{name:"",since:"",note:""},
   shots:{name:"",date:"",note:""},
-  visits:{date:today(),who:"",place:"",why:"",said:""}
+  visits:{date:today(),who:"",place:"",why:"",said:"",changed:"",repeat:"",repeatBy:"",files:[]}
 };
 
 /* One control per field, chosen by the shape of its answer. */
@@ -1835,6 +1852,9 @@ function control(key, row, f){
   if(kind === "list")
     return '<input class="inp" '+at+' list="dl-'+list+'" value="'+esc(v)+'" '+
       'placeholder="tap to choose, or type" autocapitalize="sentences" autocomplete="off">';
+  if(kind === "note")
+    return '<textarea class="inp note" rows="3" '+at+
+      ' placeholder="in their words, as they said it">'+esc(v)+'</textarea>';
   if(kind === "date")
     return '<input class="inp" type="date" '+at+' value="'+esc(v)+'">';
   if(kind === "month")
@@ -1848,7 +1868,59 @@ function entrySummary(key, r){
   if(key==="allergies")  return [r.what||"New allergy", [r.reaction,r.severity].filter(Boolean).join(" \u00b7 ")];
   if(key==="conditions") return [r.name||"New condition", r.since?("since "+r.since):""];
   if(key==="shots")      return [r.name||"New vaccination", r.date||""];
+  if(key==="visits"){
+    const bits=[r.who,r.place,r.why].filter(Boolean).join(" \u00b7 ");
+    const said=(r.said||"").trim();
+    return [r.date||"New visit",
+      [bits, said?("\u201C"+(said.length>60?said.slice(0,60)+"\u2026":said)+"\u201D"):""]
+        .filter(Boolean).join(" \u2014 ")];
+  }
   return [r.date||"New visit", [r.who,r.place,r.why].filter(Boolean).join(" \u00b7 ")];
+}
+
+/* A clinician's own instruction, replayed with the arithmetic beside it.
+   "Dr Linh asked for lipids in 6 months. That was 7 months ago." The app
+   supplies only the subtraction -- the asking was somebody else's, and it is
+   named and dated so it stays theirs. */
+function repeatsDue(mid){
+  return listOf("visits", mid)
+    .filter(v => v.repeat && /^\d{4}-\d{2}-\d{2}$/.test(v.repeatBy||""))
+    .map(v => ({v:v, over: monthsSince(v.repeatBy)}))
+    .filter(x => x.over !== null)
+    .sort((a,b) => (a.v.repeatBy < b.v.repeatBy ? -1 : 1));
+}
+function repeatLine(x){
+  const v=x.v, who=v.who?esc(v.who):"Your doctor", due=new Date(v.repeatBy+"T00:00:00");
+  const past = due.getTime() <= Date.now();
+  return who+' asked for <b>'+esc(v.repeat)+'</b> by '+esc(v.repeatBy)+
+    ' \u2014 '+(past ? esc(agoText(v.repeatBy))
+                    : 'in '+Math.max(1,Math.round((due-Date.now())/86400000))+' days')+
+    (v.date?' (asked '+esc(v.date)+')':'');
+}
+
+/* Most of what a doctor writes is handwritten in the margin of the report,
+   in whatever language they wrote it. Typing it out loses the original, and
+   no model reads it -- the photograph IS the record, and the typed line
+   beside it is the person's own reading of it. Stored in this browser like
+   any other page, never uploaded. */
+function visitPhotos(v){
+  const files = v.files || [];
+  return '<div class="gfield" style="grid-template-columns:1fr"><span>A photo of the note</span>'+
+    '<div>'+
+      (files.length
+        ? '<div class="row" style="flex-wrap:wrap;gap:var(--s2);margin-bottom:var(--s2)">'+
+          files.map(f=>'<span style="position:relative;display:inline-block">'+
+            '<img data-vzoom="'+esc(f.id)+'" alt="'+esc(f.name||"note")+'" '+
+            'style="width:84px;height:84px;object-fit:cover;border-radius:var(--r-inner);'+
+            'border:1px solid var(--line);cursor:zoom-in;background:var(--sunk)">'+
+            '<button class="btn sm warn" data-vrm="'+esc(v.id)+'|'+esc(f.id)+'" '+
+            'style="position:absolute;top:-6px;right:-6px;padding:1px 6px;line-height:1.4">&times;</button>'+
+          '</span>').join("")+'</div>'
+        : '')+
+      '<label class="btn" style="cursor:pointer">Take or choose a photo'+
+      '<input type="file" accept="image/*" capture="environment" data-vpick="'+esc(v.id)+'" hidden multiple></label>'+
+      '<div class="cap" style="margin-top:var(--s2)">Kept in this browser. It is never uploaded and never read by anything.</div>'+
+    '</div></div>';
 }
 
 function listRows(key, mid){
@@ -1864,6 +1936,7 @@ function listRows(key, mid){
       (sub?'<span class="sub">'+esc(sub)+'</span>':'')+'</span><span class="chev"></span></summary>'+
       '<div class="gbody">'+
         F.map(f=>'<label class="gfield"><span>'+esc(f[1])+'</span>'+control(key,r,f)+'</label>').join("")+
+        (key==="visits" ? visitPhotos(r) : "")+
         '<div style="padding-top:var(--s3)"><button class="btn sm warn" data-ldel="'+key+'|'+esc(r.id)+'">Remove this entry</button></div>'+
       '</div></details>';
   }).join("")+add+'</div>';
@@ -2062,6 +2135,14 @@ function vToday(){
         : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
     '</p></div>';
 
+  const due = repeatsDue(m.id);
+  const overdue = due.filter(x => new Date(x.v.repeatBy+"T00:00:00").getTime() <= Date.now());
+  if(overdue.length)
+    h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Asked for, and not done yet</div>'+
+      '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+
+      overdue.map(x=>'<li>'+repeatLine(x)+'</li>').join("")+'</ul>'+
+      '<p class="cap" style="margin-top:var(--s2)">Recorded from a visit, in the words written down at the time. Whether it still applies is a conversation with them, not a judgement this book makes.</p></div>';
+
   if(crossings.length)
     h+='<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Changed since the report before</div>'+
       '<ul style="margin:var(--s2) 0 0;padding-left:18px">'+crossings.map(c=>
@@ -2072,6 +2153,17 @@ function vToday(){
   if(flagged.length)
     h+='<div class="sec"><h3>Worth a look</h3><div class="grid g240">'+
       flagged.slice(0,6).map(obsCard).join("")+'</div></div>';
+
+  /* A record that only ever surfaces problems teaches people to dread
+     opening it. Naming what came back fine is not reassurance -- it is the
+     other half of what the reports actually said, and it is stated as a
+     fact against each report's own range, with the caveat attached. */
+  const fine = L.filter(o=>statusOf(o)==="in_range" && !meta(o.code).fact);
+  if(fine.length)
+    h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Came back inside its range</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+fine.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">Each of these sits inside the range printed on its own report. In range is not the same as healthy, and a normal result is not a clean bill of health &mdash; but it is what the report said, and it is worth seeing.</div>'+
+      '<p style="margin-top:var(--s2)">'+fine.map(o=>esc(meta(o.code).n)).join(" \u00b7 ")+'</p></details>';
 
   if(stale.length && !simple())
     h+='<details class="sec" style="margin-top:var(--s4)"><summary><span>Not measured in over a year</span>'+
@@ -2311,7 +2403,20 @@ function vTrends(){
     '<p>These readings were reported in '+esc(units.join(" and "))+'. The line is plotted in '+esc(M.u)+' so the points are comparable; the table below shows each reading in the unit its own report used.</p></div>';
   if(labs.length>1) h+='<div class="callout c-amber" style="margin-bottom:var(--s3)"><div class="kick">'+labs.length+' different laboratories</div>'+
     '<p>'+esc(labs.join(" · "))+'. A step between labs can be the analyser rather than the person. The dots are coloured by each reading&rsquo;s status against its own report&rsquo;s range, not against a common one.</p></div>';
+  /* The question a person actually has about a chart is whether the thing
+     they started changed the number. Marking when a medicine began answers
+     it without answering it: the book draws the date it was told, beside the
+     line, and says nothing about cause. Reading the two together is the
+     person's business and their doctor's. */
+  const marks = listOf("meds", m.id)
+    .filter(x => /^\d{4}-\d{2}/.test(x.since||""))
+    .map(x => ({when: (x.since.length===7 ? x.since+"-01" : x.since), what: x.name}))
+    .filter(x => x.when >= (pts[0].observedAt||"") && x.when <= (pts[pts.length-1].observedAt||"9999"));
   h+='<div class="card chart" style="position:relative">'+line(pts,M)+'</div>';
+  if(marks.length)
+    h+='<div class="cap" style="margin-top:var(--s2)">Started during this period: '+
+      marks.map(x=>'<b>'+esc(x.what)+'</b> '+esc(x.when.slice(0,7))).join(" \u00b7 ")+
+      '. Shown because it overlaps the line, not because it explains it.</div>';
   h+='<div class="sec" style="margin-top:var(--s4)"><h2>The readings behind the line</h2><div class="card"><div class="tw">'+
     '<table><thead><tr><th>Date</th><th class="n">As reported</th><th class="n">In '+esc(M.u)+'</th><th>Status</th><th>Range on that report</th><th>Lab</th></tr></thead><tbody>'+
     pts.slice().reverse().map(o=>'<tr><td class="n">'+esc(o.observedAt||"—")+'</td>'+
@@ -2641,6 +2746,18 @@ function vSheet(){
       flagged.map(line).join("")+'</tbody></table></div>'
       :'<p class="cap">Every result on file sits inside the range printed on its own report.</p>')+
 
+    (function(){
+      const vs=listOf("visits",m.id), last=vs[0];
+      if(!last) return "";
+      const d=repeatsDue(m.id);
+      return '<h3>Last visit</h3><p>'+esc(last.date||"date not recorded")+
+        (last.who?' \u00b7 '+esc(last.who):"")+(last.place?' \u00b7 '+esc(last.place):"")+
+        (last.why?' \u00b7 '+esc(last.why):"")+'</p>'+
+        (last.said?'<p style="margin-top:var(--s2)">They said: \u201C'+esc(last.said)+'\u201D</p>':"")+
+        (last.changed?'<p style="margin-top:var(--s2)">What changed: '+esc(last.changed)+'</p>':"")+
+        (d.length?'<p style="margin-top:var(--s2)">Asked to repeat: '+
+          d.map(x=>esc(x.v.repeat)+" by "+esc(x.v.repeatBy)).join("; ")+'</p>':"");
+    })()+
     (qs.length?'<h3>What I wanted to ask</h3><ul style="margin:0;padding-left:18px">'+
       qs.map(a=>'<li>'+esc(a.title)+'</li>').join("")+'</ul>':'')+
 
@@ -3738,6 +3855,25 @@ function paintTabs(){
    screen, in green, from before sync existed. It was the most visible of the
    four places that claim had gone stale, and the only one a person sees
    without scrolling. It now reports the state the book is actually in. */
+/* An <img> cannot hold a blob, only a URL for one. The thumbnails are drawn
+   with their file id and the actual bytes are fetched afterwards, so nothing
+   blocks the page and a missing image degrades to an empty square rather
+   than a broken layout. */
+const _noteUrls = new Map();
+async function paintNotePhotos(){
+  const imgs = document.querySelectorAll("img[data-vzoom]:not([src])");
+  for(const img of imgs){
+    const id = img.getAttribute("data-vzoom");
+    let url = _noteUrls.get(id);
+    if(!url){
+      const blob = await getFile(id);
+      if(!blob) continue;
+      url = URL.createObjectURL(blob);
+      _noteUrls.set(id, url);
+    }
+    img.src = url;
+  }
+}
 function paintSyncBadge(){
   const el=document.getElementById("syncBadge"); if(!el) return;
   let cls, txt, tip;
@@ -3771,6 +3907,7 @@ function render(){
     tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
     tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings();
   drawer();
+  paintNotePhotos();
   if(tab==="trends") wireChart();
 }
 function wireChart(){
@@ -3791,7 +3928,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
@@ -3846,6 +3983,22 @@ document.addEventListener("click", async e=>{
   if(t.dataset.ladd){ const k=t.dataset.ladd;
     S[k]=S[k]||[]; S[k].push(Object.assign({id:uid(),memberId:who,sample:false,mtime:Date.now()}, BLANK[k]));
     save(); render(); return; }
+  if(t.dataset.vzoom){
+    const blob = await getFile(t.dataset.vzoom); if(!blob) return;
+    const url = URL.createObjectURL(blob);
+    const host = document.getElementById("dHost");
+    host.innerHTML = '<div class="scrim" data-x="1"></div>'+
+      '<div style="position:fixed;inset:var(--s5);z-index:41;display:grid;place-items:center;pointer-events:none">'+
+      '<img src="'+url+'" alt="the note" style="max-width:100%;max-height:100%;object-fit:contain;'+
+      'border-radius:var(--r-card);background:var(--card)"></div>';
+    return;
+  }
+  if(t.dataset.vrm){
+    const [vid,fid] = t.dataset.vrm.split("|");
+    const v = (S.visits||[]).find(x=>x.id===vid); if(!v) return;
+    v.files = (v.files||[]).filter(f=>f.id!==fid); touch(v);
+    await delFile(fid); save(); render(); return;
+  }
   if(t.dataset.ldel){ const [k,id]=t.dataset.ldel.split("|");
     const key = (LISTS.find(l=>l[0]===k)||[])[1];
     S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
@@ -4124,6 +4277,19 @@ document.addEventListener("change", async e=>{
   if(el.id==="trendSel"){ trendCode=el.value; render(); return; }
   if(el.id==="impFile"){ const f=el.files&&el.files[0]; if(!f) return;
     try{ doImport(await f.text()); }catch(err){ alert("Could not read that file."); } return; }
+  if(el.dataset && el.dataset.vpick){
+    const v=(S.visits||[]).find(x=>x.id===el.dataset.vpick);
+    const picked=el.files?[...el.files]:[]; el.value="";
+    if(v && picked.length){
+      v.files = v.files || [];
+      for(const f of picked){
+        const id=uid();
+        if(await putFile(id,f)) v.files.push({id:id,name:f.name||"note"});
+      }
+      touch(v); save(); render();
+    }
+    return;
+  }
   if(el.id==="globalPick"){ const fs=el.files; const copy=fs?[...fs]:[]; el.value=""; if(copy.length) await handleIncomingFiles(copy); return; }
 
 });
