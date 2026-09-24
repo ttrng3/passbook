@@ -1,6 +1,7 @@
-# Vitals Journal
+# Passbook
 
-A personal and family medical record book that runs entirely in the browser.
+A personal and family medical record book — the small book you carry and get
+updated at every visit, kept in a browser instead of a drawer.
 Paste a lab report, check every value against the sheet, keep the series.
 
 **Where records go, stated exactly.** The book lives in the browser's own
@@ -97,3 +98,16 @@ Decision-support only, not a diagnosis. This is a patient-held copy — give a
 clinician the original report, which carries the laboratory's method, its
 accreditation and its own flags. It holds no critical-value table and will never
 tell you a result is dangerous. If you feel unwell, contact a doctor.
+
+## The name
+
+It was called Vitals Journal until 2026-09-24. *Vitals* is a specific clinical
+term — blood pressure, pulse, temperature, breathing rate — and that is the one
+category of data this book barely holds. It also collides with an iOS feature of
+the same name. A passbook is what this actually is: a small book you carry, and
+someone writes in it each time you are seen.
+
+The repository was renamed too, so `ttrng3.github.io/famrec` now redirects here.
+Storage keys, the hand-off file's `kind` stamp and the Postgres table were
+deliberately **not** renamed — those are addresses, not names, and changing one
+would leave existing records in place and unreachable.
