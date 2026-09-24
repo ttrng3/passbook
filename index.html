@@ -283,7 +283,27 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
 
    Rename any of these and yesterday's data is still there and unreachable,
    which is the worst shape a bug can take. They stay as they are. */
-const LS = "vitals-journal-v2", LS_OLD = "vitals-journal-v1";
+const LS = "passbook-v1";
+/* Read in order, newest first. A key is an address: the records written
+   yesterday are under the old one, and a rename that forgets them is a
+   data-loss event that raises no error and simply shows an empty book. So
+   nothing is renamed without a path from the old address to the new. */
+const LS_LEGACY = ["vitals-journal-v2", "vitals-journal-v1"];
+let _cameFrom = null;
+/* A preference is cheap to lose but annoying, so it copies forward once and
+   the old key is dropped in the same breath. */
+function pref(key, legacy){
+  try{
+    let v = localStorage.getItem(key);
+    if(v === null){
+      for(const old of legacy){
+        const o = localStorage.getItem(old);
+        if(o !== null){ localStorage.setItem(key, o); localStorage.removeItem(old); v = o; break; }
+      }
+    }
+    return v;
+  }catch(e){ return null; }
+}
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
 const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -1270,8 +1290,12 @@ function load(){
   try{
     const raw = localStorage.getItem(LS);
     if(raw){ const p = JSON.parse(raw); if(p && p.members && p.members.length) return repairLegacy(p); }
-    const old = localStorage.getItem(LS_OLD);
-    if(old){ const p = JSON.parse(old); if(p && p.members && p.members.length) return repairLegacy(migrate(p)); }
+    for(const key of LS_LEGACY){
+      const old = localStorage.getItem(key);
+      if(!old) continue;
+      const p = JSON.parse(old);
+      if(p && p.members && p.members.length){ _cameFrom = key; return repairLegacy(migrate(p)); }
+    }
   }catch(e){ console.warn("read failed", e); }
   return seed();
 }
@@ -1313,22 +1337,61 @@ function migrate(p){
 let warned=false;
 function save(){
   try{ if(typeof queueSync==="function") queueSync(); }catch(e){}
-  try{ localStorage.setItem(LS, JSON.stringify(S)); }
+  try{
+    localStorage.setItem(LS, JSON.stringify(S));
+    /* Copy first, verify, then delete -- the same order the file-safety rule
+       demands, for the same reason: a half-written move is worse than none. */
+    if(_cameFrom && localStorage.getItem(LS)){ localStorage.removeItem(_cameFrom); _cameFrom = null; }
+  }
   catch(e){ if(!warned){ warned=true; alert("This browser refused to save — private window, or storage is full.\n\nYour records are on screen but will go when the tab closes. Open Settings and copy the backup out now."); } }
 }
-const TEXT_KEY="famrec-text";
-function bigText(){ try{ return localStorage.getItem(TEXT_KEY)==="large"; }catch(e){ return false; } }
+const TEXT_KEY="passbook-text";
+function bigText(){ return pref(TEXT_KEY, ["famrec-text"])==="large"; }
 function applyText(){ try{ document.body.setAttribute("data-text", (bigText()||simple())?"large":"normal");
   document.body.setAttribute("data-simple", simple()?"on":"off"); }catch(e){} }
 function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actions||[]).some(a=>a.sample); }
 
 /* --------------------------------------------------- attachments */
 let _db=null;
-function idb(){ if(_db) return _db;
-  _db = new Promise((res,rej)=>{ let r; try{ r = indexedDB.open("vitals-journal-files",1);}catch(e){return rej(e);}
+const IDB = "passbook-files", IDB_OLD = "vitals-journal-files";
+function openIdb(name){
+  return new Promise((res,rej)=>{ let r; try{ r = indexedDB.open(name,1);}catch(e){return rej(e);}
     r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("f")) r.result.createObjectStore("f"); };
     r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
-  return _db; }
+}
+function idb(){ if(_db) return _db; _db = openIdb(IDB); return _db; }
+
+/* Report images are the largest thing here and the only part that cannot be
+   re-derived from anything. So the move copies, counts both sides, and only
+   then deletes -- and if the counts disagree it leaves the old database
+   exactly where it is and says nothing, because getFile still reads it. */
+let _dbOld = null;
+function idbOld(){ if(_dbOld) return _dbOld; _dbOld = openIdb(IDB_OLD); return _dbOld; }
+function allKeys(d){ return new Promise((res,rej)=>{
+  const r=d.transaction("f","readonly").objectStore("f").getAllKeys();
+  r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error); }); }
+async function moveFiles(){
+  try{
+    if(localStorage.getItem("passbook-files-moved")==="1") return;
+    const oldDb = await idbOld();
+    const keys = await allKeys(oldDb);
+    if(keys.length){
+      const neu = await idb();
+      for(const k of keys){
+        const blob = await new Promise((res,rej)=>{ const r=oldDb.transaction("f","readonly").objectStore("f").get(k);
+          r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); });
+        if(blob==null) continue;
+        await new Promise((res,rej)=>{ const t=neu.transaction("f","readwrite");
+          t.objectStore("f").put(blob,k); t.oncomplete=res; t.onerror=()=>rej(t.error); });
+      }
+      const after = await allKeys(neu);
+      if(after.length < keys.length) return;     /* leave the old alone */
+    }
+    oldDb.close(); _dbOld = null;
+    try{ indexedDB.deleteDatabase(IDB_OLD); }catch(e){}
+    localStorage.setItem("passbook-files-moved","1");
+  }catch(e){ /* the old database stays; getFile still finds everything */ }
+}
 async function putFile(id,blob){ try{ const d=await idb(); await new Promise((res,rej)=>{
     const t=d.transaction("f","readwrite"); t.objectStore("f").put(blob,id); t.oncomplete=res; t.onerror=()=>rej(t.error); });
   return true; }catch(e){ return false; } }
@@ -1338,9 +1401,15 @@ async function delFile(id){
     const t=d.transaction("f","readwrite"); t.objectStore("f").delete(id);
     t.oncomplete=res; t.onerror=()=>rej(t.error); }); }catch(e){}
 }
-async function getFile(id){ try{ const d=await idb(); return await new Promise((res,rej)=>{
-    const r=d.transaction("f","readonly").objectStore("f").get(id); r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
-  }catch(e){ return null; } }
+async function getFile(id){
+  const from = async d => new Promise((res,rej)=>{
+    const r=d.transaction("f","readonly").objectStore("f").get(id);
+    r.onsuccess=()=>res(r.result||null); r.onerror=()=>rej(r.error); });
+  try{ const hit = await from(await idb()); if(hit) return hit; }catch(e){}
+  /* Not in the new store: either the move has not run yet or it was left
+     alone on purpose. Either way the image is still there to be found. */
+  try{ return await from(await idbOld()); }catch(e){ return null; }
+}
 
 /* --------------------------------------------------- computation */
 function person(id){ return (S.members||[]).find(m=>m.id===id) || (S.members||[])[0] || {id:"none",name:"\u2014",sex:"",dob:"",population:"asian_pacific"}; }
@@ -1543,8 +1612,8 @@ function agoText(iso){
    metrics only, the archive hidden, type a step up, and three tabs instead
    of six. Per device and never per account, because the person who needs it
    is not always the person who set it up. */
-const SIMPLE_KEY="famrec-simple";
-function simple(){ try{ return localStorage.getItem(SIMPLE_KEY)==="on"; }catch(e){ return false; } }
+const SIMPLE_KEY="passbook-simple";
+function simple(){ return pref(SIMPLE_KEY, ["famrec-simple"])==="on"; }
 function setSimple(on){ try{ on?localStorage.setItem(SIMPLE_KEY,"on"):localStorage.removeItem(SIMPLE_KEY); }catch(e){}
   applyText(); render(); }
 
@@ -2341,7 +2410,7 @@ function vSheet(){
 function exportPayload(memberId){
   const mem = memberId ? S.members.filter(m=>m.id===memberId) : S.members;
   const ids = mem.map(m=>m.id);
-  const out = {kind:"vitals-journal", v:2, exported:today(),
+  const out = {kind:"passbook", v:2, exported:today(),
     members:mem,
     observations:S.observations.filter(o=>ids.indexOf(o.memberId)>=0),
     actions:S.actions.filter(a=>ids.indexOf(a.memberId)>=0)};
@@ -2349,7 +2418,10 @@ function exportPayload(memberId){
   return out;
 }
 function mergeIn(p, label){
-  if(!p || p.kind!=="vitals-journal" || !Array.isArray(p.members)) throw new Error("not a Passbook file");
+  /* Files exported before the rename carry the old stamp and must keep
+     importing forever -- they are already sitting in people's messages. */
+  const known = p && (p.kind==="passbook" || p.kind==="vitals-journal");
+  if(!known || !Array.isArray(p.members)) throw new Error("not a Passbook file");
   let addedM=0, addedO=0, addedA=0, dupO=0;
   const haveM=new Set(S.members.map(m=>m.id));
   p.members.forEach(m=>{ if(!haveM.has(m.id)){ m.local=true; S.members.push(m); haveM.add(m.id); addedM++; } });
@@ -2468,8 +2540,63 @@ function vHandoff(){
 }
 
 /* -------------------------------------------------------- settings */
+/* ---- inviting a family member, from here rather than a dashboard -------
+
+   The usual way to invite somebody needs the privileged service key and the
+   admin API, and that key appears nowhere in this project by rule. So the
+   invitation is inverted: their address goes on a family list that only
+   people already signed in can write to, and a trigger on the database's own
+   user table refuses any signup that is not on it. They then just visit the
+   site and sign up like anyone would.
+
+   No privileged key, no admin API, and the front door opens only to
+   addresses somebody inside deliberately wrote down. */
+let inviteRows = null, inviteMsg = null;
+
+async function loadInvites(){
+  if(!AUTH) return;
+  const r = await supa("/rest/v1/family_invites?select=email,note,created_at,used_at&order=created_at");
+  if(r.ok){ inviteRows = r.body || []; inviteMsg = null; }
+  else if(r.status === 404 || (r.body && r.body.code === "PGRST205")){
+    inviteRows = []; inviteMsg = {t:"amber", k:"The family list is not there yet",
+      x:"Apply migration 0019_family_invites.sql, then reload. Until it exists, nobody can be invited and nobody can sign up."};
+  } else {
+    inviteRows = []; inviteMsg = {t:"red", k:"Could not read the family list",
+      x:(r.body && (r.body.message||r.body.hint)) || ("HTTP "+r.status)};
+  }
+  render();
+}
+
+function inviteCard(){
+  if(IS_ARTIFACT) return "";
+  if(!AUTH) return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
+    '<div class="cap">Sign in below first. Only someone already inside can add an address to the family list.</div></div>';
+  if(inviteRows === null){ loadInvites();
+    return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3><div class="cap">Reading the family list&hellip;</div></div>'; }
+
+  let h='<div class="card" style="margin-bottom:var(--s4)">'+
+    '<h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
+    '<div class="cap" style="margin-bottom:var(--s3);max-width:60ch">Write their email address here and they can sign up on this site themselves, set their own password, and keep their own book. '+
+    'Anyone whose address is not on this list is refused by the database, not by a checkbox &mdash; so the page can stay public without the front door being open.</div>';
+  if(inviteMsg) h+='<div class="callout c-'+inviteMsg.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(inviteMsg.k)+'</div><p>'+esc(inviteMsg.x)+'</p></div>';
+  h+='<div class="row"><input class="inp" id="invEmail" type="email" placeholder="their email address" style="flex:1;min-width:200px">'+
+     '<input class="inp" id="invNote" placeholder="who they are (optional)" style="flex:1;min-width:140px">'+
+     '<button class="btn pri" id="invAdd">Add them</button></div>';
+  if(inviteRows.length) h+='<div class="tw" style="margin-top:var(--s3)"><table><thead><tr>'+
+    '<th>Address</th><th>Who</th><th>Signed up</th><th style="width:1%"></th></tr></thead><tbody>'+
+    inviteRows.map(r=>'<tr><td class="mono">'+esc(r.email)+'</td><td class="cap">'+esc(r.note||"\u2014")+'</td>'+
+      '<td>'+(r.used_at
+        ? '<span class="badge st-in_range"><span class="dot"></span>yes</span>'
+        : '<span class="badge st-watch"><span class="dot"></span>not yet</span>')+'</td>'+
+      '<td>'+(r.used_at?'':'<button class="btn sm warn" data-invdel="'+esc(r.email)+'">Remove</button>')+'</td></tr>').join("")+
+    '</tbody></table></div>';
+  h+='<div class="cap" style="margin-top:var(--s3)">Each person gets their own private book. Nobody sees anybody else&rsquo;s records by signing in &mdash; sharing is still a copy you choose to send.</div>';
+  return h+'</div>';
+}
+
 function vSettings(){
-  let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+  let h=inviteCard()+
+    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
     '<div><h3 style="margin:0">Simple mode</h3>'+
     '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
     'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
@@ -2600,11 +2727,11 @@ function drawer(){
    This only runs on the real site. The claude.ai artifact viewer blocks
    cross-origin requests, so there the panel explains that instead. */
 const SUPA = {url:"https://uoncyxguauemrqupqxto.supabase.co", key:"sb_publishable_DOg4mmkTXCZP5cb2COAG5g_GBnsWU6K"};
-const AUTH_KEY = "famrec-auth";
+const AUTH_KEY = "passbook-auth";
 const IS_ARTIFACT = !!(window.claude && typeof window.claude.use === "function");
 let AUTH = null, syncMsg = null, syncing = false;
 
-function loadAuth(){ try{ const r=localStorage.getItem(AUTH_KEY); if(r) AUTH=JSON.parse(r); }catch(e){} }
+function loadAuth(){ try{ const r=pref(AUTH_KEY, ["famrec-auth"]); if(r) AUTH=JSON.parse(r); }catch(e){} }
 function saveAuth(){ try{ AUTH?localStorage.setItem(AUTH_KEY,JSON.stringify(AUTH)):localStorage.removeItem(AUTH_KEY); }catch(e){} }
 function syncConfigured(){ return SUPA.url.indexOf("http")===0 && SUPA.key.length>10; }
 
@@ -2778,6 +2905,24 @@ function dropExamples(){
 
 /* Keep the account copy current without anyone pressing a button. */
 let syncTimer=null;
+/* The sync table is being renamed famrec_state -> passbook_state. The page
+   ships BEFORE the migration runs, so it has to work on either side of it:
+   it asks for the new name once, and if Postgres says no such table it uses
+   the old one for the rest of the session. That removes the window where a
+   deployed page queries a table that does not exist yet and sync fails
+   silently, which is the whole risk in renaming a live table. */
+let STATE_TABLE = null;
+async function stateTable(){
+  if(STATE_TABLE) return STATE_TABLE;
+  try{
+    const r = await supa("/rest/v1/passbook_state?select=user_id&limit=1");
+    const missing = r.status === 404 ||
+      (r.body && (r.body.code === "PGRST205" || /passbook_state/.test(r.body.message||"")));
+    STATE_TABLE = missing ? "famrec_state" : "passbook_state";
+  }catch(e){ STATE_TABLE = "famrec_state"; }
+  return STATE_TABLE;
+}
+
 function queueSync(){
   if(!AUTH || IS_ARTIFACT || syncing) return;
   clearTimeout(syncTimer);
@@ -2801,7 +2946,8 @@ async function syncNow(quiet){
   }
   syncing = true;
   if(!quiet){ syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."}; render(); }
-  const q = "/rest/v1/famrec_state?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
+  const TBL = await stateTable();
+  const q = "/rest/v1/" + TBL + "?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
   let changed = false;
   try{
     let r = await supa(q);
@@ -2811,8 +2957,8 @@ async function syncNow(quiet){
     }
     if(!r.ok){
       const code = r.body && r.body.code;
-      if(code==="PGRST205" || (r.body && /famrec_state/.test(r.body.message||"")))
-        throw new Error("The sync table does not exist yet. Run 0010_famrec_sync.sql in the Supabase SQL editor, then try again.");
+      if(code==="PGRST205" || (r.body && /_state/.test(r.body.message||"")))
+        throw new Error("The sync table does not exist yet. Apply the migrations in ~/Projects/vitals-app/supabase/migrations, then try again.");
       throw new Error((r.body&&(r.body.message||r.body.hint))||("The database refused the read (HTTP "+r.status+")."));
     }
     let remote = (r.body && r.body[0] && r.body[0].doc) || null;
@@ -2838,7 +2984,7 @@ async function syncNow(quiet){
     /* Everything the account is allowed to hold. A record someone else sent
        is theirs, kept here as a copy, and not mine to put on a server. */
     const keptMembers = syncable(S.members);
-    const up = await supa("/rest/v1/famrec_state", {method:"POST",
+    const up = await supa("/rest/v1/" + TBL, {method:"POST",
       headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
       body:[{user_id:AUTH.uid, device:(navigator.platform||"device"),
              doc:{v:2, members:keptMembers,
@@ -2988,8 +3134,8 @@ function putWithProgress(url, file, mime, onFrac){
 /* How long a read actually takes, measured on this device rather than
    guessed. The median of the last dozen is what the estimate is built from;
    until there are any, the read shows no estimate at all. */
-const READ_MS_KEY = "famrec-readms";
-function readTimes(){ try{ var a=JSON.parse(localStorage.getItem(READ_MS_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+const READ_MS_KEY = "passbook-readms";
+function readTimes(){ try{ var a=JSON.parse(pref(READ_MS_KEY, ["famrec-readms"])||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
 function noteReadTime(ms){ try{ localStorage.setItem(READ_MS_KEY, JSON.stringify(readTimes().concat(ms).slice(-12))); }catch(e){} }
 function typicalRead(){ var a=readTimes().slice().sort(function(x,y){return x-y;}); return a.length ? a[Math.floor(a.length/2)] : 0; }
 
@@ -3382,7 +3528,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -3434,6 +3580,23 @@ document.addEventListener("click", async e=>{
     const key = (LISTS.find(l=>l[0]===k)||[])[1];
     S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
     save(); render(); return; }
+  if(t.id==="invAdd"){
+    const em=(document.getElementById("invEmail")||{}).value||"";
+    const nt=(document.getElementById("invNote")||{}).value||"";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){
+      inviteMsg={t:"amber",k:"That is not an email address",x:"Check the spelling and try again."}; render(); return; }
+    const r=await supa("/rest/v1/family_invites",{method:"POST",
+      body:[{email:em.trim().toLowerCase(), note:nt.trim()||null, invited_by:AUTH.uid}]});
+    inviteMsg = r.ok
+      ? {t:"blue",k:"Added",x:em.trim()+" can now sign up at this address and keep their own book."}
+      : {t:"red",k:"Could not add them",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+    inviteRows=null; render(); return;
+  }
+  if(t.dataset.invdel){
+    const r=await supa("/rest/v1/family_invites?email=eq."+encodeURIComponent(t.dataset.invdel),{method:"DELETE"});
+    inviteMsg = r.ok ? null : {t:"red",k:"Could not remove that",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+    inviteRows=null; render(); return;
+  }
   if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
   if(t.id==="simpleOn"){ setSimple(true); return; }
   if(t.id==="simpleOff"){ setSimple(false); return; }
@@ -3544,7 +3707,7 @@ document.addEventListener("click", async e=>{
     if(!confirm("Delete what the database currently holds and replace it with this device?\n\nNothing on this device is removed.")) return;
     syncMsg={t:"blue",k:"Resetting",x:"Clearing the stored copy."}; render();
     try{
-      const d = await supa("/rest/v1/famrec_state?user_id=eq."+encodeURIComponent(AUTH.uid), {method:"DELETE"});
+      const d = await supa("/rest/v1/" + (await stateTable()) + "?user_id=eq."+encodeURIComponent(AUTH.uid), {method:"DELETE"});
       if(!d.ok && d.status!==404) throw new Error((d.body&&(d.body.message||d.body.hint))||("HTTP "+d.status));
       S.lastSync=null; save();
       await syncNow();
@@ -3555,7 +3718,7 @@ document.addEventListener("click", async e=>{
     if(!confirm("Last check. Anything on this device that was never synced will be gone for good.")) return;
     AUTH=null; saveAuth(); codeSent=false;
     try{ localStorage.removeItem(LS); localStorage.removeItem(LS_OLD); }catch(e){}
-    try{ indexedDB.deleteDatabase("vitals-journal-files"); _db=null; }catch(e){}
+    try{ indexedDB.deleteDatabase(IDB); _db=null; indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
     S=seed(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
     who=S.members[0].id; detail=null; draft=null;
     syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
