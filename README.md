@@ -3,10 +3,28 @@
 A personal and family medical record book that runs entirely in the browser.
 Paste a lab report, check every value against the sheet, keep the series.
 
-**There is no server, no account and no database.** Records live in the
-browser's own storage on the device that entered them; attached report images
-live in that browser's IndexedDB. Nothing is uploaded, nothing is synced and
-nothing crosses a border, because nothing leaves the machine.
+**Where records go, stated exactly.** The book lives in the browser's own
+storage on the device that entered it, and attached report images live in that
+browser's IndexedDB. Three things leave it, and nothing else does:
+
+1. **Signed in, your own records sync** to a single row that only your account
+   can read, on Supabase in Singapore. Signed out, nothing syncs at all.
+2. **Reading a report sends that page off the device** — the photo goes to the
+   same Supabase project and on to Anthropic in the United States to be read,
+   and the stored copy is deleted as soon as the read finishes. The original
+   stays in the phone's camera roll; this book's own copy stays in the browser.
+3. **Records merged from someone else's hand-off file never leave the device.**
+   They are marked *on this device only* and excluded from the sync document,
+   so a relative's readings never reach the server through your account. That
+   is enforced in `syncable()`, not just promised in the interface.
+
+Two of those cross a border. That is a fact about the design rather than a
+reassurance about it.
+
+*(This section said "there is no server, no account and no database" until
+2026-09-24. That was true when it was written and had been false since sync and
+server-side extraction were added. A privacy claim that drifts behind the code
+is worse than no claim.)*
 
 This repository holds the *tool*. It must never hold anybody's records — see
 `.gitignore`.
@@ -68,9 +86,10 @@ Paste the report text and the parser fills the rows. It reads Vietnamese and
 English test names, commas used as decimal separators, Vietnamese `T/L` and
 `G/L` count units, and ranges written `3.9 - 6.4`, `< 5.2` or `> 1.03`.
 
-On a phone, photograph the sheet and use the camera's own text selection to copy
-the table, then paste. That reads a Vietnamese lab sheet considerably better
-than any OCR this page could run itself, and the image never leaves the phone.
+Pasting text is still supported and is the only path that keeps the page in the
+browser end to end. Photographing a report is the easier path and a different
+trade: the image is sent to be read, then the stored copy is deleted. Both are
+offered; the page says which is which at the point of use.
 
 ## Not a medical device
 
