@@ -20,8 +20,8 @@ img{max-width:100%}
 <style>
 :root{
   --bg:#F2F2F7; --card:#FFFFFF; --sunk:#F2F2F7; --line:#E5E5EA; --line-soft:#EFEFF2;
-  --ink:#1C1C1E; --ink-body:#3C3C43; --ink-muted:#8E8E93;
-  --blue:#007AFF;  --blue-bg:#E8F1FE;  --blue-ink:#0060DF;  --blue-line:#CFE3FD;
+  --ink:#1C1C1E; --ink-body:#3C3C43; --ink-muted:#6E6E73;
+  --blue:#007AFF;  --blue-bg:#E8F1FE;  --blue-ink:#0040DD;  --blue-line:#CFE3FD;
   --green:#34C759; --green-bg:#E6F7EB; --green-ink:#1E7F3C; --green-line:#BFE9CC;
   --amber:#FF9500; --amber-bg:#FFF4E5; --amber-ink:#8A5200; --amber-line:#F6DFBC;
   --red:#FF3B30;   --red-bg:#FFEBE9;   --red-ink:#C4271D;   --red-line:#F7D2CE;
@@ -31,11 +31,11 @@ img{max-width:100%}
   --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
 }
 *{box-sizing:border-box}
-body{background:var(--bg); color:var(--ink-body); font-family:var(--sans); font-size:14px; line-height:1.5; margin:0; -webkit-text-size-adjust:100%}
+body{background:var(--bg); color:var(--ink-body); font-family:var(--sans); font-size:15px; line-height:1.5; font-variant-numeric:tabular-nums; margin:0; -webkit-text-size-adjust:100%}
 h1,h2,h3{margin:0; color:var(--ink); text-wrap:balance}
-h1{font-size:28px; font-weight:600; letter-spacing:-.021em}
-h2{font-size:20px; font-weight:500; letter-spacing:-.012em}
-h3{font-size:16px; font-weight:600}
+h1{font-size:28px; font-weight:700; letter-spacing:-.021em}
+h2{font-size:22px; font-weight:600; letter-spacing:-.012em}
+h3{font-size:17px; font-weight:600}
 p{margin:0}
 button{font:inherit; color:inherit}
 input,select,textarea{font:inherit; color:var(--ink)}
@@ -43,21 +43,21 @@ input,select,textarea{font:inherit; color:var(--ink)}
 .num{font-variant-numeric:tabular-nums}
 .mono{font-family:var(--mono)}
 .muted{color:var(--ink-muted)}
-.cap{font-size:12px; color:var(--ink-muted)}
-.kick{font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase}
+.cap{font-size:13px; color:var(--ink-muted)}
+.kick{font-size:13px; font-weight:600; letter-spacing:.04em; text-transform:uppercase}
 
 /* shell */
 .wrap{max-width:1080px; margin:0 auto; padding-inline:var(--s4); padding-block:0 96px}
 header.top{position:sticky; top:env(safe-area-inset-top,0px); z-index:30; background:var(--bg); border-bottom:1px solid var(--line)}
 .top-in{max-width:1080px; margin:0 auto; padding:var(--s3) var(--s4); display:flex; gap:var(--s3); align-items:center; flex-wrap:wrap}
-.top-in h1{font-size:19px; margin-right:auto}
+.top-in h1{font-size:22px; font-weight:700; margin-right:auto}
 .people{display:flex; gap:var(--s1); flex-wrap:wrap}
 .pbtn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-pill); padding:5px 10px; cursor:pointer; font-size:13px; display:inline-flex; align-items:center; gap:6px}
 .pbtn[aria-pressed="true"]{background:var(--blue-bg); border-color:var(--blue-line); color:var(--blue-ink); font-weight:600}
 .pbtn .dot{width:6px; height:6px; border-radius:50%; background:currentColor; flex:none}
 nav.tabs{display:flex; gap:var(--s1); overflow-x:auto; border-bottom:1px solid var(--line); margin-bottom:var(--s5); scrollbar-width:none}
 nav.tabs::-webkit-scrollbar{display:none}
-.tab{border:0; background:none; padding:var(--s3) var(--s3) 10px; cursor:pointer; white-space:nowrap; font-size:14px; color:var(--ink-muted); border-bottom:2px solid transparent; margin-bottom:-1px}
+.tab{border:0; background:none; padding:var(--s3) var(--s3) 10px; cursor:pointer; white-space:nowrap; font-size:15px; color:var(--ink-muted); border-bottom:2px solid transparent; margin-bottom:-1px}
 .tab[aria-selected="true"]{color:var(--blue-ink); border-bottom-color:var(--blue); font-weight:600}
 .tab .c{font-size:12px; margin-left:5px; opacity:.75}
 
@@ -71,10 +71,10 @@ nav.tabs::-webkit-scrollbar{display:none}
 .g240{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .g300{grid-template-columns:repeat(auto-fit,minmax(300px,1fr))}
 .row{display:flex; gap:var(--s2); flex-wrap:wrap; align-items:center}
-.btn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-inner); padding:8px 14px; cursor:pointer; font-size:14px; font-weight:500; color:var(--ink)}
+.btn{border:1px solid var(--line); background:var(--card); border-radius:var(--r-inner); padding:8px 14px; cursor:pointer; font-size:15px; font-weight:600; color:var(--ink)}
 .btn:hover{background:var(--sunk)}
-.btn.pri{background:var(--blue); border-color:var(--blue); color:#fff}
-.btn.pri:hover{background:var(--blue-ink)}
+.btn.pri{background:var(--blue-ink); border-color:var(--blue-ink); color:#fff}
+.btn.pri:hover{background:#0033B0; border-color:#0033B0}
 .btn.warn{color:var(--red-ink); border-color:var(--red-line)}
 .btn.warn:hover{background:var(--red-bg)}
 .btn:disabled{opacity:.4; cursor:not-allowed}
@@ -84,7 +84,7 @@ label.fl{display:block; font-size:12px; font-weight:600; color:var(--ink-muted);
 .inp{width:100%; border:1px solid var(--line); border-radius:var(--r-inner); padding:9px 10px; background:var(--card); font-size:15px}
 .inp:focus{border-color:var(--blue); outline:none}
 textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
-.hint{font-size:12px; color:var(--ink-muted); margin-top:var(--s1); line-height:1.45}
+.hint{font-size:13px; color:var(--ink-muted); margin-top:var(--s1); line-height:1.45}
 .empty{border:1px dashed var(--line); border-radius:var(--r-card); padding:var(--s5); text-align:center; color:var(--ink-muted); background:var(--card)}
 .empty b{display:block; color:var(--ink); font-size:16px; font-weight:600; margin-bottom:var(--s1)}
 
@@ -135,7 +135,7 @@ textarea.inp{font-family:var(--mono); font-size:13px; line-height:1.55}
 
 /* table */
 .tw{overflow-x:auto}
-table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px}
+table{border-collapse:collapse; width:100%; font-size:15px; min-width:520px}
 th{text-align:left; font-size:12px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-muted); padding:var(--s2) var(--s3); border-bottom:1px solid var(--line); white-space:nowrap}
 td{padding:var(--s3); border-bottom:1px solid var(--line-soft); vertical-align:top}
 tbody tr:last-child td{border-bottom:0}
@@ -191,14 +191,14 @@ body[data-text="large"] .tab{font-size:16px; padding:15px 16px 13px}
 body[data-text="large"] .obs .nm{font-size:15px}
 body[data-text="large"] .obs .vl{font-size:27px}
 body[data-text="large"] table{font-size:16px}
-body[data-text="large"] h1{font-size:30px}
-body[data-text="large"] h2{font-size:22px}
-body[data-text="large"] h3{font-size:18px}
+body[data-text="large"] h1{font-size:32px}
+body[data-text="large"] h2{font-size:26px}
+body[data-text="large"] h3{font-size:20px}
 footer.fix{position:fixed; left:0; right:0; bottom:0; z-index:35; background:var(--card); border-top:1px solid var(--line); padding:10px var(--s4); padding-bottom:calc(10px + env(safe-area-inset-bottom,0px)); font-size:12px; color:var(--ink-muted); text-align:center}
 footer.fix b{color:var(--ink)}
 @media (max-width:560px){
-  h1{font-size:24px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
-  .top-in h1{font-size:17px; width:100%; margin-bottom:var(--s1)}
+  h1{font-size:24px} h2{font-size:20px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
+  .top-in h1{font-size:20px; width:100%; margin-bottom:var(--s1)}
 }
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
@@ -342,6 +342,12 @@ function pref(key, legacy){
 }
 const uid = () => Math.random().toString(36).slice(2,10);
 const today = () => new Date().toISOString().slice(0,10);
+/* One way to write a date on screen: 24 Sep 2026. Stored values stay ISO. */
+function fmtDate(iso){ if(!iso) return ""; const d=new Date(String(iso).length===10?iso+"T00:00:00":iso);
+  return isNaN(d)?String(iso):d.toLocaleDateString("en-GB",{day:"numeric",month:"short",year:"numeric"}); }
+function fmtWhen(t){ const d=new Date(t); if(isNaN(d)) return "";
+  const hm=d.toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  return d.toDateString()===new Date().toDateString()?hm:fmtDate(d.toISOString())+", "+hm; }
 /* Vietnamese labs print "5,3" for 5.3, and parseFloat stops at the comma and
    returns 5 -- a high result read as in range. A comma followed by one, two,
    or four or more digits is a decimal mark; exactly three ("10,500") is a US
@@ -1640,7 +1646,7 @@ function obsCard(o){
     '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
     '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
-    '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
+    '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt?fmtDate(o.observedAt):"no date")+
       (agoText(o.observedAt)?' · '+esc(agoText(o.observedAt)):'')+
       (isLocal(o)?' · on this device only':'')+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
@@ -1862,7 +1868,8 @@ function vCard(){
 
   let h = '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'&rsquo;s health card</h2>'+
-    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div>'+
+    '<div class="row"><button class="btn" data-tab="sheet" style="font-size:16px;padding:12px 20px">Sheet for an appointment</button>'+
+    '<button class="btn pri" id="printCard" style="font-size:16px;padding:12px 20px">Print this card</button></div></div>'+
     '<div class="cap" style="margin-bottom:var(--s4)">Carry it, or put a copy in a wallet. In an emergency this is the page that matters &mdash; nobody reads a chart when the ambulance arrives.</div>';
 
   /* the card itself, styled to print on its own page */
@@ -1870,7 +1877,7 @@ function vCard(){
     '<div class="row" style="justify-content:space-between;align-items:flex-start">'+
       '<div><div class="kick" style="color:var(--ink-muted)">Emergency information</div>'+
       '<h2 style="margin:var(--s1) 0 0">'+esc(m.name)+'</h2>'+
-      '<div class="cap">'+(m.dob?esc(m.dob)+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
+      '<div class="cap">'+(m.dob?esc(fmtDate(m.dob))+(age!==null?" \u00b7 "+age+" years":""):"date of birth not set")+
         (m.sex?" \u00b7 "+esc(m.sex):"")+'</div></div>'+
       (blood?'<div style="text-align:right"><div class="kick" style="color:var(--ink-muted)">Blood group</div>'+
         '<div style="font-size:30px;font-weight:600;line-height:1.1">'+esc(blood)+'</div></div>':'')+
@@ -1896,7 +1903,7 @@ function vCard(){
         (m.insurer?'<p class="cap" style="margin-top:var(--s2)">'+esc(m.insurer)+(m.policy?" \u00b7 "+esc(m.policy):"")+'</p>':"")+'</div>'+
     '</div>'+
     '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
-      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+today()+'.</p>'+
+      'Written by '+esc(m.name)+' or their family, not by a clinician. It records what they have said, and nothing on it is a diagnosis. Printed '+fmtDate(today())+'.</p>'+
   '</div>';
 
   /* who to call, and the insurer -- edited in place */
@@ -2007,7 +2014,7 @@ function pairCard(ca, cb, label, L){
     '<div class="vl">'+shown+'<span>'+esc((a||b).unit||meta(ca).u)+'</span></div>'+
     '<div style="margin-top:var(--s2)">'+badge(worst)+
       (half?' <span class="badge st-unknown"><span class="dot"></span>'+esc(a?meta(cb).n:meta(ca).n)+' not measured</span>':'')+'</div>'+
-    '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt||"no date")+'</div></button>';
+    '<div class="ft">'+esc(src.source||"source not recorded")+' · '+esc(src.observedAt?fmtDate(src.observedAt):"no date")+'</div></button>';
 }
 /* ---- Today ------------------------------------------------------------
 
@@ -2041,7 +2048,7 @@ function vToday(){
     '<div class="kick" style="color:var(--ink-muted)">Where things stand</div>'+
     '<p style="margin-top:var(--s2)">'+
       '<b>'+L.length+'</b> measurement'+(L.length===1?"":"s")+' on file'+
-      (newest?', the newest from <b>'+esc(newest)+'</b> ('+esc(agoText(newest))+')':"")+'. '+
+      (newest?', the newest from <b>'+esc(fmtDate(newest))+'</b> ('+esc(agoText(newest))+')':"")+'. '+
       (flagged.length
         ? '<b>'+flagged.length+'</b> sit'+(flagged.length===1?"s":"")+' outside or near the range printed on its own report.'
         : 'Every one sits inside the range printed on its own report. In range is not the same as healthy.')+
@@ -2076,6 +2083,32 @@ function vToday(){
   return h;
 }
 
+/* The standard panel, edited where it is used: at the foot of Results.
+   Names the catalogue does not know are listed on their own, so a misread
+   line can be removed instead of sitting in the panel as a test. */
+function panelEditor(){
+  const used=new Set(S.observations.map(o=>o.code));
+  const odd=Object.keys(S.customCodes||{}).sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
+  let h=
+    '<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
+    '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
+    '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
+    'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
+    '<div class="row" style="margin-top:var(--s3)">'+
+      (S.panel||[]).map(c=>'<span class="badge '+(isCustom(c)?"st-watch":"st-unknown")+'"><span class="dot"></span>'+esc(meta(c).n)+
+        ' <button class="btn sm" data-unpanel="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove from panel">&times;</button></span>').join("")+
+      ((S.panel||[]).length?'':'<span class="cap">Empty &mdash; nothing is being looked for.</span>')+
+    '</div>'+
+    '<div class="row" style="margin-top:var(--s4)"><select class="inp" id="panelAdd" style="width:auto;min-width:230px">'+codeOpts(null)+'</select>'+
+    '<button class="btn" id="panelAddBtn">Add to panel</button>'+
+    '<button class="btn" id="panelReset">Restore the default panel</button></div></div></div>';
+  if(odd.length) h+='<div class="card" style="margin-top:var(--s3)"><h3>Names from your reports</h3>'+
+    '<div class="hint" style="margin-bottom:var(--s3)">These came off a report and match no known test. Some are real tests with an unusual name; some are a misread line. Remove any that are not tests. A name with readings cannot be removed until its readings are.</div>'+
+    '<div class="row">'+odd.map(c=>'<span class="badge st-unknown"><span class="dot"></span>'+esc(meta(c).n)+
+      (used.has(c)?' <span class="cap">has readings</span>':' <button class="btn sm" data-dropcode="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove this name">&times;</button>')+
+      '</span>').join("")+'</div></div>';
+  return h;
+}
 function vRecord(){
   const m=person(who), L=latest(m.id);
   let h = hasSamples()?sampleNote():"";
@@ -2155,7 +2188,8 @@ function vRecord(){
       '</details>';
   }).join("");
   if(!panel.length && !L.length)
-    h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel in Settings, or add a report.</div>';
+    h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel below, or add a report.</div>';
+  h += '<details style="margin-top:var(--s6)"><summary>Edit your standard panel</summary>'+panelEditor()+'</details>';
   return h;
 }
 
@@ -2287,7 +2321,7 @@ function qualTrend(m, code){
     pts.map(o=>'<div style="text-align:center;min-width:92px">'+
       badge(statusOf(o))+
       '<div style="margin-top:var(--s2);font-weight:600">'+esc(o.valueRaw||"\u2014")+'</div>'+
-      '<div class="cap">'+esc(o.observedAt||"no date")+'</div></div>').join("")+
+      '<div class="cap">'+esc(o.observedAt?fmtDate(o.observedAt):"no date")+'</div></div>').join("")+
     '</div>'+
     '<p class="cap" style="margin-top:var(--s4)">This test is reported as words, not a number, so there is no line to draw. '+
     (moves.length
@@ -2562,7 +2596,7 @@ function vSheet(){
     '<td class="n">'+esc(o.valueRaw||fmt(o.value))+' '+esc(o.unit||meta(o.code).u)+'</td>'+
     '<td class="cap">'+esc(o.refLabel||o.refText||"no range on report")+'</td>'+
     '<td>'+esc(ST[statusOf(o)])+'</td>'+
-    '<td class="cap">'+esc(o.observedAt||"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
+    '<td class="cap">'+esc(o.observedAt?fmtDate(o.observedAt):"\u2014")+' \u00b7 '+esc(o.source||"source not recorded")+'</td></tr>';
 
   let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>Sheet for the appointment</h2>'+
@@ -2571,7 +2605,7 @@ function vSheet(){
 
   h+='<div class="card cardsheet">'+
     '<h2 style="margin:0">'+esc(m.name)+'</h2>'+
-    '<div class="cap">'+(m.dob?esc(m.dob):"date of birth not set")+
+    '<div class="cap">'+(m.dob?esc(fmtDate(m.dob)):"date of birth not set")+
       (ageOf(m)!==null?" \u00b7 "+ageOf(m)+" years":"")+(m.sex?" \u00b7 "+esc(m.sex):"")+
       (bloodOf(m.id)?" \u00b7 blood group "+esc(bloodOf(m.id)):"")+'</div>'+
 
@@ -2599,7 +2633,7 @@ function vSheet(){
     '<p class="cap" style="margin-top:var(--s4);border-top:1px solid var(--line-soft);padding-top:var(--s3)">'+
       L.length+' measurements on file'+(labs.length>1?' from '+labs.length+' laboratories ('+esc(labs.join(", "))+')':"")+
       '. Each result is shown against the range printed on its own report, not against a common one. '+
-      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+today()+'.</p>'+
+      'Kept by '+esc(m.name)+' or their family; nothing here is a diagnosis. Printed '+fmtDate(today())+'.</p>'+
   '</div>';
   return h;
 }
@@ -2651,7 +2685,7 @@ function syncCard(){
       '<p>The claude.ai viewer blocks a page from reaching an outside server, so this copy cannot sync &mdash; a platform rule, not a choice. '+
       'Open the same book at <b>ttrng3.github.io/passbook</b> and it will. Everything else works identically in both.</p></div>';
   let h='<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between"><h3>Sync</h3>'+
-    (S.lastSync?'<span class="cap">Last synced '+esc(new Date(S.lastSync).toLocaleString())+'</span>':'<span class="cap">Never synced</span>')+'</div>';
+    (S.lastSync?'<span class="cap">Last synced '+esc(fmtWhen(S.lastSync))+'</span>':'<span class="cap">Never synced</span>')+'</div>';
   if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-top:var(--s3)"><div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
   if(AUTH){
     h+='<div class="row" style="margin-top:var(--s3)">'+
@@ -2661,7 +2695,7 @@ function syncCard(){
       '<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Who can see these records</div>'+
       '<p>Only this account. The page is public, so anyone can open it &mdash; they get an empty book of their own and cannot reach yours. '+
       'Every row in the database is locked to the account that wrote it by a database rule, not by anything this page does, '+
-      'and new accounts are switched off entirely. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
+      'and new accounts open only to addresses on your family list. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
       'If that is a shared machine, use <i>Sign out and erase this device</i> below.</p></div>'+
       '<details><summary>Set or change your password</summary><div>'+
         '<div class="hint">A password signs you in without waiting for an email, which matters because this project allows one auth email a minute. Make it long and used nowhere else &mdash; it opens a medical record.</div>'+
@@ -2731,32 +2765,75 @@ function vHandoff(){
     '<div id="impMsg"></div></div>';
 
   h+='<div class="card"><h3>Family in other countries</h3>'+
-    '<div class="hint">How it works when family live in other countries:</div>'+
+    '<div class="hint">If they would rather not have an account, this works too:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
     '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
     '<li>When they want you to have a copy, they press <b>Send a copy out</b> and message you the text.</li>'+
     '<li>You merge it here. Every reading that arrives is stamped with who sent it and when.</li>'+
     '</ol>'+
-    '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Why it is not a shared account</div>'+
-    '<p>One place everyone uploads to would mean one person holding a whole family&rsquo;s medical records on a server, across borders. Passbook does not do that.</p>'+
+    '<div class="callout c-blue" style="margin-top:var(--s4)"><div class="kick">Two ways to keep family records</div>'+
+    '<p>An invited relative gets their own account and their own book. Their records sync to a row on the server in Singapore that only their account can read &mdash; not you, not anyone else in the family. Or they keep a book on their phone only and send you copies, as above.</p>'+
     '<p>Copies people choose to send you are a different thing, and they stay on this machine &mdash; merged records are marked <b>on this device only</b> and are excluded from the sync, so a relative&rsquo;s readings never reach the server through your account. That is enforced in the code, not just promised here.</p></div></div>';
   return h;
 }
 
 /* -------------------------------------------------------- settings */
+/* ---- inviting a family member, from here rather than a dashboard -------
+
+   The usual way to invite somebody needs the privileged service key and the
+   admin API, and that key appears nowhere in this project by rule. So the
+   invitation is inverted: their address goes on a family list that only
+   people already signed in can write to, and a trigger on the database's own
+   user table refuses any signup that is not on it. They then just visit the
+   site and sign up like anyone would.
+
+   No privileged key, no admin API, and the front door opens only to
+   addresses somebody inside deliberately wrote down. */
+let inviteRows = null, inviteMsg = null;
+
+async function loadInvites(){
+  if(!AUTH) return;
+  const r = await supa("/rest/v1/family_invites?select=email,note,created_at,used_at&order=created_at");
+  if(r.ok){ inviteRows = r.body || []; inviteMsg = null; }
+  else if(r.status === 404 || (r.body && r.body.code === "PGRST205")){
+    inviteRows = []; inviteMsg = {t:"amber", k:"Invites are not switched on yet",
+      x:"The family list is missing on the server, so nobody can be invited yet."};
+  } else {
+    inviteRows = []; inviteMsg = {t:"red", k:"Could not read the family list",
+      x:(r.body && (r.body.message||r.body.hint)) || ("HTTP "+r.status)};
+  }
+  render();
+}
+
+function inviteCard(){
+  if(IS_ARTIFACT) return "";
+  if(!AUTH) return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
+    '<div class="cap">Sign in below first. Only someone already inside can add an address to the family list.</div></div>';
+  if(inviteRows === null){ loadInvites();
+    return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3><div class="cap">Reading the family list&hellip;</div></div>'; }
+
+  let h='<div class="card" style="margin-bottom:var(--s4)">'+
+    '<h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
+    '<div class="cap" style="margin-bottom:var(--s3);max-width:60ch">Write their email address here and they can sign up on this site themselves, set their own password, and keep their own book. '+
+    'Anyone whose address is not on this list is refused by the database, not by a checkbox &mdash; so the page can stay public without the front door being open.</div>';
+  if(inviteMsg) h+='<div class="callout c-'+inviteMsg.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(inviteMsg.k)+'</div><p>'+esc(inviteMsg.x)+'</p></div>';
+  h+='<div class="row"><input class="inp" id="invEmail" type="email" placeholder="their email address" style="flex:1;min-width:200px">'+
+     '<input class="inp" id="invNote" placeholder="who they are (optional)" style="flex:1;min-width:140px">'+
+     '<button class="btn pri" id="invAdd">Add them</button></div>';
+  if(inviteRows.length) h+='<div class="tw" style="margin-top:var(--s3)"><table><thead><tr>'+
+    '<th>Address</th><th>Who</th><th>Signed up</th><th style="width:1%"></th></tr></thead><tbody>'+
+    inviteRows.map(r=>'<tr><td class="mono">'+esc(r.email)+'</td><td class="cap">'+esc(r.note||"\u2014")+'</td>'+
+      '<td>'+(r.used_at
+        ? '<span class="badge st-in_range"><span class="dot"></span>yes</span>'
+        : '<span class="badge st-watch"><span class="dot"></span>not yet</span>')+'</td>'+
+      '<td>'+(r.used_at?'':'<button class="btn sm warn" data-invdel="'+esc(r.email)+'">Remove</button>')+'</td></tr>').join("")+
+    '</tbody></table></div>';
+  h+='<div class="cap" style="margin-top:var(--s3)">Each person gets their own private book. Nobody sees anybody else&rsquo;s records by signing in &mdash; sharing is still a copy you choose to send.</div>';
+  return h+'</div>';
+}
+
 function vSettings(){
-  let h=
-    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
-    '<div><h3 style="margin:0">Simple mode</h3>'+
-    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
-    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
-    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
-      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
-    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
-    '<div><h3 style="margin:0">Sheet for an appointment</h3>'+
-    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">One printable page: medicines, allergies, conditions, whatever is flagged, and the questions you wrote.</div></div>'+
-    '<button class="btn" data-tab="sheet">Open it</button></div></div>'+
-    vHandoff()+'<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">People</h2>';
+  let h='<div class="sec"><h2 style="margin-bottom:var(--s3)">Family</h2>'+inviteCard()+'<h3 style="margin:var(--s4) 0 var(--s3)">People in this book</h3>';
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
     (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
       '<span class="dot"></span>On this device only</span>'+
@@ -2770,31 +2847,27 @@ function vSettings(){
       Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
     (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
     '</div>').join("");
-  h+='<button class="btn" id="addP">Add a person</button></div>';
+  h+='<button class="btn" id="addP">Add a person</button></div>'+
+    '<div class="sec" style="margin-top:var(--s6)">'+vHandoff()+'</div>';
 
-  h+='<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">Display</h2><div class="card">'+
+  h+='<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">Display</h2>'+
+    '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
+    '<div><h3 style="margin:0">Simple mode</h3>'+
+    '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
+    'Nothing is deleted or hidden from the record &mdash; it is the same book with fewer decisions on screen. Set per device, so one person can use it and another not.</div></div>'+
+    '<button class="btn '+(simple()?"":"pri")+'" id="'+(simple()?"simpleOff":"simpleOn")+'">'+
+      (simple()?"Turn it off":"Turn it on")+'</button></div></div>'+
+    '<div class="card">'+
     '<div class="row" style="justify-content:space-between"><div><b>Larger text</b>'+
     '<div class="hint" style="margin-top:2px">Bigger type and bigger buttons throughout. Kept on this device.</div></div>'+
     '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div></div>'+
-    '<div class="sec" style="margin-top:var(--s6)"><div class="row" style="justify-content:space-between;align-items:baseline">'+
-    '<h2>Your standard panel</h2><span class="cap"><span class="num">'+(S.panel||[]).length+'</span> tests</span></div>'+
-    '<div class="card"><div class="hint">What this book expects to find on a report. Anything you record is added automatically, including metrics the catalogue has never seen. '+
-    'Remove what you do not track. This is a checklist, not a recommendation about which tests to have.</div>'+
-    '<div class="row" style="margin-top:var(--s3)">'+
-      (S.panel||[]).map(c=>'<span class="badge '+(isCustom(c)?"st-watch":"st-unknown")+'"><span class="dot"></span>'+esc(meta(c).n)+
-        ' <button class="btn sm" data-unpanel="'+esc(c)+'" style="padding:0 5px;border:0;background:none;font-weight:700" aria-label="Remove from panel">&times;</button></span>').join("")+
-      ((S.panel||[]).length?'':'<span class="cap">Empty &mdash; nothing is being looked for.</span>')+
-    '</div>'+
-    '<div class="row" style="margin-top:var(--s4)"><select class="inp" id="panelAdd" style="width:auto;min-width:230px">'+codeOpts(null)+'</select>'+
-    '<button class="btn" id="panelAddBtn">Add to panel</button>'+
-    '<button class="btn" id="panelReset">Restore the default panel</button></div></div></div>'+
-    '<div class="sec"><h2>How this book behaves</h2><div class="card">'+
+    '<div class="sec" style="margin-top:var(--s6)"><details class="card"><summary>How this book behaves, and where records go</summary><div style="margin-top:var(--s3)">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
     '<p><b>Where your records actually go.</b> The book lives in this browser. Three things leave it, and nothing else does:</p>'+
     '<ul style="padding-left:20px;line-height:1.7;color:var(--ink-body);margin-bottom:var(--s3)">'+
-    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs.</li>'+
+    '<li><b>Signed in, your own records sync</b> to a row that only your account can read, on Supabase in Singapore. Sign out and nothing syncs. The same holds for each relative you invite: their own row, readable only by them.</li>'+
     '<li><b>Reading a report sends that page off the device.</b> The photo goes to that same Supabase project and on to Anthropic in the United States to be read, then the stored copy is deleted as soon as the read finishes. The original stays in your phone&rsquo;s camera roll; this book keeps its own copy only in this browser.</li>'+
     '<li><b>Records someone else sent you never leave this device.</b> Anything merged from a hand-off file is marked on this device only and is left out of the sync entirely &mdash; it is their record, kept here as a copy, not yours to put on a server.</li>'+
     '</ul>'+
@@ -2807,9 +2880,9 @@ function vSettings(){
     '<li><b>Different labs are not interchangeable.</b> Analyser and method differ, so a change between labs may be the lab. Trends that cross laboratories are flagged.</li>'+
     '<li><b>Context changes interpretation</b> — fasting state, time of day, acute illness, pregnancy, medicines and supplements. Record what you can; biotin in particular can distort several immunoassays.</li>'+
     '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
-    '</ul></div></details></div></div>';
+    '</ul></div></details></div></details></div>';
 
-  h+='<div class="card"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">'+(AUTH
+  h+='<div class="card" style="margin-top:var(--s6)"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">'+(AUTH
       ? 'This clears this device only. Your synced copy stays on the server and comes back the next time you sign in here. Take a hand-off first if you want a copy you hold.'
       : 'Nothing on this device is synced, so there is no other copy. Take a hand-off first.')+'</div>'+
     '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
@@ -2929,7 +3002,7 @@ async function setPassword(password){
 }
 async function sendCode(email){
   const r = await supa("/auth/v1/otp?redirect_to="+encodeURIComponent(returnTo()),
-    {method:"POST", noAuth:true, body:{email, create_user:false}});
+    {method:"POST", noAuth:true, body:{email, create_user:true}});
   if(!r.ok) throw new Error((r.body&&(r.body.msg||r.body.error_description||r.body.message))
     || ("Could not send the code (HTTP "+r.status+")."));
   return true;
@@ -2962,13 +3035,14 @@ function syncMerge(a, b){
   const tomb = {o:uniq((ta.o||[]).concat(tb.o||[])),
                 a:uniq((ta.a||[]).concat(tb.a||[])),
                 m:uniq((ta.m||[]).concat(tb.m||[])),
-                p:uniq((ta.p||[]).concat(tb.p||[]))};
+                p:uniq((ta.p||[]).concat(tb.p||[])),
+                c:uniq((ta.c||[]).concat(tb.c||[]))};
   const out = {v:2,
     members:      pickById(a.members,      b.members,      tomb.m),
     observations: pickById(a.observations, b.observations, tomb.o),
     actions:      pickById(a.actions,      b.actions,      tomb.a),
     reports:      pickById(a.reports,      b.reports,      []),
-    customCodes:  Object.assign({}, b.customCodes||{}, a.customCodes||{}),
+    customCodes:  Object.fromEntries(Object.entries(Object.assign({}, b.customCodes||{}, a.customCodes||{})).filter(e=>tomb.c.indexOf(e[0])<0)),
     panel:        uniq((a.panel||[]).concat(b.panel||[])).filter(c=>tomb.p.indexOf(c)<0),
     tomb:tomb};
   LISTS.forEach(l=>{
@@ -3638,7 +3712,8 @@ function paintSyncBadge(){
     cls="st-unknown"; txt="Preview copy";
     tip="The claude.ai viewer blocks a page from reaching a server, so this copy cannot sync or read reports. Open ttrng3.github.io/passbook for the working one.";
   } else if(AUTH && AUTH.email){
-    cls="st-in_range"; txt="Syncing";
+    cls=syncing?"st-unknown":"st-in_range";
+    txt=syncing?"Syncing\u2026":(S.lastSync?"Synced "+fmtWhen(S.lastSync):"Not synced yet");
     tip="Signed in as "+AUTH.email+". Your own records sync to a row only this account can read. Records merged from someone else stay on this device.";
   } else {
     cls="st-watch"; txt="This device only";
@@ -3683,7 +3758,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -3735,6 +3810,23 @@ document.addEventListener("click", async e=>{
     const key = (LISTS.find(l=>l[0]===k)||[])[1];
     S[k]=(S[k]||[]).filter(x=>x.id!==id); if(key) tombstone(key,id);
     save(); render(); return; }
+  if(t.id==="invAdd"){
+    const em=(document.getElementById("invEmail")||{}).value||"";
+    const nt=(document.getElementById("invNote")||{}).value||"";
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){
+      inviteMsg={t:"amber",k:"That is not an email address",x:"Check the spelling and try again."}; render(); return; }
+    const r=await supa("/rest/v1/family_invites",{method:"POST",
+      body:[{email:em.trim().toLowerCase(), note:nt.trim()||null, invited_by:AUTH.uid}]});
+    inviteMsg = r.ok
+      ? {t:"blue",k:"Added",x:em.trim()+" can now sign up at this address and keep their own book."}
+      : {t:"red",k:"Could not add them",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+    inviteRows=null; render(); return;
+  }
+  if(t.dataset.invdel){
+    const r=await supa("/rest/v1/family_invites?email=eq."+encodeURIComponent(t.dataset.invdel),{method:"DELETE"});
+    inviteMsg = r.ok ? null : {t:"red",k:"Could not remove that",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+    inviteRows=null; render(); return;
+  }
   if(t.id==="printCard" || t.id==="printSheet"){ window.print(); return; }
   if(t.id==="simpleOn"){ setSimple(true); return; }
   if(t.id==="simpleOff"){ setSimple(false); return; }
@@ -3752,6 +3844,7 @@ document.addEventListener("click", async e=>{
     draft.rows.filter(r=>r.confirmed && rowHasValue(r)).forEach(r=>{
       if(isCustom(r.code)){
         S.customCodes[r.code] = {n:(r.newName||meta(r.code).n||r.code).trim(), u:r.unit||"", g:"Also on your reports"};
+        S.tomb.c=(S.tomb.c||[]).filter(x=>x!==r.code);
       }
       if(!isCustom(r.code) && S.panel.indexOf(r.code)<0 && (S.tomb.p||[]).indexOf(r.code)<0)
         S.panel.push(r.code);
@@ -3803,6 +3896,10 @@ document.addEventListener("click", async e=>{
     if(!draft.rows.some(r=>r.code===c))
       draft.rows.push({code:c,value:"",unit:meta(c).u,refLow:"",refHigh:"",refLabel:"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"});
     tab="add"; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.dropcode){ const c=t.dataset.dropcode;
+    if(!S.observations.some(o=>o.code===c)){ delete S.customCodes[c]; S.panel=(S.panel||[]).filter(x=>x!==c);
+      S.tomb.c=uniq((S.tomb.c||[]).concat([c])); save(); }
+    render(); return; }
   if(t.dataset.unpanel){
     const c=t.dataset.unpanel;
     S.panel=(S.panel||[]).filter(x=>x!==c);
