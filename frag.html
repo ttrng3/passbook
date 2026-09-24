@@ -2720,13 +2720,13 @@ function syncCard(){
   return h+'</div>';
 }
 function vHandoff(){
-  let h='<h2 style="margin-bottom:var(--s3)">Sync and hand-off</h2>'+syncCard();
+  let h='';
   h+='<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Two ways across, and they do different jobs</div>'+
     '<p><b>Sync</b> is for your own devices: one account, your rows only, converging automatically. '+
     '<b>Hand-off</b> is for everyone else &mdash; a file a relative chooses to send you, which you merge in knowingly. '+
     'Both merge rather than overwrite, so you can import the same file twice safely.</p></div>';
 
-  h+='<div class="card"><h3>Send a copy out</h3>'+
+  h+='<div class="card" style="margin-bottom:var(--s4)"><h3>Send a copy out</h3>'+
     '<div class="hint" style="margin-bottom:var(--s3)">Copy the text, then put it wherever you like — AirDrop a note to yourself, message it, email it. Paste it into <b>Bring a copy in</b> on the other device.</div>'+
     '<div class="row"><select class="inp" id="expWho" style="width:auto;min-width:200px">'+
       '<option value="">Everything in this book</option>'+
@@ -2745,7 +2745,11 @@ function vHandoff(){
     '<label class="btn" style="cursor:pointer">Or pick a file<input type="file" id="impFile" accept=".json,.txt,application/json,text/plain" hidden></label></div>'+
     '<div id="impMsg"></div></div>';
 
-  h+='<div class="card"><h3>Family in other countries</h3>'+
+  return h;
+}
+function familyNoAccount(){
+  let h='';
+  h+='<div class="card"><h3>Without an account</h3>'+
     '<div class="hint">If they would rather not have an account, this works too:</div>'+
     '<ol style="margin:var(--s3) 0 0; padding-left:20px; color:var(--ink-body); line-height:1.7">'+
     '<li>Each person opens this same link on their own phone and keeps <b>their own</b> book. It stays in their browser unless they sign in, and it is theirs to sync or not.</li>'+
@@ -2789,7 +2793,7 @@ async function loadInvites(){
 function inviteCard(){
   if(IS_ARTIFACT) return "";
   if(!AUTH) return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
-    '<div class="cap">Sign in below first. Only someone already inside can add an address to the family list.</div></div>';
+    '<div class="cap">Sign in first, under Settings &rsaquo; Account and sync. Only someone already signed in can add an address to the family list.</div></div>';
   if(inviteRows === null){ loadInvites();
     return '<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Invite a family member</h3><div class="cap">Reading the family list&hellip;</div></div>'; }
 
@@ -2813,8 +2817,13 @@ function inviteCard(){
   return h+'</div>';
 }
 
-function vSettings(){
-  let h='<div class="sec"><h2 style="margin-bottom:var(--s3)">Family</h2>'+inviteCard()+'<h3 style="margin:var(--s4) 0 var(--s3)">People in this book</h3>';
+/* Settings, laid out the way iOS Settings is: a short list of rows, each
+   opening its own page. One subject per screen, so nobody has to read past
+   sync to find text size. */
+let setPage=null;
+const SET_PAGES={
+  invite:  {t:"Invite family",           f:()=>inviteCard()+familyNoAccount()},
+  people:  {t:"People in this book",     f:()=>{ let h=''; 
   h+=S.members.map(m=>'<div class="card" style="margin-bottom:var(--s3)"><div class="grid g180">'+
     (isLocal(m)?'<div style="grid-column:1/-1"><span class="badge" style="background:var(--sunk);color:var(--ink-muted)">'+
       '<span class="dot"></span>On this device only</span>'+
@@ -2828,10 +2837,10 @@ function vSettings(){
       Object.keys(BMI_STD).map(p=>'<option value="'+p+'"'+(m.population===p?" selected":"")+'>'+esc(BMI_STD[p].label)+'</option>').join("")+'</select></div></div>'+
     (S.members.length>1?'<button class="btn sm warn" data-delm="'+esc(m.id)+'" style="margin-top:var(--s3)">Remove '+esc(m.name)+' and their records</button>':'')+
     '</div>').join("");
-  h+='<button class="btn" id="addP">Add a person</button></div>'+
-    '<div class="sec" style="margin-top:var(--s6)">'+vHandoff()+'</div>';
-
-  h+='<div class="sec" style="margin-top:var(--s6)"><h2 style="margin-bottom:var(--s3)">Display</h2>'+
+  h+='<button class="btn" id="addP">Add a person</button>'; return h; }},
+  sync:    {t:"Account and sync",        f:()=>syncCard()},
+  copies:  {t:"Send or receive a copy",  f:()=>vHandoff()},
+  display: {t:"Text size and simple mode",f:()=>
     '<div class="card" style="margin-bottom:var(--s4)"><div class="row" style="justify-content:space-between;align-items:center">'+
     '<div><h3 style="margin:0">Simple mode</h3>'+
     '<div class="cap" style="margin-top:var(--s1);max-width:52ch">Three tabs instead of six, larger text, and the standard check-up list only. '+
@@ -2841,8 +2850,8 @@ function vSettings(){
     '<div class="card">'+
     '<div class="row" style="justify-content:space-between"><div><b>Larger text</b>'+
     '<div class="hint" style="margin-top:2px">Bigger type and bigger buttons throughout. Kept on this device.</div></div>'+
-    '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div></div>'+
-    '<div class="sec" style="margin-top:var(--s6)"><details class="card"><summary>How this book behaves, and where records go</summary><div style="margin-top:var(--s3)">'+
+    '<button class="btn" id="textSize">'+(bigText()?"Turn off":"Turn on")+'</button></div></div>'},
+  about:   {t:"How this book works",     f:()=>'<div class="card">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>It never decides a result is critical.</b> That needs a clinician-signed critical-value table and there isn&rsquo;t one. You can flag a reading by hand; the app will not.</p>'+
     '<p style="margin-bottom:var(--s3)"><b>Units travel with the value.</b> Each reading is stored and shown in the unit its own report used, and converted only when something is compared or plotted — with the conversion stated.</p>'+
@@ -2861,12 +2870,35 @@ function vSettings(){
     '<li><b>Different labs are not interchangeable.</b> Analyser and method differ, so a change between labs may be the lab. Trends that cross laboratories are flagged.</li>'+
     '<li><b>Context changes interpretation</b> — fasting state, time of day, acute illness, pregnancy, medicines and supplements. Record what you can; biotin in particular can distort several immunoassays.</li>'+
     '<li><b>Children are not small adults.</b> Paediatric intervals shift with age and puberty; an adult range read across is simply wrong.</li>'+
-    '</ul></div></details></div></details></div>';
-
-  h+='<div class="card" style="margin-top:var(--s6)"><h3>Delete everything</h3><div class="hint" style="margin:var(--s2) 0 var(--s3)">'+(AUTH
+    '</ul></div></details></div>'},
+  wipe:    {t:"Delete everything",       f:()=>{ let h='';
+  h+='<div class="card"><div class="hint" style="margin:0 0 var(--s3)">'+(AUTH
       ? 'This clears this device only. Your synced copy stays on the server and comes back the next time you sign in here. Take a hand-off first if you want a copy you hold.'
       : 'Nothing on this device is synced, so there is no other copy. Take a hand-off first.')+'</div>'+
     '<button class="btn warn" id="wipe">Delete every person, reading and follow-up</button></div>';
+  return h; }}
+};
+function setRow(id, sub, danger){
+  return '<button class="gadd" data-setpage="'+id+'" style="display:flex;align-items:center;gap:var(--s3);font-weight:400;color:'+(danger?'var(--red-ink)':'var(--ink)')+'">'+
+    '<span style="flex:1;min-width:0">'+esc(SET_PAGES[id].t)+(sub?'<span class="sub" style="display:block;font-size:14px;color:var(--ink-muted);margin-top:2px">'+esc(sub)+'</span>':'')+'</span>'+
+    '<span class="chev" aria-hidden="true" style="width:0;height:0;border-left:6px solid var(--ink-muted);border-top:5px solid transparent;border-bottom:5px solid transparent"></span></button>';
+}
+function vSettings(){
+  if(setPage && SET_PAGES[setPage])
+    return '<button class="btn" data-setpage="" style="margin-bottom:var(--s3)">&larr; Settings</button>'+
+      '<h2 style="margin-bottom:var(--s4)">'+esc(SET_PAGES[setPage].t)+'</h2>'+SET_PAGES[setPage].f();
+  const names=S.members.map(m=>m.name).join(", ");
+  const acct=IS_ARTIFACT?"Not available in this preview":AUTH&&AUTH.email?(S.lastSync?"Synced "+fmtWhen(S.lastSync):"Signed in"):"Not signed in";
+  const disp=[simple()?"Simple mode on":"", bigText()?"Larger text on":""].filter(Boolean).join(" \u00b7 ")||"Standard";
+  let h='<h2 style="margin-bottom:var(--s2)">Settings</h2>';
+  h+='<div class="ghdr">Family</div><div class="glist">'+
+    (IS_ARTIFACT?'':setRow("invite","Give a relative their own private book"))+
+    setRow("people",names)+'</div>';
+  h+='<div class="ghdr">Your records</div><div class="glist">'+
+    setRow("sync",acct)+setRow("copies","Pass records between phones or people")+'</div>';
+  h+='<div class="ghdr">Display</div><div class="glist">'+setRow("display",disp)+'</div>';
+  h+='<div class="ghdr">About</div><div class="glist">'+setRow("about","What it never does, and where records go")+'</div>';
+  h+='<div class="glist" style="margin-top:var(--s5)">'+setRow("wipe","",true)+'</div>';
   return h;
 }
 
@@ -3739,9 +3771,10 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#invAdd,[data-invdel],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("#invAdd,[data-invdel],[data-setpage],[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
-  if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
+  if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
   if(t.dataset.openp){ who=t.dataset.openp; tab="record"; render(); window.scrollTo(0,0); return; }
   if(t.dataset.obs){ detail=t.dataset.obs; drawer(); return; }
