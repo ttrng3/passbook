@@ -202,6 +202,14 @@ footer.fix b{color:var(--ink)}
 /* Progress. The bar is only ever drawn from something measured: bytes sent,
    or pages finished. Where nothing is measurable it animates without a
    number rather than inventing one. */
+details.sec>summary{display:flex;align-items:center;gap:var(--s2);cursor:pointer;
+  list-style:none;padding:var(--s3) 0;border-bottom:1px solid var(--line);
+  font-size:16px;font-weight:600;color:var(--ink)}
+details.sec>summary::-webkit-details-marker{display:none}
+details.sec>summary:before{content:"";width:0;height:0;flex:none;
+  border-left:5px solid var(--ink-muted);border-top:4px solid transparent;
+  border-bottom:4px solid transparent;transition:transform .15s ease}
+details.sec[open]>summary:before{transform:rotate(90deg)}
 .pbar{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;margin:var(--s2) 0}
 .pbar>i{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .35s ease}
 .pbar.ind>i{width:34%;animation:pslide 1.15s ease-in-out infinite}
@@ -432,6 +440,171 @@ const C = {
  fat_left_leg:{n:"Fat mass, left leg",u:"kg",g:"Segmental",syn:["fat left leg"]},
  fat_pct_left_leg:{n:"Fat, left leg (of ideal)",u:"%",g:"Segmental",syn:[]},
  ecw_left_leg:{n:"ECW ratio, left leg",u:"ratio",g:"Segmental",syn:["ecw ratio left leg"]},
+ /* ---- a comprehensive annual examination, seeded in advance ----------
+    Generated with migration 0016 from one shared list, so the two cannot
+    drift apart. The point is to stop discovering the panel one report at a
+    time: a person having an annual physical does not learn their panel
+    gradually, so neither should this book. Expect one or two additions a
+    year from here, not a dozen a report.
+
+    No reference range is seeded for any of them, deliberately. The range
+    that counts is the one the issuing laboratory printed beside the result
+    -- its analyser, its population -- and a table written here would quietly
+    override the lab that actually ran the test. These supply the name and
+    the slot; the standard arrives with the report. */
+ pt_sec:{n:"Prothrombin time",u:"s",g:"Clotting",syn:["pt","pt (giay)","thoi gian prothrombin","tq"]},
+ pt_pct:{n:"Prothrombin activity",u:"%",g:"Clotting",syn:["prothrombin %","pt activity","pt%","ty le prothrombin"]},
+ inr:{n:"INR",u:"ratio",g:"Clotting",syn:["chi so inr","pt-inr"]},
+ aptt_sec:{n:"APTT",u:"s",g:"Clotting",syn:["tck","thoi gian thromboplastin tung phan"]},
+ aptt_ratio:{n:"APTT ratio",u:"ratio",g:"Clotting",syn:["raptt"]},
+ fibrinogen:{n:"Fibrinogen",u:"g/L",g:"Clotting",syn:["soi huyet"]},
+ d_dimer:{n:"D-dimer",u:"mg/L",g:"Clotting",syn:["d dimer","dd"]},
+ bleeding_time:{n:"Bleeding time",u:"min",g:"Clotting",syn:["thoi gian mau chay","ts"]},
+ reticulocytes_pct:{n:"Reticulocytes",u:"%",g:"Blood count",syn:["hong cau luoi","ret%","reticulocyte"]},
+ nrbc_pct:{n:"Nucleated red cells",u:"%",g:"Blood count",syn:["nrbc","nrbc%"]},
+ blood_group_abo:{n:"Blood group",u:"",g:"Blood count",q:true,fact:true,syn:["abo","nhom mau","nhom mau abo"]},
+ rh_factor:{n:"Rh factor",u:"",g:"Blood count",q:true,fact:true,syn:["rh","rh(d)","yeu to rh"]},
+ iron_serum:{n:"Iron",u:"µmol/L",g:"Iron studies",syn:["fe","sat","sat huyet thanh","serum iron"]},
+ tibc:{n:"Iron binding capacity",u:"µmol/L",g:"Iron studies",syn:["kha nang gan sat toan phan","tibc","total iron binding capacity"]},
+ transferrin:{n:"Transferrin",u:"g/L",g:"Iron studies",syn:[]},
+ transferrin_sat:{n:"Transferrin saturation",u:"%",g:"Iron studies",syn:["do bao hoa transferrin","tsat"]},
+ haptoglobin:{n:"Haptoglobin",u:"g/L",g:"Iron studies",syn:[]},
+ glucose_random:{n:"Glucose (random)",u:"mmol/L",g:"Metabolic",syn:["duong huyet bat ky","random glucose","rbs"]},
+ glucose_ogtt_2h:{n:"Glucose (2h after load)",u:"mmol/L",g:"Metabolic",syn:["2-hour glucose","glucose 2h","nghiem phap dung nap glucose","ogtt 2h"]},
+ c_peptide:{n:"C-peptide",u:"nmol/L",g:"Metabolic",syn:["c peptid"]},
+ homa_ir:{n:"HOMA-IR",u:"index",g:"Metabolic",syn:["homa ir"]},
+ fructosamine:{n:"Fructosamine",u:"µmol/L",g:"Metabolic",syn:[]},
+ lactate:{n:"Lactate",u:"mmol/L",g:"Metabolic",syn:["acid lactic"]},
+ ketone_blood:{n:"Ketones (blood)",u:"mmol/L",g:"Metabolic",syn:["beta-hydroxybutyrate","blood ketone","ceton mau"]},
+ apoa1:{n:"Apolipoprotein A1",u:"g/L",g:"Lipids",syn:["apo a1","apoa1"]},
+ apob_apoa1_ratio:{n:"ApoB / ApoA1",u:"ratio",g:"Lipids",syn:["apob/a1","apob/apoa1"]},
+ chol_hdl_ratio:{n:"Cholesterol / HDL",u:"ratio",g:"Lipids",syn:["chol/hdl","cholesterol/hdl","tc/hdl"]},
+ ldl_hdl_ratio:{n:"LDL / HDL",u:"ratio",g:"Lipids",syn:["ldl/hdl"]},
+ remnant_chol:{n:"Remnant cholesterol",u:"mmol/L",g:"Lipids",syn:[]},
+ ldh:{n:"LDH",u:"U/L",g:"Liver",syn:["lactate dehydrogenase"]},
+ ammonia:{n:"Ammonia",u:"µmol/L",g:"Liver",syn:["amoniac","nh3"]},
+ prealbumin:{n:"Prealbumin",u:"g/L",g:"Liver",syn:["tien albumin"]},
+ bile_acids:{n:"Bile acids",u:"µmol/L",g:"Liver",syn:["acid mat"]},
+ cystatin_c:{n:"Cystatin C",u:"mg/L",g:"Kidney",syn:["cystatin-c"]},
+ microalbumin_urine:{n:"Microalbumin (urine)",u:"mg/L",g:"Urine",syn:["albumin nieu vi luong","micro albumin nieu","microalbumin"]},
+ urine_acr:{n:"Albumin / creatinine (urine)",u:"mg/mmol",g:"Urine",syn:["acr","albumin/creatinine ratio","ty le albumin/creatinin nieu","uacr"]},
+ urine_creatinine:{n:"Creatinine (urine)",u:"mmol/L",g:"Urine",syn:["creatinin nieu","urine creatinine"]},
+ urine_protein_24h:{n:"Protein (24h urine)",u:"g/24h",g:"Urine",syn:["24h urine protein","dam nieu 24 gio","protein nieu 24h"]},
+ bicarbonate:{n:"Bicarbonate",u:"mmol/L",g:"Electrolytes",syn:["bicarbonat","co2 total","hco3"]},
+ anion_gap:{n:"Anion gap",u:"mmol/L",g:"Electrolytes",syn:["khoang trong anion"]},
+ osmolality:{n:"Osmolality",u:"mOsm/kg",g:"Electrolytes",syn:["ap luc tham thau"]},
+ total_t3:{n:"Total T3",u:"nmol/L",g:"Thyroid",syn:["t3","t3 toan phan"]},
+ total_t4:{n:"Total T4",u:"nmol/L",g:"Thyroid",syn:["t4","t4 toan phan"]},
+ anti_tpo:{n:"Anti-TPO",u:"IU/mL",g:"Thyroid",syn:["anti thyroid peroxidase","khang the khang tpo","tpoab"]},
+ anti_tg:{n:"Anti-thyroglobulin",u:"IU/mL",g:"Thyroid",syn:["anti thyroglobulin","anti-tg","tgab"]},
+ trab:{n:"TRAb",u:"IU/L",g:"Thyroid",syn:["tsh receptor antibody"]},
+ thyroglobulin:{n:"Thyroglobulin",u:"µg/L",g:"Thyroid",syn:["tg (thyroglobulin)","thyroglobulin huyet thanh"]},
+ testosterone_total:{n:"Testosterone (total)",u:"nmol/L",g:"Hormones",syn:["testosterone","testosterone toan phan","total testosterone"]},
+ testosterone_free:{n:"Testosterone (free)",u:"pmol/L",g:"Hormones",syn:["free testosterone","testosterone tu do"]},
+ shbg:{n:"SHBG",u:"nmol/L",g:"Hormones",syn:["sex hormone binding globulin"]},
+ estradiol:{n:"Estradiol",u:"pmol/L",g:"Hormones",syn:["e2"]},
+ progesterone:{n:"Progesterone",u:"nmol/L",g:"Hormones",syn:[]},
+ lh:{n:"LH",u:"IU/L",g:"Hormones",syn:["luteinizing hormone"]},
+ fsh:{n:"FSH",u:"IU/L",g:"Hormones",syn:["follicle stimulating hormone"]},
+ prolactin:{n:"Prolactin",u:"mIU/L",g:"Hormones",syn:["prl"]},
+ cortisol_am:{n:"Cortisol (morning)",u:"nmol/L",g:"Hormones",syn:["cortisol","cortisol 8h","morning cortisol"]},
+ dhea_s:{n:"DHEA-S",u:"µmol/L",g:"Hormones",syn:["dhea sulfate","dheas"]},
+ pth:{n:"Parathyroid hormone",u:"pmol/L",g:"Hormones",syn:["pth"]},
+ igf1:{n:"IGF-1",u:"nmol/L",g:"Hormones",syn:["igf1","somatomedin c"]},
+ growth_hormone:{n:"Growth hormone",u:"µg/L",g:"Hormones",syn:["gh"]},
+ amh:{n:"AMH",u:"pmol/L",g:"Hormones",syn:["anti-mullerian hormone"]},
+ beta_hcg:{n:"Beta-hCG",u:"IU/L",g:"Hormones",syn:["beta hcg","hcg","β-hcg"]},
+ troponin_i:{n:"Troponin I",u:"ng/L",g:"Heart",syn:["tni","troponin i hs"]},
+ troponin_t_hs:{n:"Troponin T (hs)",u:"ng/L",g:"Heart",syn:["hs-tnt","troponin t","troponin t hs"]},
+ ck:{n:"Creatine kinase",u:"U/L",g:"Heart",syn:["ck","cpk"]},
+ ck_mb:{n:"CK-MB",u:"U/L",g:"Heart",syn:["ckmb"]},
+ bnp:{n:"BNP",u:"ng/L",g:"Heart",syn:[]},
+ nt_probnp:{n:"NT-proBNP",u:"ng/L",g:"Heart",syn:["nt pro bnp","probnp"]},
+ homocysteine:{n:"Homocysteine",u:"µmol/L",g:"Heart",syn:["homocystein"]},
+ myoglobin:{n:"Myoglobin",u:"µg/L",g:"Heart",syn:[]},
+ rheumatoid_factor:{n:"Rheumatoid factor",u:"IU/mL",g:"Immune",syn:["rf","yeu to dang thap"]},
+ ana:{n:"ANA",u:"",g:"Immune",q:true,syn:["antinuclear antibody","khang the khang nhan"]},
+ anti_ccp:{n:"Anti-CCP",u:"U/mL",g:"Immune",syn:["ccp"]},
+ aso:{n:"ASO",u:"IU/mL",g:"Immune",syn:["anti streptolysin o","aslo"]},
+ complement_c3:{n:"Complement C3",u:"g/L",g:"Immune",syn:["bo the c3","c3"]},
+ complement_c4:{n:"Complement C4",u:"g/L",g:"Immune",syn:["bo the c4","c4"]},
+ igg:{n:"IgG",u:"g/L",g:"Immune",syn:[]},
+ iga:{n:"IgA",u:"g/L",g:"Immune",syn:[]},
+ igm:{n:"IgM",u:"g/L",g:"Immune",syn:[]},
+ ige_total:{n:"IgE (total)",u:"IU/mL",g:"Immune",syn:["ige","ige toan phan","total ige"]},
+ procalcitonin:{n:"Procalcitonin",u:"ng/mL",g:"Inflammation",syn:["pct (procalcitonin)","pro-calcitonin"]},
+ anti_hbc:{n:"Anti-HBc",u:"",g:"Infections",q:true,syn:["anti hbc total","hbcab"]},
+ hbeag:{n:"HBeAg",u:"",g:"Infections",q:true,syn:["hbe ag"]},
+ anti_hbe:{n:"Anti-HBe",u:"",g:"Infections",q:true,syn:["hbeab"]},
+ hiv_ag_ab:{n:"HIV Ag/Ab",u:"",g:"Infections",q:true,syn:["hiv","hiv ab","hiv combo"]},
+ syphilis_rpr:{n:"Syphilis RPR",u:"",g:"Infections",q:true,syn:["giang mai rpr","rpr","vdrl"]},
+ syphilis_tpha:{n:"Syphilis TPHA",u:"",g:"Infections",q:true,syn:["giang mai tpha","tpha"]},
+ h_pylori_igg:{n:"H. pylori IgG",u:"",g:"Infections",q:true,syn:["h pylori igg","helicobacter pylori igg","hp igg"]},
+ h_pylori_stool:{n:"H. pylori (stool antigen)",u:"",g:"Infections",q:true,syn:["h pylori stool antigen","hp stool ag"]},
+ h_pylori_breath:{n:"H. pylori (breath test)",u:"",g:"Infections",q:true,syn:["test tho hp","ubt","urea breath test"]},
+ rubella_igg:{n:"Rubella IgG",u:"",g:"Infections",q:true,syn:[]},
+ measles_igg:{n:"Measles IgG",u:"",g:"Infections",q:true,syn:["soi igg"]},
+ varicella_igg:{n:"Varicella IgG",u:"",g:"Infections",q:true,syn:["thuy dau igg"]},
+ ebv_vca_igg:{n:"EBV VCA IgG",u:"",g:"Infections",q:true,syn:["ebv igg"]},
+ cmv_igg:{n:"CMV IgG",u:"",g:"Infections",q:true,syn:[]},
+ dengue_ns1:{n:"Dengue NS1",u:"",g:"Infections",q:true,syn:["ns1","sot xuat huyet ns1"]},
+ tb_igra:{n:"TB interferon test",u:"",g:"Infections",q:true,syn:["igra","quantiferon","tb igra"]},
+ hbv_dna:{n:"HBV DNA",u:"IU/mL",g:"Infections",syn:["dinh luong hbv dna","hbv-dna"]},
+ hcv_rna:{n:"HCV RNA",u:"IU/mL",g:"Infections",syn:["hcv-rna"]},
+ psa_free:{n:"PSA (free)",u:"ng/mL",g:"Tumour markers",syn:["fpsa","free psa","psa tu do"]},
+ psa_ratio:{n:"PSA free / total",u:"%",g:"Tumour markers",syn:["%fpsa","fpsa/tpsa","psa ratio"]},
+ ca125:{n:"CA 125",u:"U/mL",g:"Tumour markers",syn:["ca 12-5","ca125"]},
+ ca15_3:{n:"CA 15-3",u:"U/mL",g:"Tumour markers",syn:["ca15-3"]},
+ nse:{n:"NSE",u:"ng/mL",g:"Tumour markers",syn:["neuron specific enolase"]},
+ he4:{n:"HE4",u:"pmol/L",g:"Tumour markers",syn:[]},
+ beta2_microglobulin:{n:"Beta-2 microglobulin",u:"mg/L",g:"Tumour markers",syn:["b2m","beta 2 microglobulin","β2-microglobulin"]},
+ vit_b1:{n:"Vitamin B1",u:"nmol/L",g:"Vitamins",syn:["thiamine"]},
+ vit_b6:{n:"Vitamin B6",u:"nmol/L",g:"Vitamins",syn:["pyridoxine"]},
+ vit_a:{n:"Vitamin A",u:"µmol/L",g:"Vitamins",syn:["retinol"]},
+ vit_e:{n:"Vitamin E",u:"µmol/L",g:"Vitamins",syn:["tocopherol"]},
+ vit_c:{n:"Vitamin C",u:"µmol/L",g:"Vitamins",syn:["ascorbic acid"]},
+ zinc:{n:"Zinc",u:"µmol/L",g:"Vitamins",syn:["kem","zn"]},
+ copper:{n:"Copper",u:"µmol/L",g:"Vitamins",syn:["dong huyet thanh"]},
+ selenium:{n:"Selenium",u:"µmol/L",g:"Vitamins",syn:["selen"]},
+ urine_wbc_hpf:{n:"White cells (urine, counted)",u:"/HPF",g:"Urine",syn:["bach cau (soi can)","bach cau vi truong","te bao bach cau nieu","urine wbc","wbc (urine)"]},
+ urine_rbc_hpf:{n:"Red cells (urine, counted)",u:"/HPF",g:"Urine",syn:["hong cau (soi can)","hong cau vi truong","rbc (urine)","te bao hong cau nieu","urine rbc"]},
+ urine_epithelial:{n:"Epithelial cells (urine)",u:"",g:"Urine",q:true,syn:["epithelial cells","te bao bieu mo"]},
+ urine_casts:{n:"Casts (urine)",u:"",g:"Urine",q:true,syn:["casts","cylinders","tru nieu"]},
+ urine_crystals:{n:"Crystals (urine)",u:"",g:"Urine",q:true,syn:["crystals","tinh the"]},
+ urine_bacteria:{n:"Bacteria (urine)",u:"",g:"Urine",q:true,syn:["bacteria","vi khuan nieu"]},
+ urine_color:{n:"Colour (urine)",u:"",g:"Urine",q:true,fact:true,syn:["color","colour","mau sac"]},
+ urine_clarity:{n:"Clarity (urine)",u:"",g:"Urine",q:true,syn:["clarity","do trong","turbidity"]},
+ stool_occult_blood:{n:"Occult blood (stool)",u:"",g:"Stool",q:true,syn:["fit","fobt","hong cau an trong phan","occult blood"]},
+ stool_parasites:{n:"Parasites (stool)",u:"",g:"Stool",q:true,syn:["ky sinh trung duong ruot","soi phan","stool parasites"]},
+ stool_wbc:{n:"White cells (stool)",u:"",g:"Stool",q:true,syn:["bach cau phan","stool wbc"]},
+ chest_xray:{n:"Chest X-ray",u:"",g:"Scans & imaging",q:true,self:true,syn:["cxr","x quang tim phoi","x-quang nguc"]},
+ abdominal_us:{n:"Abdominal ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am bung","sieu am o bung"]},
+ thyroid_us:{n:"Thyroid ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tuyen giap"]},
+ carotid_us:{n:"Carotid ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am dong mach canh"]},
+ breast_us:{n:"Breast ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tuyen vu"]},
+ pelvic_us:{n:"Pelvic ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tu cung phan phu"]},
+ echocardiogram:{n:"Echocardiogram",u:"",g:"Scans & imaging",q:true,self:true,syn:["echo","sieu am tim"]},
+ mammogram:{n:"Mammogram",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup nhu anh","mammography"]},
+ pap_smear:{n:"Pap smear",u:"",g:"Scans & imaging",q:true,self:true,syn:["pap","phet te bao co tu cung"]},
+ gastroscopy:{n:"Gastroscopy",u:"",g:"Scans & imaging",q:true,self:true,syn:["noi soi da day","noi soi thuc quan da day"]},
+ colonoscopy:{n:"Colonoscopy",u:"",g:"Scans & imaging",q:true,self:true,syn:["noi soi dai trang"]},
+ ct_scan:{n:"CT scan",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup cat lop","ct"]},
+ mri_scan:{n:"MRI",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup cong huong tu"]},
+ bone_density_t:{n:"Bone density (T-score)",u:"T-score",g:"Scans & imaging",syn:["dxa t-score","mat do xuong t-score","t score","t-score"]},
+ bone_density_z:{n:"Bone density (Z-score)",u:"Z-score",g:"Scans & imaging",syn:["dxa z-score","z score","z-score"]},
+ fev1:{n:"FEV1",u:"L",g:"Function tests",syn:["fev 1"]},
+ fvc:{n:"FVC",u:"L",g:"Function tests",syn:[]},
+ fev1_fvc:{n:"FEV1 / FVC",u:"%",g:"Function tests",syn:["chi so gaensler","fev1/fvc"]},
+ pef:{n:"Peak flow",u:"L/min",g:"Function tests",syn:["peak expiratory flow","pef"]},
+ audiometry:{n:"Hearing test",u:"",g:"Function tests",q:true,self:true,syn:["audiometry","do thinh luc"]},
+ iop_right:{n:"Eye pressure, right",u:"mmHg",g:"Function tests",syn:["iop od","iop right","nhan ap mat phai"]},
+ iop_left:{n:"Eye pressure, left",u:"mmHg",g:"Function tests",syn:["iop left","iop os","nhan ap mat trai"]},
+ grip_strength:{n:"Grip strength",u:"kg",g:"Function tests",syn:["handgrip","luc nam tay"]},
+ vo2max:{n:"VO2 max",u:"mL/kg/min",g:"Function tests",syn:["vo2max"]},
+ temperature_c:{n:"Temperature",u:"°C",g:"Vitals",syn:["body temperature","nhiet do"]},
+ spo2:{n:"Oxygen saturation",u:"%",g:"Vitals",syn:["do bao hoa oxy","spo2"]},
+ respiratory_rate:{n:"Breathing rate",u:"/min",g:"Vitals",syn:["nhip tho","respiratory rate","rr"]},
+ hip_cm:{n:"Hip",u:"cm",g:"Body",syn:["hip circumference","vong hong","vong mong"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
@@ -456,7 +629,23 @@ const DEFAULT_PANEL = [
   "mpv","plateletcrit","pdw","ca72_4",
   "ecg_finding","visual_acuity_right","visual_acuity_left",
   "skeletal_muscle_mass","body_fat_mass","total_body_water","bmr",
-  "waist_hip_ratio","ecw_tbw_ratio","smi","phase_angle"
+  "waist_hip_ratio","ecw_tbw_ratio","smi","phase_angle",
+  /* The rest of a comprehensive annual examination. Everything in the
+     catalogue is recognised on a report whether or not it is listed here --
+     this is the CHECKLIST, the things worth noticing the absence of. The
+     sex-specific and the situational (AMH, CA 125, dengue, troponin) stay out
+     of it on purpose: a permanent empty card for a test nobody expects is
+     noise, and they still land the moment a report carries one. */
+  "hip_cm","spo2",
+  "pt_sec","inr","aptt_sec","fibrinogen",
+  "blood_group_abo","rh_factor","iron_serum","transferrin_sat",
+  "apoa1","chol_hdl_ratio","ldh","bicarbonate",
+  "microalbumin_urine","urine_acr",
+  "anti_tpo","homocysteine","ck",
+  "hiv_ag_ab","syphilis_tpha","h_pylori_igg","anti_hbc",
+  "urine_wbc_hpf","urine_rbc_hpf","stool_occult_blood",
+  "chest_xray","abdominal_us","thyroid_us","echocardiogram",
+  "fev1_fvc","iop_right","iop_left"
 ];
 /* Two pairs read as one measurement on a report and are shown as one card,
    while staying two rows in the data — the contract never pre-joins codes. */
@@ -498,7 +687,11 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Body","Body composition","Segmental","Vitals","Metabolic","Lipids","Liver","Kidney","Urine","Electrolytes","Blood count","Thyroid","Inflammation","Vitamins","Serology","Tumour markers","Lifestyle","Also on your reports"];
+const GROUPS = ["Vitals","Body","Body composition","Segmental",
+  "Metabolic","Lipids","Liver","Kidney","Electrolytes","Urine","Stool",
+  "Blood count","Iron studies","Clotting","Thyroid","Hormones","Heart",
+  "Inflammation","Immune","Serology","Infections","Tumour markers","Vitamins",
+  "Scans & imaging","Function tests","Lifestyle","Also on your reports"];
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
@@ -1028,6 +1221,16 @@ function checksFor(mid){
 }
 
 /* ------------------------------------------------------- components */
+/* A blood group has no range and never will -- it is neither in one nor out
+   of one, and showing "no range on file" on it (which renders LOUDER than in
+   range, by hard rule 17) reads as a warning about something that is simply
+   a fact. Those get a neutral pill and are left out of a panel's worst-case
+   roll-up. */
+function obsBadge(o){
+  return meta(o.code).fact
+    ? '<span class="badge" style="background:var(--sunk);color:var(--ink-muted)"><span class="dot"></span>On file</span>'
+    : badge(statusOf(o));
+}
 function badge(st){ return '<span class="badge st-'+st+'"><span class="dot"></span>'+esc(ST[st]||st)+'</span>'; }
 function bandHTML(o, cuts, names){
   const M=meta(o.code);
@@ -1060,7 +1263,7 @@ function obsCard(o){
     '<div class="nm">'+icon(o.code)+' '+esc(M.n)+(o.derived?' · derived':'')+'</div>'+
     '<div class="vl">'+esc(o.valueRaw||fmt(o.value))+'<span>'+esc(o.unit||M.u)+'</span></div>'+
     (alt?'<div class="cap num">= '+esc(alt)+'</div>':'')+
-    '<div style="margin-top:var(--s2)">'+badge(st)+'</div>'+
+    '<div style="margin-top:var(--s2)">'+obsBadge(o)+'</div>'+
     '<div class="ft">'+esc(o.source||"source not recorded")+' · '+esc(o.observedAt||"no date")+
       (o.fasting?' · '+esc(o.fasting):'')+'</div></button>';
 }
@@ -1177,27 +1380,57 @@ function vRecord(){
     '<div class="row" style="margin-bottom:var(--s4)">'+
       badge("in_range")+badge("watch")+badge("discuss")+badge("unknown")+'</div>';
 
+  /* One flat grid stopped working somewhere past a hundred metrics. A report
+     is not read as one list either -- it is read panel by panel, and a
+     clinician looks at the liver panel together or not at all. So the book
+     follows the panels, in the order a check-up is usually laid out.
+
+     A section opens if it holds a reading and closes if it does not, which
+     means a book with four reports in it shows four open sections and keeps
+     the rest as a quiet checklist of what has never been done. That is the
+     panel doing its job: a test you have never had is invisible otherwise. */
   const consumed = new Set();
-  const cards = [];
+  const byGroup = new Map();
+  const put = (g, html, st, fact) => {
+    const b = byGroup.get(g) || {cards:[], on:0, n:0, worst:"in_range"};
+    b.cards.push(html); b.n++;
+    if(st){ b.on++; if(!fact && RANK[st] < RANK[b.worst]) b.worst = st; }
+    byGroup.set(g, b);
+  };
   for(const code of panel){
     if(consumed.has(code)) continue;
+    const g = meta(code).g || "Also on your reports";
     const pair = PAIRS[code];
     if(pair && panel.indexOf(pair.mate)>=0){
       consumed.add(code); consumed.add(pair.mate);
-      cards.push(pairCard(code, pair.mate, pair.label, L));
+      const a = L.find(x=>x.code===code);
+      put(g, pairCard(code, pair.mate, pair.label, L), a ? statusOf(a) : null);
       continue;
     }
     const o = L.find(x=>x.code===code);
-    cards.push(o ? obsCard(o) : ghostCard(code));
+    put(g, o ? obsCard(o) : ghostCard(code), o ? statusOf(o) : null, !!meta(code).fact);
   }
-  h += '<div class="grid g240">'+cards.join("")+'</div>';
+  /* Anything measured that is not on the panel keeps its own group too, so a
+     one-off from a specialist still lands beside the panel it belongs to. */
+  L.filter(o => panel.indexOf(o.code) < 0)
+   .sort((a,b) => RANK[statusOf(a)] - RANK[statusOf(b)])
+   .forEach(o => put(meta(o.code).g || "Also on your reports", obsCard(o), statusOf(o), !!meta(o.code).fact));
 
-  const extra = L.filter(o=>panel.indexOf(o.code)<0);
-  if(extra.length){
-    h += '<div class="sec" style="margin-top:var(--s6)"><h2>Also on your reports</h2>'+
-      '<div class="cap" style="margin-bottom:var(--s3)">Recorded, but not on your standard panel. Add any of them to the panel in Settings so a missing one shows up as a gap.</div>'+
-      '<div class="grid g240">'+extra.sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]).map(obsCard).join("")+'</div></div>';
-  }
+  const order = GROUPS.filter(g => byGroup.has(g))
+    .concat([...byGroup.keys()].filter(g => GROUPS.indexOf(g) < 0));
+  h += order.map(g => {
+    const b = byGroup.get(g);
+    const open = b.on > 0;
+    const flag = (b.on && b.worst !== "in_range" && b.worst !== "unknown") ? badge(b.worst) : "";
+    return '<details class="sec" '+(open?"open":"")+' style="margin-top:var(--s4)">'+
+      '<summary><span>'+esc(g)+'</span>'+
+        '<span class="cap" style="margin-left:auto;white-space:nowrap">'+
+          '<span class="num">'+b.on+'</span> of <span class="num">'+b.n+'</span></span>'+
+        (flag ? '<span style="margin-left:var(--s2)">'+flag+'</span>' : '')+
+      '</summary>'+
+      '<div class="grid g240" style="margin-top:var(--s3)">'+b.cards.join("")+'</div>'+
+      '</details>';
+  }).join("");
   if(!panel.length && !L.length)
     h += '<div class="empty"><b>Nothing to show yet</b>Your panel is empty and no readings are on file. Restore the default panel in Settings, or add a report.</div>';
   return h;
@@ -1717,7 +1950,7 @@ function drawer(){
     '<div class="row" style="align-items:baseline"><span class="big">'+esc(o.valueRaw||fmt(o.value))+'</span>'+
       '<span class="muted" style="font-size:15px">'+esc(o.unit||M.u)+'</span></div>'+
     (o.unit!==M.u?'<div class="cap num" style="margin-top:var(--s1)">= '+fmt(o.value)+' '+esc(M.u)+' after conversion</div>':'')+
-    '<div style="margin:var(--s3) 0">'+badge(st)+'</div>'+
+    '<div style="margin:var(--s3) 0">'+obsBadge(o)+'</div>'+
     '<div class="callout c-blue"><p>'+esc(why(o))+'</p></div>'+bands+dis+
     '<dl class="kv">'+
       '<dt>Laboratory</dt><dd>'+esc(o.source||"not recorded")+'</dd>'+
