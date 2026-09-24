@@ -199,7 +199,21 @@ footer.fix b{color:var(--ink)}
   h1{font-size:24px} .card{padding:var(--s4)} .drawer{width:100%} .big{font-size:34px}
   .top-in h1{font-size:17px; width:100%; margin-bottom:var(--s1)}
 }
+/* Progress. The bar is only ever drawn from something measured: bytes sent,
+   or pages finished. Where nothing is measurable it animates without a
+   number rather than inventing one. */
+.pbar{height:6px;border-radius:999px;background:var(--sunk);overflow:hidden;margin:var(--s2) 0}
+.pbar>i{display:block;height:100%;background:var(--blue);border-radius:999px;transition:width .35s ease}
+.pbar.ind>i{width:34%;animation:pslide 1.15s ease-in-out infinite}
+@keyframes pslide{0%{margin-left:-34%}100%{margin-left:100%}}
+.stg{display:flex;gap:var(--s2);flex-wrap:wrap;margin-top:var(--s3)}
+.stg b{font-size:12px;font-weight:600;border-radius:var(--r-pill);padding:2px 8px;
+  background:var(--sunk);color:var(--ink-muted);display:inline-flex;align-items:center;gap:6px}
+.stg b:before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}
+.stg b.on{background:var(--blue-bg);color:var(--blue-ink)}
+.stg b.did{background:var(--green-bg);color:var(--green-ink)}
 @media print{
+  .pbar,.stg{display:none!important}
   body{background:#FFFFFF; font-size:11pt}
   :root{--ink-muted:#222; --ink-body:#222; --bg:#FFFFFF; --line:#BBB; --line-soft:#DDD}
   .card,.tile,.callout{background:#FFFFFF!important; border:1px solid #BBB; break-inside:avoid}
@@ -1311,7 +1325,7 @@ function line(pts,M){
 
 /* ------------------------------------------------------- add report */
 function newDraft(){ return {memberId:who,date:today(),source:"",fasting:"",specimen:"",note:"",
-  rows:[],files:[],busy:"",notes:[],skipped:[]}; }
+  rows:[],files:[],busy:"",prog:null,notes:[],skipped:[]}; }
 function kb(n){ return n>=1048576 ? (n/1048576).toFixed(1)+" MB" : Math.max(1,Math.round(n/1024))+" KB"; }
 function codeOpts(sel){
   const G={};
@@ -1444,8 +1458,9 @@ function vAdd(){
     '<div class="hint" style="margin-bottom:var(--s4)">Drag it anywhere on this page, or paste a screenshot with '+
       '<span class="mono">⌘V</span>. Photos and PDFs are both read by the Vitals extractor, which resolves every test name through your alias table rather than guessing. '+
       'It reads Vietnamese and English equally well — on the bench, Vietnamese scored slightly higher. Pages go to your own Supabase and on to the model; nothing is read in this browser.</div>'+
-    (draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
-      '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
+    (draft.prog ? '<div id="progHost">'+progressHTML()+'</div>'
+      : draft.busy?'<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Working</div>'+
+        '<p id="busyline">'+esc(draft.busy)+'</p></div>':'')+
     ((draft.notes&&draft.notes.length)?'<div class="callout c-amber" style="margin-bottom:var(--s4)">'+
       '<div class="kick">Note</div><p>'+esc(draft.notes.join(" · "))+'</p></div>':'')+
     '<details><summary>Or paste the text of a report</summary><div>'+
@@ -2092,6 +2107,33 @@ function extFor(f){
   return m?m[1].toLowerCase():"jpg";
 }
 
+/* fetch() reports nothing until it is finished, and on a phone a 4 MB photo
+   is most of the wait. XMLHttpRequest is the only way to see bytes leaving,
+   so the one honest number in the whole operation comes from here. */
+function putWithProgress(url, file, mime, onFrac){
+  return new Promise(function(resolve){
+    var x = new XMLHttpRequest();
+    x.open("POST", url, true);
+    x.setRequestHeader("apikey", SUPA.key);
+    x.setRequestHeader("Authorization", "Bearer " + AUTH.tok);
+    x.setRequestHeader("Content-Type", mime);
+    x.setRequestHeader("x-upsert", "true");
+    if(x.upload) x.upload.onprogress = function(e){
+      if(e.lengthComputable && onFrac) onFrac(e.loaded / e.total); };
+    x.onload  = function(){ resolve({ok: x.status>=200 && x.status<300, status: x.status, text: x.responseText}); };
+    x.onerror = function(){ resolve({ok:false, status:0, text:""}); };
+    x.send(file);
+  });
+}
+
+/* How long a read actually takes, measured on this device rather than
+   guessed. The median of the last dozen is what the estimate is built from;
+   until there are any, the read shows no estimate at all. */
+const READ_MS_KEY = "famrec-readms";
+function readTimes(){ try{ var a=JSON.parse(localStorage.getItem(READ_MS_KEY)||"[]"); return Array.isArray(a)?a:[]; }catch(e){ return []; } }
+function noteReadTime(ms){ try{ localStorage.setItem(READ_MS_KEY, JSON.stringify(readTimes().concat(ms).slice(-12))); }catch(e){} }
+function typicalRead(){ var a=readTimes().slice().sort(function(x,y){return x-y;}); return a.length ? a[Math.floor(a.length/2)] : 0; }
+
 async function extractViaVitals(file, say){
   if(IS_ARTIFACT) throw new Error("this copy cannot reach the extractor — open ttrng3.github.io/famrec");
   if(!AUTH || !AUTH.uid) throw new Error("sign in first — extraction runs under your own account");
@@ -2099,26 +2141,20 @@ async function extractViaVitals(file, say){
   const path = AUTH.uid + "/famrec-" + Date.now() + "-" + uid() + "." + extFor(file);
   const mime = file.type || "application/octet-stream";
 
-  say && say("Uploading the page");
-  let up = await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
-    method: "POST",
-    headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok,
-              "Content-Type": mime, "x-upsert": "true"},
-    body: file
-  });
+  const dest = SUPA.url + "/storage/v1/object/documents/" + path;
+  const onFrac = function(f){ say && say("upload", f); };
+  say && say("upload", 0);
+  let up = await putWithProgress(dest, file, mime, onFrac);
   if(up.status === 401 && await renewSession()){
-    up = await fetch(SUPA.url + "/storage/v1/object/documents/" + path, {
-      method: "POST",
-      headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok,
-                "Content-Type": mime, "x-upsert": "true"},
-      body: file });
+    say && say("upload", 0);
+    up = await putWithProgress(dest, file, mime, onFrac);
   }
   if(!up.ok){
-    let why = ""; try{ const j = await up.json(); why = j.message || j.error || ""; }catch(e){}
+    let why = ""; try{ const j = JSON.parse(up.text||"{}"); why = j.message || j.error || ""; }catch(e){}
     throw new Error("the page could not be uploaded (HTTP " + up.status + (why ? ": " + why : "") + ")");
   }
 
-  say && say("Registering it");
+  say && say("register");
   const ins = await supa("/rest/v1/documents", {method: "POST",
     headers: {Prefer: "return=representation"},
     body: [{storage_path: path, mime_type: mime}]});
@@ -2126,12 +2162,14 @@ async function extractViaVitals(file, say){
     throw new Error((ins.body && (ins.body.message || ins.body.hint)) || "the document row could not be created");
   const documentId = ins.body[0].id;
 
-  say && say("Reading it — this takes a few seconds");
+  say && say("read");
+  const readStarted = Date.now();
   const r = await fetch(SUPA.url + "/functions/v1/extract-document", {
     method: "POST",
     headers: {apikey: SUPA.key, Authorization: "Bearer " + AUTH.tok, "Content-Type": "application/json"},
     body: JSON.stringify({documentId: documentId})
   });
+  noteReadTime(Date.now() - readStarted);
   let out = null; try{ out = await r.json(); }catch(e){}
   if(!r.ok) throw new Error((out && out.error) || ("the extractor refused it (HTTP " + r.status + ")"));
   /* notice is set when the page held more rows than one read could return.
@@ -2227,17 +2265,87 @@ async function addOneFile(f){
   return {entry:entry, file:f, kind:kind, name:f.name};
 }
 
+/* ------------------------------------------------- the waiting indicator
+
+   Three stages per page, and only two of them can honestly be measured: the
+   upload knows its bytes, and the queue knows how many pages are finished.
+   The read cannot be measured at all -- the reader answers when it answers --
+   so it is estimated from how long reads have actually taken on THIS device,
+   and the estimate is labelled as one. It stops at 92% and stays there rather
+   than sliding to full and sitting at "100%" while nothing has happened,
+   which is the thing that makes a progress bar feel like a lie.
+
+   Before there is any history, the read gets a moving bar with no number,
+   which is the honest picture of "we do not know yet". */
+
+const STAGES = [["upload","Uploading"],["register","Filing"],["read","Reading"]];
+
+function readFrac(P){
+  if(!P.typical || !P.t0) return null;
+  return Math.min(0.92, (Date.now() - P.t0) / P.typical);
+}
+function secs(ms){ return Math.max(0, Math.round(ms/1000)); }
+
+function progressHTML(){
+  const P = draft && draft.prog; if(!P) return "";
+  const si = STAGES.findIndex(x => x[0] === P.stage);
+  /* This page's own share of one page: upload is the long part on a phone,
+     the read is the long part on a laptop, so they get similar weight. */
+  const own = si < 0 ? 0 : si === 0 ? 0.40 * (P.up || 0)
+            : si === 1 ? 0.45
+            : 0.50 + 0.50 * (readFrac(P) === null ? 0 : readFrac(P));
+  const overall = P.n ? Math.min(99, Math.round(((P.i + own) / P.n) * 100)) : 0;
+
+  let detail = "", ind = false;
+  if(si === 0) detail = Math.round((P.up || 0) * 100) + "% sent";
+  else if(si === 1) detail = "a moment";
+  else {
+    const f = readFrac(P), el = secs(Date.now() - P.t0);
+    if(f === null){ ind = true; detail = el + "s so far \u2014 first page on this device, so there is nothing to compare it to yet"; }
+    else if(f >= 0.92) detail = el + "s \u2014 longer than the usual " + secs(P.typical) + "s, still reading";
+    else detail = el + "s of about " + secs(P.typical) + "s";
+  }
+
+  return '<div class="callout c-blue" style="margin-bottom:var(--s4)">'+
+    '<div class="row" style="justify-content:space-between;align-items:baseline">'+
+      '<div class="kick">'+(P.n>1 ? 'Page '+(P.i+1)+' of '+P.n : 'Working')+'</div>'+
+      '<div class="cap num">'+overall+'%</div></div>'+
+    '<div class="pbar"><i style="width:'+overall+'%"></i></div>'+
+    '<div class="stg">'+STAGES.map(function(x,k){
+        return '<b class="'+(k<si?"did":k===si?"on":"")+'">'+x[1]+'</b>'; }).join("")+'</div>'+
+    '<p class="cap" style="margin-top:var(--s2)">'+esc(detail)+'</p>'+
+    (ind ? '<div class="pbar ind"><i></i></div>' : '')+
+    '</div>';
+}
+
+let progTimer = null;
+function paintProg(){
+  /* Discarding the report mid-read leaves the ticker with nothing to draw,
+     so it stops itself rather than firing four times a second forever. */
+  if(!draft || !draft.prog){ progTick(false); return; }
+  const host = document.getElementById("progHost");
+  if(host) host.innerHTML = progressHTML();
+}
+function progTick(on){
+  if(on && !progTimer) progTimer = setInterval(paintProg, 300);
+  if(!on && progTimer){ clearInterval(progTimer); progTimer = null; }
+}
+
 /* Every page goes to the extractor; nothing is read in this browser. */
 async function readQueue(pending){
+  draft.prog = {n: pending.length, i: 0, stage: "", up: 0, t0: 0, typical: typicalRead()};
+  draft.busy = " ";
+  render(); progTick(true);
   for(let i = 0; i < pending.length; i++){
     const p = pending[i];
     if(!p.entry) continue;
-    const where = pending.length > 1 ? " (" + (i+1) + " of " + pending.length + ")" : "";
+    draft.prog.i = i;
     try{
-      const res = await extractViaVitals(p.file, msg => {
-        draft.busy = msg + where + "\u2026";
-        const el = document.getElementById("busyline"); if(el) el.textContent = draft.busy;
-        render();
+      const res = await extractViaVitals(p.file, (stage, frac) => {
+        const P = draft.prog; if(!P) return;
+        if(stage !== P.stage){ P.stage = stage; P.t0 = Date.now(); }
+        if(stage === "upload") P.up = frac || 0;
+        paintProg();
       });
       const rows = rowsFromVitals(res.rows, p.name);
       draft.rows = draft.rows.concat(rows);
@@ -2259,6 +2367,8 @@ async function readQueue(pending){
     }
     render();
   }
+  progTick(false);
+  draft.prog = null;
   draft.busy = "";
   render();
 }
