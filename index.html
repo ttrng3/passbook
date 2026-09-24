@@ -273,17 +273,17 @@ const esc = s => String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&
    u  = canonical unit · alt = [displayUnit, multiply-by-this-to-reach-canonical]
    syn = names seen on Vietnamese and English reports, lowercased, accent-free */
 const C = {
- glucose_fasting:{n:"Glucose (fasting)",u:"mmol/L",g:"Metabolic",alt:[["mg/dL",1/18.016]],syn:["glucose","duong huyet","glucose mau","glu","duong mau","blood glucose","fasting glucose"]},
- hba1c_dcct:{n:"HbA1c",u:"%",g:"Metabolic",syn:["hba1c","hb a1c","a1c","hemoglobin a1c","huyet sac to a1c"]},
- hba1c_ifcc:{n:"HbA1c (IFCC)",u:"mmol/mol",g:"Metabolic",syn:["hba1c ifcc"]},
- insulin_fasting:{n:"Insulin (fasting)",u:"pmol/L",g:"Metabolic",alt:[["µIU/mL",6.945]],syn:["insulin","insulin doi"]},
- cholesterol_total:{n:"Cholesterol, total",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["cholesterol toan phan","cholesterol total","cholesterol tp","total cholesterol","cholesterol","chol"]},
- ldl_c:{n:"LDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["ldl","ldl-c","ldl c","ldl cholesterol","ldl - cholesterol"]},
- hdl_c:{n:"HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["hdl","hdl-c","hdl c","hdl cholesterol","hdl - cholesterol"]},
- non_hdl_c:{n:"Non-HDL cholesterol",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/38.67]],syn:["non hdl","non-hdl","non hdl-c"]},
- triglycerides:{n:"Triglycerides",u:"mmol/L",g:"Lipids",alt:[["mg/dL",1/88.57]],syn:["triglycerid","triglyceride","triglycerides","tg","trigly"]},
- apob:{n:"Apolipoprotein B",u:"g/L",g:"Lipids",syn:["apob","apo b","apolipoprotein b"]},
- lpa:{n:"Lipoprotein(a)",u:"nmol/L",g:"Lipids",syn:["lp(a)","lpa","lipoprotein a"]},
+ glucose_fasting:{n:"Glucose (fasting)",u:"mmol/L",g:"Blood sugar",alt:[["mg/dL",1/18.016]],syn:["glucose","duong huyet","glucose mau","glu","duong mau","blood glucose","fasting glucose"]},
+ hba1c_dcct:{n:"HbA1c",u:"%",g:"Blood sugar",syn:["hba1c","hb a1c","a1c","hemoglobin a1c","huyet sac to a1c"]},
+ hba1c_ifcc:{n:"HbA1c (IFCC)",u:"mmol/mol",g:"Blood sugar",syn:["hba1c ifcc"]},
+ insulin_fasting:{n:"Insulin (fasting)",u:"pmol/L",g:"Blood sugar",alt:[["µIU/mL",6.945]],syn:["insulin","insulin doi"]},
+ cholesterol_total:{n:"Cholesterol, total",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["cholesterol toan phan","cholesterol total","cholesterol tp","total cholesterol","cholesterol","chol"]},
+ ldl_c:{n:"LDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["ldl","ldl-c","ldl c","ldl cholesterol","ldl - cholesterol"]},
+ hdl_c:{n:"HDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["hdl","hdl-c","hdl c","hdl cholesterol","hdl - cholesterol"]},
+ non_hdl_c:{n:"Non-HDL cholesterol",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/38.67]],syn:["non hdl","non-hdl","non hdl-c"]},
+ triglycerides:{n:"Triglycerides",u:"mmol/L",g:"Cholesterol",alt:[["mg/dL",1/88.57]],syn:["triglycerid","triglyceride","triglycerides","tg","trigly"]},
+ apob:{n:"Apolipoprotein B",u:"g/L",g:"Cholesterol",syn:["apob","apo b","apolipoprotein b"]},
+ lpa:{n:"Lipoprotein(a)",u:"nmol/L",g:"Cholesterol",syn:["lp(a)","lpa","lipoprotein a"]},
  alt:{n:"ALT",u:"U/L",g:"Liver",syn:["alt","sgpt","alt (gpt)","gpt","alt/sgpt","alanin aminotransferase"]},
  ast:{n:"AST",u:"U/L",g:"Liver",syn:["ast","sgot","ast (got)","got","ast/sgot","aspartat aminotransferase"]},
  ggt:{n:"GGT",u:"U/L",g:"Liver",syn:["ggt","gamma gt","gamma-gt","g-gt"]},
@@ -319,12 +319,12 @@ const C = {
  urine_leukocytes:{n:"Leukocytes (urine)",u:"",g:"Urine",q:true,syn:["bach cau nieu","leukocyte esterase"]},
  urine_specific_gravity:{n:"Specific gravity (urine)",u:"ratio",g:"Urine",syn:["ty trong","ti trong","specific gravity","sg nieu"]},
  urine_ph:{n:"pH (urine)",u:"pH",g:"Urine",syn:["ph nieu","ph nuoc tieu"]},
- sodium:{n:"Sodium",u:"mmol/L",g:"Electrolytes",syn:["natri","sodium","na","na+"]},
- potassium:{n:"Potassium",u:"mmol/L",g:"Electrolytes",syn:["kali","potassium","k","k+"]},
- chloride:{n:"Chloride",u:"mmol/L",g:"Electrolytes",syn:["clo","chloride","cl","cl-"]},
- calcium:{n:"Calcium",u:"mmol/L",g:"Electrolytes",alt:[["mg/dL",0.2495]],syn:["canxi","calcium","ca","ca toan phan","calci"]},
- phosphate:{n:"Phosphate",u:"mmol/L",g:"Electrolytes",syn:["phospho","phosphate","photpho"]},
- magnesium:{n:"Magnesium",u:"mmol/L",g:"Electrolytes",syn:["magie","magnesium","mg"]},
+ sodium:{n:"Sodium",u:"mmol/L",g:"Salts & minerals",syn:["natri","sodium","na","na+"]},
+ potassium:{n:"Potassium",u:"mmol/L",g:"Salts & minerals",syn:["kali","potassium","k","k+"]},
+ chloride:{n:"Chloride",u:"mmol/L",g:"Salts & minerals",syn:["clo","chloride","cl","cl-"]},
+ calcium:{n:"Calcium",u:"mmol/L",g:"Salts & minerals",alt:[["mg/dL",0.2495]],syn:["canxi","calcium","ca","ca toan phan","calci"]},
+ phosphate:{n:"Phosphate",u:"mmol/L",g:"Salts & minerals",syn:["phospho","phosphate","photpho"]},
+ magnesium:{n:"Magnesium",u:"mmol/L",g:"Salts & minerals",syn:["magie","magnesium","mg"]},
  tsh:{n:"TSH",u:"mIU/L",g:"Thyroid",syn:["tsh","tsh sieu nhay"]},
  free_t4:{n:"Free T4",u:"pmol/L",g:"Thyroid",alt:[["ng/dL",12.87]],syn:["ft4","free t4","t4 tu do"]},
  free_t3:{n:"Free T3",u:"pmol/L",g:"Thyroid",alt:[["pg/mL",1.536]],syn:["ft3","free t3","t3 tu do"]},
@@ -358,37 +358,37 @@ const C = {
  crp:{n:"CRP",u:"mg/L",g:"Inflammation",syn:["crp"]},
  hscrp:{n:"hs-CRP",u:"mg/L",g:"Inflammation",syn:["hs-crp","hscrp","crp sieu nhay","hs crp"]},
  esr:{n:"ESR",u:"mm/h",g:"Inflammation",syn:["esr","mau lang","toc do mau lang","vss"]},
- hbsag:{n:"HBsAg",u:"index",g:"Serology",syn:["hbsag","hbs ag"]},
- anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Serology",syn:["anti-hbs","antihbs","anti hbs"]},
- anti_hcv:{n:"Anti-HCV",u:"index",g:"Serology",syn:["anti-hcv","anti hcv","hcv ab"]},
- anti_hav:{n:"Anti-HAV",u:"index",g:"Serology",syn:["anti-hav","anti hav"]},
- psa:{n:"PSA",u:"ng/mL",g:"Tumour markers",syn:["psa total","psa","psa toan phan","total psa"]},
- cea:{n:"CEA",u:"ng/mL",g:"Tumour markers",syn:["cea"]},
- ca19_9:{n:"CA 19-9",u:"U/mL",g:"Tumour markers",syn:["ca 19-9","ca19-9","ca19 9"]},
- afp:{n:"AFP",u:"ng/mL",g:"Tumour markers",syn:["afp"]},
- cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Tumour markers",syn:["cyfra","cyfra 21-1"]},
- scc:{n:"SCC",u:"ng/mL",g:"Tumour markers",syn:["scc"]},
- ca72_4:{n:"CA 72-4",u:"U/mL",g:"Tumour markers",syn:["ca 72-4","ca72-4","ca 72 - 4","cancer antigen 72-4"]},
+ hbsag:{n:"HBsAg",u:"index",g:"Infections",syn:["hbsag","hbs ag"]},
+ anti_hbs:{n:"Anti-HBs",u:"mIU/mL",g:"Infections",syn:["anti-hbs","antihbs","anti hbs"]},
+ anti_hcv:{n:"Anti-HCV",u:"index",g:"Infections",syn:["anti-hcv","anti hcv","hcv ab"]},
+ anti_hav:{n:"Anti-HAV",u:"index",g:"Infections",syn:["anti-hav","anti hav"]},
+ psa:{n:"PSA",u:"ng/mL",g:"Cancer markers",syn:["psa total","psa","psa toan phan","total psa"]},
+ cea:{n:"CEA",u:"ng/mL",g:"Cancer markers",syn:["cea"]},
+ ca19_9:{n:"CA 19-9",u:"U/mL",g:"Cancer markers",syn:["ca 19-9","ca19-9","ca19 9"]},
+ afp:{n:"AFP",u:"ng/mL",g:"Cancer markers",syn:["afp"]},
+ cyfra_21_1:{n:"CYFRA 21-1",u:"ng/mL",g:"Cancer markers",syn:["cyfra","cyfra 21-1"]},
+ scc:{n:"SCC",u:"ng/mL",g:"Cancer markers",syn:["scc"]},
+ ca72_4:{n:"CA 72-4",u:"U/mL",g:"Cancer markers",syn:["ca 72-4","ca72-4","ca 72 - 4","cancer antigen 72-4"]},
  vit_d_25oh:{n:"Vitamin D (25-OH)",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.496]],syn:["vitamin d","25-oh vitamin d","25 oh vitamin d","vit d","vitamin d toan phan","25(oh)d"]},
  vit_b12:{n:"Vitamin B12",u:"pmol/L",g:"Vitamins",alt:[["pg/mL",0.738]],syn:["vitamin b12","b12","vit b12"]},
  ferritin:{n:"Ferritin",u:"µg/L",g:"Vitamins",syn:["ferritin"]},
  folate:{n:"Folate",u:"nmol/L",g:"Vitamins",alt:[["ng/mL",2.266]],syn:["folate","acid folic","folic acid"]},
- bp_systolic:{n:"Blood pressure, systolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam thu","systolic","sbp","huyet ap toi da"]},
- bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vitals",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
- heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vitals",syn:["mach","nhip tim","heart rate","pulse","hr"]},
- hrv_avg:{n:"HRV",u:"ms",g:"Vitals",syn:["hrv"]},
+ bp_systolic:{n:"Blood pressure, systolic",u:"mmHg",g:"Vital signs",syn:["huyet ap tam thu","systolic","sbp","huyet ap toi da"]},
+ bp_diastolic:{n:"Blood pressure, diastolic",u:"mmHg",g:"Vital signs",syn:["huyet ap tam truong","diastolic","dbp","huyet ap toi thieu"]},
+ heart_rate_resting:{n:"Resting heart rate",u:"bpm",g:"Vital signs",syn:["mach","nhip tim","heart rate","pulse","hr"]},
+ hrv_avg:{n:"HRV",u:"ms",g:"Vital signs",syn:["hrv"]},
  /* A health assessment reports these as words -- "Within normal limit",
     "6/6" -- which is exactly what q:true is for. Each carries the expected
     reading off its own report; nothing is assumed about what normal is. */
- ecg_finding:{n:"ECG",u:"",g:"Vitals",q:true,self:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
- visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vitals",q:true,self:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
- visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vitals",q:true,self:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
- weight_kg:{n:"Weight",u:"kg",g:"Body & composition",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
- height_cm:{n:"Height",u:"cm",g:"Body & composition",alt:[["in",2.54]],syn:["chieu cao","height"]},
- bmi:{n:"BMI",u:"kg/m²",g:"Body & composition",syn:["bmi","chi so khoi co the","body mass index"]},
- body_fat_pct:{n:"Body fat",u:"%",g:"Body & composition",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
- visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body & composition",syn:["mo noi tang","visceral fat"]},
- waist_cm:{n:"Waist",u:"cm",g:"Body & composition",alt:[["in",2.54]],syn:["vong eo","waist"]},
+ ecg_finding:{n:"ECG",u:"",g:"Vital signs",q:true,self:true,syn:["ecg","ekg","electrocardiogram","dien tam do","ecg comments"]},
+ visual_acuity_right:{n:"Vision, right eye",u:"",g:"Vital signs",q:true,self:true,syn:["right eye","visual acuity right","thi luc mat phai"]},
+ visual_acuity_left:{n:"Vision, left eye",u:"",g:"Vital signs",q:true,self:true,syn:["left eye","visual acuity left","thi luc mat trai"]},
+ weight_kg:{n:"Weight",u:"kg",g:"Body",alt:[["lb",0.4536]],syn:["can nang","weight","trong luong"]},
+ height_cm:{n:"Height",u:"cm",g:"Body",alt:[["in",2.54]],syn:["chieu cao","height"]},
+ bmi:{n:"BMI",u:"kg/m²",g:"Body",syn:["bmi","chi so khoi co the","body mass index"]},
+ body_fat_pct:{n:"Body fat",u:"%",g:"Body",syn:["ty le mo","body fat percentage","body fat","mo co the"]},
+ visceral_fat_cm2:{n:"Visceral fat",u:"cm²",g:"Body",syn:["mo noi tang","visceral fat"]},
+ waist_cm:{n:"Waist",u:"cm",g:"Body",alt:[["in",2.54]],syn:["vong eo","waist"]},
  /* An InBody sheet: body water and its two compartments, protein and mineral
     mass, fat and lean mass whole-body and per limb. Worth storing as series
     because skeletal muscle falling while fat mass rises, at an unchanged
@@ -397,49 +397,49 @@ const C = {
     "Protein" is NOT a synonym here -- it already means a serum total protein
     and a urine protein. The section heading is what tells them apart, and
     that lives in the alias table, not in this list. */
- total_body_water:{n:"Total body water",u:"L",g:"Body & composition",syn:["total body water","tbw","tong luong nuoc co the"]},
- intracellular_water:{n:"Water inside cells",u:"L",g:"Body & composition",syn:["intracellular water","icw"]},
- extracellular_water:{n:"Water outside cells",u:"L",g:"Body & composition",syn:["extracellular water","ecw"]},
- ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body & composition",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
- protein_mass:{n:"Protein mass",u:"kg",g:"Body & composition",syn:["protein mass"]},
- mineral_mass:{n:"Minerals",u:"kg",g:"Body & composition",syn:["minerals","mineral","chat khoang"]},
- body_fat_mass:{n:"Fat mass",u:"kg",g:"Body & composition",syn:["body fat mass","bfm","khoi luong mo"]},
- soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body & composition",syn:["soft lean mass","slm"]},
- fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body & composition",syn:["fat free mass","fat-free mass","ffm"]},
- skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body & composition",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
- body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body & composition",syn:["body cell mass","bcm"]},
- smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body & composition",syn:["smi","skeletal muscle index"]},
- bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body & composition",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
- waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body & composition",syn:["waist-hip ratio","whr","ty le eo hong"]},
- phase_angle:{n:"Phase angle",u:"°",g:"Body & composition",syn:["phase angle","whole body phase angle"]},
- inbody_score:{n:"InBody score",u:"points",g:"Body & composition",syn:["inbody score","inbody points"]},
+ total_body_water:{n:"Total body water",u:"L",g:"Body",syn:["total body water","tbw","tong luong nuoc co the"]},
+ intracellular_water:{n:"Water inside cells",u:"L",g:"Body",syn:["intracellular water","icw"]},
+ extracellular_water:{n:"Water outside cells",u:"L",g:"Body",syn:["extracellular water","ecw"]},
+ ecw_tbw_ratio:{n:"ECW ratio",u:"ratio",g:"Body",syn:["ecw ratio","ecw/tbw","ecw/tbw ratio"]},
+ protein_mass:{n:"Protein mass",u:"kg",g:"Body",syn:["protein mass"]},
+ mineral_mass:{n:"Minerals",u:"kg",g:"Body",syn:["minerals","mineral","chat khoang"]},
+ body_fat_mass:{n:"Fat mass",u:"kg",g:"Body",syn:["body fat mass","bfm","khoi luong mo"]},
+ soft_lean_mass:{n:"Soft lean mass",u:"kg",g:"Body",syn:["soft lean mass","slm"]},
+ fat_free_mass:{n:"Fat-free mass",u:"kg",g:"Body",syn:["fat free mass","fat-free mass","ffm"]},
+ skeletal_muscle_mass:{n:"Skeletal muscle",u:"kg",g:"Body",syn:["skeletal muscle mass","smm","khoi luong co xuong"]},
+ body_cell_mass:{n:"Body cell mass",u:"kg",g:"Body",syn:["body cell mass","bcm"]},
+ smi:{n:"Skeletal muscle index",u:"kg/m²",g:"Body",syn:["smi","skeletal muscle index"]},
+ bmr:{n:"Basal metabolic rate",u:"kcal",g:"Body",syn:["basal metabolic rate","bmr","ty le trao doi chat co ban"]},
+ waist_hip_ratio:{n:"Waist–hip ratio",u:"ratio",g:"Body",syn:["waist-hip ratio","whr","ty le eo hong"]},
+ phase_angle:{n:"Phase angle",u:"°",g:"Body",syn:["phase angle","whole body phase angle"]},
+ inbody_score:{n:"InBody score",u:"points",g:"Body",syn:["inbody score","inbody points"]},
  /* One name, three measurements: an arm has a lean mass, a fat mass and an
     ECW ratio, all printed as "Right Arm" on the same page. */
- lean_right_arm:{n:"Lean mass, right arm",u:"kg",g:"Segmental",syn:["lean right arm"]},
- lean_pct_right_arm:{n:"Lean, right arm (of ideal)",u:"%",g:"Segmental",syn:[]},
- fat_right_arm:{n:"Fat mass, right arm",u:"kg",g:"Segmental",syn:["fat right arm"]},
- fat_pct_right_arm:{n:"Fat, right arm (of ideal)",u:"%",g:"Segmental",syn:[]},
- ecw_right_arm:{n:"ECW ratio, right arm",u:"ratio",g:"Segmental",syn:["ecw ratio right arm"]},
- lean_left_arm:{n:"Lean mass, left arm",u:"kg",g:"Segmental",syn:["lean left arm"]},
- lean_pct_left_arm:{n:"Lean, left arm (of ideal)",u:"%",g:"Segmental",syn:[]},
- fat_left_arm:{n:"Fat mass, left arm",u:"kg",g:"Segmental",syn:["fat left arm"]},
- fat_pct_left_arm:{n:"Fat, left arm (of ideal)",u:"%",g:"Segmental",syn:[]},
- ecw_left_arm:{n:"ECW ratio, left arm",u:"ratio",g:"Segmental",syn:["ecw ratio left arm"]},
- lean_trunk:{n:"Lean mass, trunk",u:"kg",g:"Segmental",syn:["lean trunk"]},
- lean_pct_trunk:{n:"Lean, trunk (of ideal)",u:"%",g:"Segmental",syn:[]},
- fat_trunk:{n:"Fat mass, trunk",u:"kg",g:"Segmental",syn:["fat trunk"]},
- fat_pct_trunk:{n:"Fat, trunk (of ideal)",u:"%",g:"Segmental",syn:[]},
- ecw_trunk:{n:"ECW ratio, trunk",u:"ratio",g:"Segmental",syn:["ecw ratio trunk"]},
- lean_right_leg:{n:"Lean mass, right leg",u:"kg",g:"Segmental",syn:["lean right leg"]},
- lean_pct_right_leg:{n:"Lean, right leg (of ideal)",u:"%",g:"Segmental",syn:[]},
- fat_right_leg:{n:"Fat mass, right leg",u:"kg",g:"Segmental",syn:["fat right leg"]},
- fat_pct_right_leg:{n:"Fat, right leg (of ideal)",u:"%",g:"Segmental",syn:[]},
- ecw_right_leg:{n:"ECW ratio, right leg",u:"ratio",g:"Segmental",syn:["ecw ratio right leg"]},
- lean_left_leg:{n:"Lean mass, left leg",u:"kg",g:"Segmental",syn:["lean left leg"]},
- lean_pct_left_leg:{n:"Lean, left leg (of ideal)",u:"%",g:"Segmental",syn:[]},
- fat_left_leg:{n:"Fat mass, left leg",u:"kg",g:"Segmental",syn:["fat left leg"]},
- fat_pct_left_leg:{n:"Fat, left leg (of ideal)",u:"%",g:"Segmental",syn:[]},
- ecw_left_leg:{n:"ECW ratio, left leg",u:"ratio",g:"Segmental",syn:["ecw ratio left leg"]},
+ lean_right_arm:{n:"Lean mass, right arm",u:"kg",g:"Body, limb by limb",syn:["lean right arm"]},
+ lean_pct_right_arm:{n:"Lean, right arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_right_arm:{n:"Fat mass, right arm",u:"kg",g:"Body, limb by limb",syn:["fat right arm"]},
+ fat_pct_right_arm:{n:"Fat, right arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_right_arm:{n:"ECW ratio, right arm",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio right arm"]},
+ lean_left_arm:{n:"Lean mass, left arm",u:"kg",g:"Body, limb by limb",syn:["lean left arm"]},
+ lean_pct_left_arm:{n:"Lean, left arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_left_arm:{n:"Fat mass, left arm",u:"kg",g:"Body, limb by limb",syn:["fat left arm"]},
+ fat_pct_left_arm:{n:"Fat, left arm (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_left_arm:{n:"ECW ratio, left arm",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio left arm"]},
+ lean_trunk:{n:"Lean mass, trunk",u:"kg",g:"Body, limb by limb",syn:["lean trunk"]},
+ lean_pct_trunk:{n:"Lean, trunk (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_trunk:{n:"Fat mass, trunk",u:"kg",g:"Body, limb by limb",syn:["fat trunk"]},
+ fat_pct_trunk:{n:"Fat, trunk (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_trunk:{n:"ECW ratio, trunk",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio trunk"]},
+ lean_right_leg:{n:"Lean mass, right leg",u:"kg",g:"Body, limb by limb",syn:["lean right leg"]},
+ lean_pct_right_leg:{n:"Lean, right leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_right_leg:{n:"Fat mass, right leg",u:"kg",g:"Body, limb by limb",syn:["fat right leg"]},
+ fat_pct_right_leg:{n:"Fat, right leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_right_leg:{n:"ECW ratio, right leg",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio right leg"]},
+ lean_left_leg:{n:"Lean mass, left leg",u:"kg",g:"Body, limb by limb",syn:["lean left leg"]},
+ lean_pct_left_leg:{n:"Lean, left leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ fat_left_leg:{n:"Fat mass, left leg",u:"kg",g:"Body, limb by limb",syn:["fat left leg"]},
+ fat_pct_left_leg:{n:"Fat, left leg (of ideal)",u:"%",g:"Body, limb by limb",syn:[]},
+ ecw_left_leg:{n:"ECW ratio, left leg",u:"ratio",g:"Body, limb by limb",syn:["ecw ratio left leg"]},
  /* ---- a comprehensive annual examination, seeded in advance ----------
     Generated with migration 0016 from one shared list, so the two cannot
     drift apart. The point is to stop discovering the panel one report at a
@@ -464,23 +464,23 @@ const C = {
  nrbc_pct:{n:"Nucleated red cells",u:"%",g:"Blood count",syn:["nrbc","nrbc%"]},
  blood_group_abo:{n:"Blood group",u:"",g:"Blood count",q:true,fact:true,syn:["abo","nhom mau","nhom mau abo"]},
  rh_factor:{n:"Rh factor",u:"",g:"Blood count",q:true,fact:true,syn:["rh","rh(d)","yeu to rh"]},
- iron_serum:{n:"Iron",u:"µmol/L",g:"Iron studies",syn:["fe","sat","sat huyet thanh","serum iron"]},
- tibc:{n:"Iron binding capacity",u:"µmol/L",g:"Iron studies",syn:["kha nang gan sat toan phan","tibc","total iron binding capacity"]},
- transferrin:{n:"Transferrin",u:"g/L",g:"Iron studies",syn:[]},
- transferrin_sat:{n:"Transferrin saturation",u:"%",g:"Iron studies",syn:["do bao hoa transferrin","tsat"]},
- haptoglobin:{n:"Haptoglobin",u:"g/L",g:"Iron studies",syn:[]},
- glucose_random:{n:"Glucose (random)",u:"mmol/L",g:"Metabolic",syn:["duong huyet bat ky","random glucose","rbs"]},
- glucose_ogtt_2h:{n:"Glucose (2h after load)",u:"mmol/L",g:"Metabolic",syn:["2-hour glucose","glucose 2h","nghiem phap dung nap glucose","ogtt 2h"]},
- c_peptide:{n:"C-peptide",u:"nmol/L",g:"Metabolic",syn:["c peptid"]},
- homa_ir:{n:"HOMA-IR",u:"index",g:"Metabolic",syn:["homa ir"]},
- fructosamine:{n:"Fructosamine",u:"µmol/L",g:"Metabolic",syn:[]},
- lactate:{n:"Lactate",u:"mmol/L",g:"Metabolic",syn:["acid lactic"]},
- ketone_blood:{n:"Ketones (blood)",u:"mmol/L",g:"Metabolic",syn:["beta-hydroxybutyrate","blood ketone","ceton mau"]},
- apoa1:{n:"Apolipoprotein A1",u:"g/L",g:"Lipids",syn:["apo a1","apoa1"]},
- apob_apoa1_ratio:{n:"ApoB / ApoA1",u:"ratio",g:"Lipids",syn:["apob/a1","apob/apoa1"]},
- chol_hdl_ratio:{n:"Cholesterol / HDL",u:"ratio",g:"Lipids",syn:["chol/hdl","cholesterol/hdl","tc/hdl"]},
- ldl_hdl_ratio:{n:"LDL / HDL",u:"ratio",g:"Lipids",syn:["ldl/hdl"]},
- remnant_chol:{n:"Remnant cholesterol",u:"mmol/L",g:"Lipids",syn:[]},
+ iron_serum:{n:"Iron",u:"µmol/L",g:"Iron",syn:["fe","sat","sat huyet thanh","serum iron"]},
+ tibc:{n:"Iron binding capacity",u:"µmol/L",g:"Iron",syn:["kha nang gan sat toan phan","tibc","total iron binding capacity"]},
+ transferrin:{n:"Transferrin",u:"g/L",g:"Iron",syn:[]},
+ transferrin_sat:{n:"Transferrin saturation",u:"%",g:"Iron",syn:["do bao hoa transferrin","tsat"]},
+ haptoglobin:{n:"Haptoglobin",u:"g/L",g:"Iron",syn:[]},
+ glucose_random:{n:"Glucose (random)",u:"mmol/L",g:"Blood sugar",syn:["duong huyet bat ky","random glucose","rbs"]},
+ glucose_ogtt_2h:{n:"Glucose (2h after load)",u:"mmol/L",g:"Blood sugar",syn:["2-hour glucose","glucose 2h","nghiem phap dung nap glucose","ogtt 2h"]},
+ c_peptide:{n:"C-peptide",u:"nmol/L",g:"Blood sugar",syn:["c peptid"]},
+ homa_ir:{n:"HOMA-IR",u:"index",g:"Blood sugar",syn:["homa ir"]},
+ fructosamine:{n:"Fructosamine",u:"µmol/L",g:"Blood sugar",syn:[]},
+ lactate:{n:"Lactate",u:"mmol/L",g:"Blood sugar",syn:["acid lactic"]},
+ ketone_blood:{n:"Ketones (blood)",u:"mmol/L",g:"Blood sugar",syn:["beta-hydroxybutyrate","blood ketone","ceton mau"]},
+ apoa1:{n:"Apolipoprotein A1",u:"g/L",g:"Cholesterol",syn:["apo a1","apoa1"]},
+ apob_apoa1_ratio:{n:"ApoB / ApoA1",u:"ratio",g:"Cholesterol",syn:["apob/a1","apob/apoa1"]},
+ chol_hdl_ratio:{n:"Cholesterol / HDL",u:"ratio",g:"Cholesterol",syn:["chol/hdl","cholesterol/hdl","tc/hdl"]},
+ ldl_hdl_ratio:{n:"LDL / HDL",u:"ratio",g:"Cholesterol",syn:["ldl/hdl"]},
+ remnant_chol:{n:"Remnant cholesterol",u:"mmol/L",g:"Cholesterol",syn:[]},
  ldh:{n:"LDH",u:"U/L",g:"Liver",syn:["lactate dehydrogenase"]},
  ammonia:{n:"Ammonia",u:"µmol/L",g:"Liver",syn:["amoniac","nh3"]},
  prealbumin:{n:"Prealbumin",u:"g/L",g:"Liver",syn:["tien albumin"]},
@@ -490,9 +490,9 @@ const C = {
  urine_acr:{n:"Albumin / creatinine (urine)",u:"mg/mmol",g:"Urine",syn:["acr","albumin/creatinine ratio","ty le albumin/creatinin nieu","uacr"]},
  urine_creatinine:{n:"Creatinine (urine)",u:"mmol/L",g:"Urine",syn:["creatinin nieu","urine creatinine"]},
  urine_protein_24h:{n:"Protein (24h urine)",u:"g/24h",g:"Urine",syn:["24h urine protein","dam nieu 24 gio","protein nieu 24h"]},
- bicarbonate:{n:"Bicarbonate",u:"mmol/L",g:"Electrolytes",syn:["bicarbonat","co2 total","hco3"]},
- anion_gap:{n:"Anion gap",u:"mmol/L",g:"Electrolytes",syn:["khoang trong anion"]},
- osmolality:{n:"Osmolality",u:"mOsm/kg",g:"Electrolytes",syn:["ap luc tham thau"]},
+ bicarbonate:{n:"Bicarbonate",u:"mmol/L",g:"Salts & minerals",syn:["bicarbonat","co2 total","hco3"]},
+ anion_gap:{n:"Anion gap",u:"mmol/L",g:"Salts & minerals",syn:["khoang trong anion"]},
+ osmolality:{n:"Osmolality",u:"mOsm/kg",g:"Salts & minerals",syn:["ap luc tham thau"]},
  total_t3:{n:"Total T3",u:"nmol/L",g:"Thyroid",syn:["t3","t3 toan phan"]},
  total_t4:{n:"Total T4",u:"nmol/L",g:"Thyroid",syn:["t4","t4 toan phan"]},
  anti_tpo:{n:"Anti-TPO",u:"IU/mL",g:"Thyroid",syn:["anti thyroid peroxidase","khang the khang tpo","tpoab"]},
@@ -522,16 +522,16 @@ const C = {
  nt_probnp:{n:"NT-proBNP",u:"ng/L",g:"Heart",syn:["nt pro bnp","probnp"]},
  homocysteine:{n:"Homocysteine",u:"µmol/L",g:"Heart",syn:["homocystein"]},
  myoglobin:{n:"Myoglobin",u:"µg/L",g:"Heart",syn:[]},
- rheumatoid_factor:{n:"Rheumatoid factor",u:"IU/mL",g:"Immune",syn:["rf","yeu to dang thap"]},
- ana:{n:"ANA",u:"",g:"Immune",q:true,syn:["antinuclear antibody","khang the khang nhan"]},
- anti_ccp:{n:"Anti-CCP",u:"U/mL",g:"Immune",syn:["ccp"]},
- aso:{n:"ASO",u:"IU/mL",g:"Immune",syn:["anti streptolysin o","aslo"]},
- complement_c3:{n:"Complement C3",u:"g/L",g:"Immune",syn:["bo the c3","c3"]},
- complement_c4:{n:"Complement C4",u:"g/L",g:"Immune",syn:["bo the c4","c4"]},
- igg:{n:"IgG",u:"g/L",g:"Immune",syn:[]},
- iga:{n:"IgA",u:"g/L",g:"Immune",syn:[]},
- igm:{n:"IgM",u:"g/L",g:"Immune",syn:[]},
- ige_total:{n:"IgE (total)",u:"IU/mL",g:"Immune",syn:["ige","ige toan phan","total ige"]},
+ rheumatoid_factor:{n:"Rheumatoid factor",u:"IU/mL",g:"Immune system",syn:["rf","yeu to dang thap"]},
+ ana:{n:"ANA",u:"",g:"Immune system",q:true,syn:["antinuclear antibody","khang the khang nhan"]},
+ anti_ccp:{n:"Anti-CCP",u:"U/mL",g:"Immune system",syn:["ccp"]},
+ aso:{n:"ASO",u:"IU/mL",g:"Immune system",syn:["anti streptolysin o","aslo"]},
+ complement_c3:{n:"Complement C3",u:"g/L",g:"Immune system",syn:["bo the c3","c3"]},
+ complement_c4:{n:"Complement C4",u:"g/L",g:"Immune system",syn:["bo the c4","c4"]},
+ igg:{n:"IgG",u:"g/L",g:"Immune system",syn:[]},
+ iga:{n:"IgA",u:"g/L",g:"Immune system",syn:[]},
+ igm:{n:"IgM",u:"g/L",g:"Immune system",syn:[]},
+ ige_total:{n:"IgE (total)",u:"IU/mL",g:"Immune system",syn:["ige","ige toan phan","total ige"]},
  procalcitonin:{n:"Procalcitonin",u:"ng/mL",g:"Inflammation",syn:["pct (procalcitonin)","pro-calcitonin"]},
  anti_hbc:{n:"Anti-HBc",u:"",g:"Infections",q:true,syn:["anti hbc total","hbcab"]},
  hbeag:{n:"HBeAg",u:"",g:"Infections",q:true,syn:["hbe ag"]},
@@ -551,13 +551,13 @@ const C = {
  tb_igra:{n:"TB interferon test",u:"",g:"Infections",q:true,syn:["igra","quantiferon","tb igra"]},
  hbv_dna:{n:"HBV DNA",u:"IU/mL",g:"Infections",syn:["dinh luong hbv dna","hbv-dna"]},
  hcv_rna:{n:"HCV RNA",u:"IU/mL",g:"Infections",syn:["hcv-rna"]},
- psa_free:{n:"PSA (free)",u:"ng/mL",g:"Tumour markers",syn:["fpsa","free psa","psa tu do"]},
- psa_ratio:{n:"PSA free / total",u:"%",g:"Tumour markers",syn:["%fpsa","fpsa/tpsa","psa ratio"]},
- ca125:{n:"CA 125",u:"U/mL",g:"Tumour markers",syn:["ca 12-5","ca125"]},
- ca15_3:{n:"CA 15-3",u:"U/mL",g:"Tumour markers",syn:["ca15-3"]},
- nse:{n:"NSE",u:"ng/mL",g:"Tumour markers",syn:["neuron specific enolase"]},
- he4:{n:"HE4",u:"pmol/L",g:"Tumour markers",syn:[]},
- beta2_microglobulin:{n:"Beta-2 microglobulin",u:"mg/L",g:"Tumour markers",syn:["b2m","beta 2 microglobulin","β2-microglobulin"]},
+ psa_free:{n:"PSA (free)",u:"ng/mL",g:"Cancer markers",syn:["fpsa","free psa","psa tu do"]},
+ psa_ratio:{n:"PSA free / total",u:"%",g:"Cancer markers",syn:["%fpsa","fpsa/tpsa","psa ratio"]},
+ ca125:{n:"CA 125",u:"U/mL",g:"Cancer markers",syn:["ca 12-5","ca125"]},
+ ca15_3:{n:"CA 15-3",u:"U/mL",g:"Cancer markers",syn:["ca15-3"]},
+ nse:{n:"NSE",u:"ng/mL",g:"Cancer markers",syn:["neuron specific enolase"]},
+ he4:{n:"HE4",u:"pmol/L",g:"Cancer markers",syn:[]},
+ beta2_microglobulin:{n:"Beta-2 microglobulin",u:"mg/L",g:"Cancer markers",syn:["b2m","beta 2 microglobulin","β2-microglobulin"]},
  vit_b1:{n:"Vitamin B1",u:"nmol/L",g:"Vitamins",syn:["thiamine"]},
  vit_b6:{n:"Vitamin B6",u:"nmol/L",g:"Vitamins",syn:["pyridoxine"]},
  vit_a:{n:"Vitamin A",u:"µmol/L",g:"Vitamins",syn:["retinol"]},
@@ -577,48 +577,48 @@ const C = {
  stool_occult_blood:{n:"Occult blood (stool)",u:"",g:"Stool",q:true,syn:["fit","fobt","hong cau an trong phan","occult blood"]},
  stool_parasites:{n:"Parasites (stool)",u:"",g:"Stool",q:true,syn:["ky sinh trung duong ruot","soi phan","stool parasites"]},
  stool_wbc:{n:"White cells (stool)",u:"",g:"Stool",q:true,syn:["bach cau phan","stool wbc"]},
- chest_xray:{n:"Chest X-ray",u:"",g:"Scans & imaging",q:true,self:true,syn:["cxr","x quang tim phoi","x-quang nguc"]},
- abdominal_us:{n:"Abdominal ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am bung","sieu am o bung"]},
- thyroid_us:{n:"Thyroid ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tuyen giap"]},
- carotid_us:{n:"Carotid ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am dong mach canh"]},
- breast_us:{n:"Breast ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tuyen vu"]},
- pelvic_us:{n:"Pelvic ultrasound",u:"",g:"Scans & imaging",q:true,self:true,syn:["sieu am tu cung phan phu"]},
- echocardiogram:{n:"Echocardiogram",u:"",g:"Scans & imaging",q:true,self:true,syn:["echo","sieu am tim"]},
- mammogram:{n:"Mammogram",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup nhu anh","mammography"]},
- pap_smear:{n:"Pap smear",u:"",g:"Scans & imaging",q:true,self:true,syn:["pap","phet te bao co tu cung"]},
- gastroscopy:{n:"Gastroscopy",u:"",g:"Scans & imaging",q:true,self:true,syn:["noi soi da day","noi soi thuc quan da day"]},
- colonoscopy:{n:"Colonoscopy",u:"",g:"Scans & imaging",q:true,self:true,syn:["noi soi dai trang"]},
- ct_scan:{n:"CT scan",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup cat lop","ct"]},
- mri_scan:{n:"MRI",u:"",g:"Scans & imaging",q:true,self:true,syn:["chup cong huong tu"]},
- bone_density_t:{n:"Bone density (T-score)",u:"T-score",g:"Scans & imaging",syn:["dxa t-score","mat do xuong t-score","t score","t-score"]},
- bone_density_z:{n:"Bone density (Z-score)",u:"Z-score",g:"Scans & imaging",syn:["dxa z-score","z score","z-score"]},
- fev1:{n:"FEV1",u:"L",g:"Function tests",syn:["fev 1"]},
- fvc:{n:"FVC",u:"L",g:"Function tests",syn:[]},
- fev1_fvc:{n:"FEV1 / FVC",u:"%",g:"Function tests",syn:["chi so gaensler","fev1/fvc"]},
- pef:{n:"Peak flow",u:"L/min",g:"Function tests",syn:["peak expiratory flow","pef"]},
- audiometry:{n:"Hearing test",u:"",g:"Function tests",q:true,self:true,syn:["audiometry","do thinh luc"]},
- iop_right:{n:"Eye pressure, right",u:"mmHg",g:"Function tests",syn:["iop od","iop right","nhan ap mat phai"]},
- iop_left:{n:"Eye pressure, left",u:"mmHg",g:"Function tests",syn:["iop left","iop os","nhan ap mat trai"]},
- grip_strength:{n:"Grip strength",u:"kg",g:"Function tests",syn:["handgrip","luc nam tay"]},
- vo2max:{n:"VO2 max",u:"mL/kg/min",g:"Function tests",syn:["vo2max"]},
- temperature_c:{n:"Temperature",u:"°C",g:"Vitals",syn:["body temperature","nhiet do"]},
- spo2:{n:"Oxygen saturation",u:"%",g:"Vitals",syn:["do bao hoa oxy","spo2"]},
- respiratory_rate:{n:"Breathing rate",u:"/min",g:"Vitals",syn:["nhip tho","respiratory rate","rr"]},
- hip_cm:{n:"Hip",u:"cm",g:"Body & composition",syn:["hip circumference","vong hong","vong mong"]},
+ chest_xray:{n:"Chest X-ray",u:"",g:"Scans",q:true,self:true,syn:["cxr","x quang tim phoi","x-quang nguc"]},
+ abdominal_us:{n:"Abdominal ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am bung","sieu am o bung"]},
+ thyroid_us:{n:"Thyroid ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tuyen giap"]},
+ carotid_us:{n:"Carotid ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am dong mach canh"]},
+ breast_us:{n:"Breast ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tuyen vu"]},
+ pelvic_us:{n:"Pelvic ultrasound",u:"",g:"Scans",q:true,self:true,syn:["sieu am tu cung phan phu"]},
+ echocardiogram:{n:"Echocardiogram",u:"",g:"Scans",q:true,self:true,syn:["echo","sieu am tim"]},
+ mammogram:{n:"Mammogram",u:"",g:"Scans",q:true,self:true,syn:["chup nhu anh","mammography"]},
+ pap_smear:{n:"Pap smear",u:"",g:"Scans",q:true,self:true,syn:["pap","phet te bao co tu cung"]},
+ gastroscopy:{n:"Gastroscopy",u:"",g:"Scans",q:true,self:true,syn:["noi soi da day","noi soi thuc quan da day"]},
+ colonoscopy:{n:"Colonoscopy",u:"",g:"Scans",q:true,self:true,syn:["noi soi dai trang"]},
+ ct_scan:{n:"CT scan",u:"",g:"Scans",q:true,self:true,syn:["chup cat lop","ct"]},
+ mri_scan:{n:"MRI",u:"",g:"Scans",q:true,self:true,syn:["chup cong huong tu"]},
+ bone_density_t:{n:"Bone density (T-score)",u:"T-score",g:"Scans",syn:["dxa t-score","mat do xuong t-score","t score","t-score"]},
+ bone_density_z:{n:"Bone density (Z-score)",u:"Z-score",g:"Scans",syn:["dxa z-score","z score","z-score"]},
+ fev1:{n:"FEV1",u:"L",g:"Breathing, hearing & sight",syn:["fev 1"]},
+ fvc:{n:"FVC",u:"L",g:"Breathing, hearing & sight",syn:[]},
+ fev1_fvc:{n:"FEV1 / FVC",u:"%",g:"Breathing, hearing & sight",syn:["chi so gaensler","fev1/fvc"]},
+ pef:{n:"Peak flow",u:"L/min",g:"Breathing, hearing & sight",syn:["peak expiratory flow","pef"]},
+ audiometry:{n:"Hearing test",u:"",g:"Breathing, hearing & sight",q:true,self:true,syn:["audiometry","do thinh luc"]},
+ iop_right:{n:"Eye pressure, right",u:"mmHg",g:"Breathing, hearing & sight",syn:["iop od","iop right","nhan ap mat phai"]},
+ iop_left:{n:"Eye pressure, left",u:"mmHg",g:"Breathing, hearing & sight",syn:["iop left","iop os","nhan ap mat trai"]},
+ grip_strength:{n:"Grip strength",u:"kg",g:"Breathing, hearing & sight",syn:["handgrip","luc nam tay"]},
+ vo2max:{n:"VO2 max",u:"mL/kg/min",g:"Breathing, hearing & sight",syn:["vo2max"]},
+ temperature_c:{n:"Temperature",u:"°C",g:"Vital signs",syn:["body temperature","nhiet do"]},
+ spo2:{n:"Oxygen saturation",u:"%",g:"Vital signs",syn:["do bao hoa oxy","spo2"]},
+ respiratory_rate:{n:"Breathing rate",u:"/min",g:"Vital signs",syn:["nhip tho","respiratory rate","rr"]},
+ hip_cm:{n:"Hip",u:"cm",g:"Body",syn:["hip circumference","vong hong","vong mong"]},
  /* The device's own targets. Recording the number a machine printed is
     recording, not advising -- but they carry no reference range and never
     will, so they show as facts on file rather than as readings missing one. */
- target_weight:{n:"Target weight (device)",u:"kg",g:"Body & composition",fact:true,syn:["target weight","can nang muc tieu"]},
- weight_control:{n:"Weight to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["weight control"]},
- fat_control:{n:"Fat to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["fat control"]},
- muscle_control:{n:"Muscle to change (device)",u:"kg",g:"Body & composition",fact:true,syn:["muscle control"]},
+ target_weight:{n:"Target weight (device)",u:"kg",g:"Body",fact:true,syn:["target weight","can nang muc tieu"]},
+ weight_control:{n:"Weight to change (device)",u:"kg",g:"Body",fact:true,syn:["weight control"]},
+ fat_control:{n:"Fat to change (device)",u:"kg",g:"Body",fact:true,syn:["fat control"]},
+ muscle_control:{n:"Muscle to change (device)",u:"kg",g:"Body",fact:true,syn:["muscle control"]},
  sleep_hours:{n:"Sleep",u:"h",g:"Lifestyle",syn:["sleep","gio ngu"]},
  steps_daily:{n:"Steps",u:"steps/day",g:"Lifestyle",syn:["steps","so buoc"]}
 };
 /* A general check-up panel: the things worth looking for on your own reports.
    It is a checklist, not a recommendation about which tests you need -- that is
    a conversation with a doctor. Edit it freely in Settings. */
-const DEFAULT_PANEL = [
+const DEFAULT_PANEL_OLD = [
   "bp_systolic","bp_diastolic","heart_rate_resting",
   "glucose_fasting","hba1c_dcct",
   "bmi","body_fat_pct","visceral_fat_cm2",
@@ -654,6 +654,7 @@ const DEFAULT_PANEL = [
   "chest_xray","abdominal_us","thyroid_us","echocardiogram",
   "fev1_fvc","iop_right","iop_left"
 ];
+
 /* Two pairs read as one measurement on a report and are shown as one card,
    while staying two rows in the data — the contract never pre-joins codes. */
 const PAIRS = {bp_systolic:{mate:"bp_diastolic", label:"Blood pressure", sep:"/"},
@@ -694,11 +695,71 @@ function icon(code){
   const g = ICON[CODE_ICON[code] || "ring"];
   return '<svg viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" style="flex:none;vertical-align:-2px;color:var(--ink-muted)">'+g+'</svg>';
 }
-const GROUPS = ["Vitals","Body & composition","Segmental",
-  "Metabolic","Lipids","Liver","Kidney","Electrolytes","Urine","Stool",
-  "Blood count","Iron studies","Clotting","Thyroid","Hormones","Heart",
-  "Inflammation","Immune","Serology","Infections","Tumour markers","Vitamins",
-  "Scans & imaging","Function tests","Lifestyle","Also on your reports"];
+/* Ordered the way a body is talked about, not the way a laboratory bills. */
+const GROUPS = ["Vital signs","Body","Blood sugar","Cholesterol","Heart",
+  "Kidney","Liver","Salts & minerals","Urine","Stool",
+  "Blood count","Iron","Clotting","Thyroid","Hormones",
+  "Inflammation","Immune system","Infections","Cancer markers","Vitamins",
+  "Scans","Breathing, hearing & sight","Lifestyle",
+  "Body, limb by limb","Secondary","Also on your reports"];
+
+/* ---- what is worth watching, and what is only worth keeping -------------
+
+   CORE is the spine of a US adult annual physical -- the measurements that
+   change what a doctor does next, and that are followed year on year:
+   blood pressure and lipids (ACC/AHA), glucose and HbA1c (ADA), kidney
+   function including the urine albumin ratio (KDIGO), liver enzymes for
+   fatty liver, a blood count, thyroid, and the deficiencies worth catching.
+   These are the check-up list and these are what Trends leads with.
+
+   EXTENDED is clinically real and worth a trend when a report carries it,
+   but is not something to chase a missing value for.
+
+   Everything else is SECONDARY: kept, searchable, never thrown away, but off
+   the checklist and out of the trend board. Almost all of it is one machine
+   describing the same measurement several ways -- an InBody derives soft lean
+   mass, fat-free mass, body cell mass and protein mass from one impedance
+   scan, and twenty-five segmental rows from the same. Tracking five algebraic
+   views of one number is not five pieces of information. */
+
+const CORE = ["bp_systolic","bp_diastolic","heart_rate_resting",
+  "weight_kg","height_cm","bmi","waist_cm","body_fat_pct",
+  "glucose_fasting","hba1c_dcct",
+  "cholesterol_total","ldl_c","hdl_c","triglycerides","non_hdl_c","apob","lpa","hscrp",
+  "creatinine","egfr","urine_acr","uric_acid",
+  "alt","ast",
+  "haemoglobin","wbc","platelets",
+  "tsh","vit_d_25oh","vit_b12","ferritin","sodium","potassium"];
+
+const EXTENDED = ["spo2","hip_cm","waist_hip_ratio","visceral_fat_cm2",
+  "skeletal_muscle_mass","total_body_water","bmr","smi","phase_angle","ecw_tbw_ratio",
+  "insulin_fasting","hba1c_ifcc","glucose_ogtt_2h","c_peptide",
+  "apoa1","chol_hdl_ratio",
+  "ggt","alp","bilirubin_total","albumin","total_protein","globulin","ldh",
+  "bun","cystatin_c","microalbumin_urine",
+  "calcium","magnesium","phosphate","chloride","bicarbonate",
+  "hematocrit","rbc","mcv","mch","mchc","rdw_cv",
+  "neutrophils_pct","lymphocytes_pct","monocytes_pct","eosinophils_pct","basophils_pct",
+  "blood_group_abo","rh_factor","iron_serum","transferrin_sat",
+  "pt_sec","inr","aptt_sec",
+  "free_t4","free_t3","anti_tpo",
+  "crp","esr","homocysteine","ck",
+  "urine_protein","urine_glucose","urine_blood","urine_leukocytes",
+  "urine_ph","urine_specific_gravity","urine_wbc_hpf","urine_rbc_hpf",
+  "hbsag","anti_hbs","anti_hcv","hiv_ag_ab",
+  "psa","cea","afp","ca19_9",
+  "folate","testosterone_total","cortisol_am",
+  "ecg_finding","chest_xray","abdominal_us","visual_acuity_right","visual_acuity_left",
+  "bone_density_t","fev1_fvc","sleep_hours","steps_daily"];
+
+const TIER = (()=>{ const m = {};
+  CORE.forEach(c=>m[c]="core"); EXTENDED.forEach(c=>{ if(!m[c]) m[c]="ext"; });
+  return m; })();
+function tierOf(code){ return TIER[code] || "sec"; }
+
+/* The checklist is the core set itself. Keeping a second hand-written list
+   beside it is how the two drift. */
+const DEFAULT_PANEL = CORE.slice();
 const BMI_STD = {
   general:{label:"WHO international",cuts:[18.5,25,30],names:["Underweight","Normal","Overweight","Obese"]},
   asian_pacific:{label:"WHO Asian-Pacific",cuts:[18.5,23,27.5],names:["Underweight","Normal","Overweight","Obese"]}
@@ -843,6 +904,49 @@ function specimenOfText(text){
   return /nuoc tieu|urinalysis|urine|urinary/.test(deaccent(String(text||"")).toLowerCase()) ? "urine" : "";
 }
 
+/* The written-out form of every abbreviation this record carries, matching
+   what migration 0017 seeded server-side. The page needs them too: the
+   reader resolves an incoming report, but re-reading a row already SAVED
+   under a made-up name happens here, and a split like "PBF Percent Body Fat"
+   can only be accepted if both halves are known on this side as well.
+
+   The split rule is why these earn their place twice over -- without
+   "percent body fat" there is nothing for "PBF" to agree with, and the row
+   stays stuck under its invented code forever. */
+const WRITTEN_OUT = {
+  bmi:["body mass index"],
+  body_fat_pct:["pbf","percent body fat"],
+  visceral_fat_cm2:["visceral fat area","vfa"],
+  total_body_water:["tbw"], intracellular_water:["icw","intra cellular water"],
+  extracellular_water:["ecw","extra cellular water"],
+  skeletal_muscle_mass:["smm"], body_cell_mass:["bcm"], fat_free_mass:["ffm"],
+  soft_lean_mass:["slm"], body_fat_mass:["bfm"], bmr:["basal metabolic rate"],
+  phase_angle:["whole body phase angle"],
+  wbc:["white blood cell","white blood cells","white blood cell count"],
+  rbc:["red blood cell","red blood cells","red blood cell count"],
+  platelets:["platelet count"],
+  mcv:["mean corpuscular volume"], mch:["mean corpuscular hemoglobin","mean corpuscular haemoglobin"],
+  mchc:["mean corpuscular hemoglobin concentration","mean corpuscular haemoglobin concentration"],
+  rdw_cv:["red cell distribution width"], mpv:["mean platelet volume"],
+  pdw:["platelet distribution width"],
+  alt:["alanine aminotransferase"], ast:["aspartate aminotransferase"],
+  ggt:["gamma glutamyl transferase"], alp:["alkaline phosphatase"],
+  ldh:["lactate dehydrogenase"], bun:["blood urea nitrogen"],
+  egfr:["estimated glomerular filtration rate"],
+  tsh:["thyroid stimulating hormone"], free_t4:["free thyroxine"],
+  free_t3:["free triiodothyronine"],
+  hba1c_dcct:["glycated hemoglobin","glycated haemoglobin","glycosylated hemoglobin"],
+  psa:["prostate specific antigen"], cea:["carcinoembryonic antigen"],
+  afp:["alpha fetoprotein"],
+  hdl_c:["high density lipoprotein","high density lipoprotein cholesterol"],
+  ldl_c:["low density lipoprotein","low density lipoprotein cholesterol"],
+  cholesterol_total:["total cholesterol"],
+  crp:["c reactive protein","c-reactive protein"],
+  esr:["erythrocyte sedimentation rate"],
+  uric_acid:["uric acid"], smi:["skeletal muscle index"]
+};
+for(const c in WRITTEN_OUT) WRITTEN_OUT[c].forEach(a=>{ if(!SYN.has(a)) SYN.set(a, c); });
+
 const UNIT_MAP = {
   "mmol/l":"mmol/L","mg/dl":"mg/dL","umol/l":"µmol/L","µmol/l":"µmol/L","g/l":"g/L","g/dl":"g/dL",
   "u/l":"U/L","iu/l":"U/L","ui/l":"U/L","ng/ml":"ng/mL","pg/ml":"pg/mL","pmol/l":"pmol/L","nmol/l":"nmol/L",
@@ -857,6 +961,59 @@ function normUnit(raw){
   const k = deaccent(raw).toLowerCase().replace(/\s+/g,"").replace(/µ/g,"u");
   return UNIT_MAP[k] || UNIT_MAP[k.replace(/u/g,"µ")] || raw.trim();
 }
+/* ---- re-reading a name the catalogue has since learned -----------------
+
+   A reading saved before the catalogue knew its name is stuck under a
+   made-up code FOREVER, because nothing ever looks at it again. That is why
+   "SMM Skeletal Muscle Mass" was still sitting in Also on your reports after
+   the reader had been taught to resolve it: the fix applied to new uploads
+   and the rows already in the book never heard about it.
+
+   So every made-up code is re-checked against the catalogue on load. The
+   rules are exactly the reader's own -- an exact match on the whole name,
+   then a split where the two halves independently name the SAME test, then a
+   split where what is left over is an instrument setting. Nothing is matched
+   by prefix or by substring, which is how "CA 19-9" once became calcium. */
+
+function exactCode(name){
+  const k = deaccent(String(name==null?"":name)).toLowerCase().replace(/\s+/g," ").trim();
+  return k ? (SYN.get(k) || null) : null;
+}
+/* A frequency describes the machine. An interval describes the measurement,
+   so "2h" is never discardable -- see "Glucose 2h". */
+const NOISE_TOK = /^(?:\d+(?:\.\d+)?(?:k|m)?hz|\d+(?:\.\d+)?(?:ohm|\u03a9)|\u03c6|\u03d5|phi|\u00b0)$/i;
+function inertPart(t){
+  const toks = String(t).replace(/(\d)\s+([a-z\u03a9\u00b0]+)/gi,"$1$2")
+    .replace(/[()\[\]\u00b0\u00b1*\u00b7:,]/g," ").split(/\s+/).filter(Boolean);
+  return toks.every(x=>NOISE_TOK.test(x));
+}
+function nameForms(raw){
+  const out=[], push=v=>{ const t=String(v).replace(/\s+/g," ").trim(); if(t && out.indexOf(t)<0) out.push(t); };
+  push(raw);
+  const nb = String(raw).replace(/\[[^\]]*\]/g," "); push(nb);
+  const np = nb.replace(/\([^)]*\)/g," "); push(np);
+  const tight = v=>v.replace(/([A-Za-z0-9])\s*[-\u2013\u2014]\s*([A-Za-z0-9])/g,"$1-$2");
+  push(tight(np)); push(tight(nb));
+  const loose = v=>v.replace(/\s+[-\u2013\u2014]\s+/g," ");
+  push(loose(np)); push(loose(nb));
+  return out;
+}
+function resolveName(raw){
+  const cands = nameForms(raw);
+  for(const c of cands){ const h=exactCode(c); if(h) return h; }
+  for(const c of cands){
+    const w = c.split(/\s+/).filter(Boolean);
+    for(let i=1;i<w.length;i++){
+      const head=w.slice(0,i).join(" "), tail=w.slice(i).join(" ");
+      const a=exactCode(head), b=exactCode(tail);
+      if(a&&b&&a===b) return a;
+      if(a&&!b&&inertPart(tail)) return a;
+      if(b&&!a&&inertPart(head)) return b;
+    }
+  }
+  return null;
+}
+
 function matchCode(nameRaw){
   let n = deaccent(nameRaw).toLowerCase()
     .replace(/[()\[\]:*#]/g," ").replace(/^\s*\d+[.)]\s*/,"").replace(/\s+/g," ").trim();
@@ -1071,6 +1228,27 @@ function migrate(p){
   p.panel = p.panel || DEFAULT_PANEL.slice();
   const gone = (p.tomb && p.tomb.p) || [];
   DEFAULT_PANEL.forEach(c=>{ if(p.panel.indexOf(c)<0 && gone.indexOf(c)<0) p.panel.push(c); });
+  /* Rows saved under a made-up code before the catalogue learned the name.
+     Nothing else re-reads them, so this is the only chance they get. */
+  const cc = p.customCodes || {};
+  const moved = {};
+  for(const code in cc){
+    const hit = resolveName(cc[code].n || code);
+    if(hit && hit !== code) moved[code] = hit;
+  }
+  if(Object.keys(moved).length){
+    (p.observations||[]).forEach(o=>{
+      const to = moved[o.code]; if(!to) return;
+      o.code = to;
+      const n = parseFloat(o.valueRaw);
+      if(isFinite(n)) o.value = toCanonical(n, to, o.unit);
+      o.mtime = Date.now();
+    });
+    (p.actions||[]).forEach(a=>{ a.codes = (a.codes||[]).map(c=>moved[c]||c); });
+    p.panel = [...new Set((p.panel||[]).map(c=>moved[c]||c))];
+    for(const from in moved) delete cc[from];
+    p.customCodes = cc;
+  }
   p.v = 2; return p;
 }
 let warned=false;
@@ -1421,13 +1599,17 @@ function vRecord(){
      one-off from a specialist still lands beside the panel it belongs to. */
   L.filter(o => panel.indexOf(o.code) < 0)
    .sort((a,b) => RANK[statusOf(a)] - RANK[statusOf(b)])
-   .forEach(o => put(meta(o.code).g || "Also on your reports", obsCard(o), statusOf(o), !!meta(o.code).fact));
+   .forEach(o => put(tierOf(o.code) === "sec" ? "Secondary"
+                                              : (meta(o.code).g || "Also on your reports"),
+                     obsCard(o), statusOf(o), !!meta(o.code).fact));
 
   const order = GROUPS.filter(g => byGroup.has(g))
     .concat([...byGroup.keys()].filter(g => GROUPS.indexOf(g) < 0));
   h += order.map(g => {
     const b = byGroup.get(g);
-    const open = b.on > 0;
+    /* Secondary stays shut even when it holds readings -- it is an archive,
+       and opening it by default is what made the record feel like a wall. */
+    const open = b.on > 0 && g !== "Secondary";
     const flag = (b.on && b.worst !== "in_range" && b.worst !== "unknown") ? badge(b.worst) : "";
     return '<details class="sec" '+(open?"open":"")+' style="margin-top:var(--s4)">'+
       '<summary><span>'+esc(g)+'</span>'+
@@ -1435,6 +1617,9 @@ function vRecord(){
           '<span class="num">'+b.on+'</span> of <span class="num">'+b.n+'</span></span>'+
         (flag ? '<span style="margin-left:var(--s2)">'+flag+'</span>' : '')+
       '</summary>'+
+      (g === "Secondary"
+        ? '<p class="cap" style="margin-top:var(--s3)">Recorded and kept, but not followed. Most of it is one machine describing the same measurement several ways &mdash; a body-composition scan derives lean mass, fat-free mass and cell mass from a single reading, and twenty-five limb rows from the same. Five views of one number is not five pieces of information.</p>'
+        : '')+
       '<div class="grid g240" style="margin-top:var(--s3)">'+b.cards.join("")+'</div>'+
       '</details>';
   }).join("");
@@ -1469,17 +1654,77 @@ function panelGaps(L){
   }
   return h+'</div>';
 }
+/* A sparkline, not a chart: no axis, no grid, no numbers. It answers one
+   question -- which way has this gone -- and the full chart below answers
+   the rest. Drawn from the canonical value so a reading in mg/dL and one in
+   mmol/L sit on the same line. */
+function spark(pts, st){
+  const v = pts.map(p=>Number(p.value)).filter(isFinite);
+  if(v.length < 2) return "";
+  const lo = Math.min.apply(null,v), hi = Math.max.apply(null,v), span = (hi-lo)||1;
+  const W = 120, H = 30;
+  const d = v.map((y,i)=>(i*(W/(v.length-1))).toFixed(1)+","+(H-((y-lo)/span)*(H-6)-3).toFixed(1)).join(" ");
+  const last = d.split(" ").pop().split(",");
+  return '<svg viewBox="0 0 '+W+' '+H+'" width="100%" height="30" preserveAspectRatio="none" aria-hidden="true">'+
+    '<polyline points="'+d+'" fill="none" stroke="'+stColor(st)+'" stroke-width="2" '+
+      'stroke-linecap="round" stroke-linejoin="round"/>'+
+    '<circle cx="'+last[0]+'" cy="'+last[1]+'" r="3" fill="'+stColor(st)+'"/></svg>';
+}
+
+/* The indicators a clinician actually follows year on year: blood pressure
+   and lipids, glucose and HbA1c, kidney function, liver enzymes, a blood
+   count, thyroid, and the deficiencies worth catching. Anything with two
+   readings gets a direction; anything with one says so rather than being
+   hidden, because "we have this once" is itself worth seeing. */
+function vKeyTrends(mid){
+  const rows = CORE.map(code=>{
+    const pts = anySeries(mid, code);
+    return pts.length ? {code:code, pts:pts} : null;
+  }).filter(Boolean);
+  if(!rows.length) return "";
+  const withTrend = rows.filter(r=>r.pts.length>1), single = rows.filter(r=>r.pts.length===1);
+  let h = '<h3 style="margin-bottom:var(--s2)">What your doctor follows</h3>'+
+    '<div class="cap" style="margin-bottom:var(--s3)">The measurements that change what happens next, over time. Tap one for the full chart and the readings behind it.</div>';
+  const card = r => {
+    const M = meta(r.code), last = r.pts[r.pts.length-1], first = r.pts[0], st = statusOf(last);
+    const q = isQual(r.code);
+    let move = "";
+    if(!q && r.pts.length>1 && isFinite(last.value) && isFinite(first.value)){
+      const d = Number(last.value)-Number(first.value);
+      const arrow = Math.abs(d) < 1e-9 ? "\u2192" : (d>0 ? "\u2191" : "\u2193");
+      move = arrow+" "+fmt(Math.abs(toUnit(d, r.code, last.unit||M.u)))+" "+esc(last.unit||M.u)+
+        " since "+esc((first.observedAt||"").slice(0,7));
+    }
+    return '<button class="obs" data-trend="'+esc(r.code)+'">'+
+      '<div class="nm">'+icon(r.code)+' '+esc(M.n)+'</div>'+
+      '<div class="vl">'+esc(last.valueRaw||fmt(last.value))+'<span>'+esc(last.unit||M.u)+'</span></div>'+
+      (q?"":spark(r.pts, st))+
+      '<div style="margin-top:var(--s2)">'+obsBadge(last)+'</div>'+
+      '<div class="ft">'+(move || (r.pts.length>1 ? r.pts.length+" readings" : "one reading \u2014 a second shows a direction"))+'</div>'+
+      '</button>';
+  };
+  h += '<div class="grid g240">'+withTrend.map(card).join("")+'</div>';
+  if(single.length)
+    h += '<details class="sec" style="margin-top:var(--s4)"><summary><span>Measured once</span>'+
+      '<span class="cap" style="margin-left:auto"><span class="num">'+single.length+'</span></span></summary>'+
+      '<div class="cap" style="margin-top:var(--s3)">One reading is a fact, not a trend. These need a second report before they can show a direction.</div>'+
+      '<div class="grid g240" style="margin-top:var(--s3)">'+single.map(card).join("")+'</div></details>';
+  return h;
+}
+
 function vTrends(){
   const m=person(who);
+  const key = vKeyTrends(m.id);
   const codes=[...new Set(obsOf(m.id).map(o=>o.code))].filter(c=>anySeries(m.id,c).length>1)
     .sort((a,b)=>meta(a).n.localeCompare(meta(b).n));
-  if(!codes.length) return '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
+  if(!codes.length) return key || '<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   if(!trendCode||codes.indexOf(trendCode)<0) trendCode=codes[0];
   const pts=series(m.id,trendCode), M=meta(trendCode);
   if(!pts.length) return h+'<div class="empty"><b>Nothing to plot yet</b>A trend needs the same test at least twice.</div>';
   const units=[...new Set(pts.map(p=>p.unit))];
   const labs=[...new Set(pts.map(p=>(p.source||"").trim()).filter(Boolean))];
-  let h='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
+  let h = key ? key+'<div style="height:var(--s6)"></div>' : "";
+  h+='<div class="row" style="justify-content:space-between;margin-bottom:var(--s4)"><h2>'+esc(m.name)+' over time</h2>'+
     '<select class="inp" id="trendSel" style="width:auto;min-width:220px">'+
     codes.map(c=>'<option value="'+esc(c)+'"'+(c===trendCode?" selected":"")+'>'+esc(meta(c).n)+' ('+anySeries(m.id,c).length+')</option>').join("")+'</select></div>';
   if(isQual(trendCode)) return h + qualTrend(m, trendCode);
@@ -2717,7 +2962,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-tab],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
@@ -2761,6 +3006,7 @@ document.addEventListener("click", async e=>{
       '<div style="position:fixed;inset:var(--s5);z-index:41;display:grid;place-items:center;pointer-events:none">'+
       '<img src="'+f.url+'" alt="'+esc(f.name)+'" style="max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--r-card);box-shadow:0 8px 40px rgba(0,0,0,.3);background:var(--card)">'+
       '</div>'; return; }
+  if(t.dataset.trend){ trendCode=t.dataset.trend; tab="trends"; render(); window.scrollTo(0,0); return; }
   if(t.id==="addRow"){ const c=document.getElementById("addCode").value;
     draft.rows.push({code:c,value:"",unit:isQual(c)?"":meta(c).u,refLow:"",refHigh:"",refLabel:"",
       refText:isQual(c)?"Negative":"",confirmed:true,agreed:true,src:"",newName:"",from:"typed in"}); render(); return; }
