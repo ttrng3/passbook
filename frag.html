@@ -4149,6 +4149,96 @@ function paintPeople(){
     '</button>').join("");
 }
 
+
+/* ---------------------------------------------------- the front door --
+
+   Until now the address opened straight into a working medical
+   application. A stranger got a book -- empty since this morning, but a
+   book, with tabs and a person in it and machinery on show. Ty: "it should
+   be a screen where it introduces what Passbook is and nothing else, like
+   this is a private house."
+
+   Said honestly: this is not access control and cannot be. index.html is a
+   static file on GitHub Pages; anyone can read its source or fetch it with
+   curl, door or no door. What protects records is row-level security on the
+   database, which is where it has always been. This changes what a stranger
+   is shown, which is worth doing on its own -- a house with no door is not
+   made safe by a sign, but it should still have a door.
+
+   And one thing the door must never do. The book is local-first: records
+   live in this browser whether or not anybody is signed in. A session
+   expires, a magic link works once, there is no code fallback on the free
+   plan and this project can send two auth emails an hour. A gate with no
+   way past it would mean a phone in a clinic, holding its owner's records
+   in its own storage, refusing to open them until an email arrives. So the
+   door is shut to a stranger and never to somebody whose records are
+   already inside. Ty chose that shape knowing the alternatives. */
+const DOOR_KEY = "passbook-door";
+let doorOpen = (function(){ try{ return sessionStorage.getItem(DOOR_KEY)==="open"; }catch(e){ return false; } })();
+function openDoor(){
+  doorOpen = true;
+  try{ sessionStorage.setItem(DOOR_KEY,"open"); }catch(e){}
+}
+function hasOwnRecords(){
+  return (S.observations||[]).some(o=>!isSample(o))
+      || (S.actions||[]).some(a=>!isSample(a))
+      || LISTS.some(l=>(S[l[0]]||[]).some(x=>!isSample(x)));
+}
+function atDoor(){
+  /* The artifact copy cannot reach the server at all, so a door there is a
+     lock with no key. Same if no database was built into this copy. */
+  if(IS_ARTIFACT || !syncConfigured()) return false;
+  return !AUTH && !doorOpen;
+}
+function vDoor(){
+  let h='<div style="max-width:56ch;margin:0 auto;padding:var(--s5) 0">'+
+    '<h1 style="margin:0 0 var(--s2);font-size:34px;letter-spacing:-0.02em">Passbook</h1>'+
+    '<p style="margin:0 0 var(--s4);font-size:18px;line-height:1.5;color:var(--ink-muted)">'+
+      'A medical record you and your family carry — the small book somebody writes in at every visit, '+
+      'kept in a browser instead of a drawer.</p>'+
+    '<div class="card" style="margin-bottom:var(--s4)">'+
+      '<div class="kick">By invitation only</div>'+
+      '<p style="margin:var(--s2) 0 0">This is one family’s book. An address nobody has invited is refused by the '+
+      'database itself, not by this page — so there is nothing here to sign up for, and no list to get onto from '+
+      'this screen. If you are expecting to be here, whoever invited you sent a link to your email.</p></div>';
+
+  if(syncMsg) h+='<div class="callout c-'+syncMsg.t+'" style="margin-bottom:var(--s4)">'+
+    '<div class="kick">'+esc(syncMsg.k)+'</div><p>'+esc(syncMsg.x)+'</p></div>';
+
+  h+='<div class="card" style="margin-bottom:var(--s4)"><h3 style="margin:0 0 var(--s2)">Sign in</h3>'+
+    '<div class="row">'+
+      '<input class="inp" id="syEmail" type="email" autocomplete="email" placeholder="you@example.com" '+
+        'style="flex:1;min-width:190px" value="'+esc(pendingEmail)+'">'+
+      '<input class="inp" id="syPass" type="password" autocomplete="current-password" placeholder="password" '+
+        'style="flex:1;min-width:150px">'+
+      '<button class="btn pri" id="pwSignIn">Sign in</button></div>'+
+    '<div class="row" style="margin-top:var(--s2)">'+
+      '<button class="btn" id="sendCode">Email me a sign-in link instead</button></div>'+
+    (codeSent?'<div class="callout c-blue" style="margin-top:var(--s3)"><div class="kick">Check your email</div>'+
+      '<p><b>Open the link on this device</b>, and open it in your normal browser — long-press it and choose '+
+      'Open in Safari rather than tapping it inside a mail app, because the link works once and the mail app’s '+
+      'own browser will spend it somewhere you are not coming back to. Set a password once you are in and you '+
+      'will not need a link again.</p></div>':'')+
+    '</div>';
+
+  /* Never locked out of records that are sitting in this browser. */
+  if(hasOwnRecords())
+    h+='<div class="card" style="margin-bottom:var(--s4)"><div class="kick">On this device</div>'+
+      '<p style="margin:var(--s2) 0 var(--s3)">There are records stored in this browser. You can open them without '+
+      'signing in — they are here either way, and a book you cannot open is no use at a clinic.</p>'+
+      '<button class="btn" id="doorIn">Open them</button></div>';
+
+  h+='<div class="callout c-blue"><div class="kick">What it is, and what it never does</div>'+
+    '<p>Every value is checked against the range printed on your own report, never against one this app made up. '+
+    'Where you have not entered a range it says so rather than guess.</p>'+
+    '<p>It never produces a diagnosis and never tells you a result is dangerous. It is a patient-held copy; '+
+    'the original report is what a clinician should see.</p></div>'+
+    '<p class="cap" style="margin-top:var(--s4)">The page is public and its source is readable by anyone. '+
+    'Records are not: each account reads only its own, enforced by the database.</p>'+
+  '</div>';
+  return h;
+}
+
 /* ------------------------------------------- handing your book over ----
 
    Ty asked for the one thing this design forbade: the person who
@@ -4325,6 +4415,15 @@ function alertBanner(){
     '<button class="btn sm" id="goAccount">Open Account and sync</button></div>';
 }
 function render(){
+  if(atDoor()){
+    document.getElementById("people").innerHTML="";
+    document.getElementById("tabs").innerHTML="";
+    const b=document.getElementById("syncBadge");
+    if(b){ b.className="badge"; b.textContent=""; b.removeAttribute("title"); }
+    document.getElementById("view").innerHTML=vDoor();
+    drawer();
+    return;
+  }
   paintPeople(); paintTabs(); paintSyncBadge();
   document.getElementById("view").innerHTML = alertBanner() +
     (tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
@@ -4353,10 +4452,11 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-invsend],[data-shmerge],#shareSw,#shareNow,#shareStop,#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-invsend],[data-shmerge],#doorIn,#shareSw,#shareNow,#shareStop,#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.id==="goAccount"){ tab="settings"; setPage="sync"; render(); window.scrollTo(0,0); return; }
+  if(t.id==="doorIn"){ openDoor(); tab="today"; render(); window.scrollTo(0,0); return; }
   if(t.id==="shareSw"||t.id==="shareNow"||t.id==="shareStop"){
     const el=document.getElementById("shareName"); if(el) S.shareLabel=el.value.trim();
     if(t.id==="shareStop"){
@@ -4638,6 +4738,7 @@ document.addEventListener("click", async e=>{
     syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
     render(); return; }
   if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
+    doorOpen=false; try{ sessionStorage.removeItem(DOOR_KEY); }catch(e){}
     syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
     render(); return; }
   if(t.id==="pwSignIn"){
