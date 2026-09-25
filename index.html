@@ -3243,6 +3243,7 @@ const SET_PAGES={
     '</div>').join("");
   h+='<button class="btn" id="addP">Add a person</button>'; return h; }},
   sync:    {t:"Account and sync",        f:()=>syncCard()},
+  share:   {t:"Share my book",           f:()=>shareCard()},
   copies:  {t:"Send or receive a copy",  f:()=>vHandoff()},
   about:   {t:"How this book works",     f:()=>'<div class="card">'+
     '<p style="margin-bottom:var(--s3)"><b>It ships no laboratory reference ranges.</b> Every status comes from a range you typed off your own report. Where none is on file it says so rather than guess. The only thresholds in the code are the two published BMI standards, and it shows both precisely because they disagree.</p>'+
@@ -3287,7 +3288,9 @@ function vSettings(){
     (IS_ARTIFACT?'':setRow("invite","Give a relative their own private book"))+
     setRow("people",names)+'</div>';
   h+='<div class="ghdr">Your records</div><div class="glist">'+
-    setRow("sync",acct)+setRow("copies","Pass records between phones or people")+'</div>';
+    setRow("sync",acct)+
+    (IS_ARTIFACT?'':setRow("share", S.shareOn?"On \u2014 the person who invited you can read it":"Off"))+
+    setRow("copies","Pass records between phones or people")+'</div>';
   h+='<div class="ghdr">About</div><div class="glist">'+setRow("about","What it never does, and where records go")+'</div>';
   h+='<div class="glist" style="margin-top:var(--s5)">'+setRow("wipe","",true)+'</div>';
   return h;
@@ -3638,6 +3641,7 @@ async function syncNow(quiet){
     const samples = (S.observations||[]).length - after;
     S.lastSync = new Date().toISOString();
     save();
+    await sharePush(true);
     if(!quiet) syncMsg = {t:"green", k:"Synced",
       x:(gained>0 ? gained+" reading"+(gained===1?"":"s")+" arrived from your other device. "
                   : "Everything already matched. ")
@@ -4100,7 +4104,11 @@ function tabList(){
   const out=[["today",t("Today")]];
   if((S.members||[]).length>1) out.push(["overview",t("Family")]);
   out.push(["record",t("Results")],["trends",t("Trends")],["card",t("Card")],
-           ["actions",t("Questions")],["settings",t("Settings")]);
+           ["actions",t("Questions")]);
+  /* Only somebody who has actually been handed a book gets this tab. It is
+     not a feature everybody has to read past. */
+  if(shareRows && shareRows.length) out.push(["shared",t("Shared with me")]);
+  out.push(["settings",t("Settings")]);
   return out;
 }
 function paintTabs(){
@@ -4159,6 +4167,171 @@ function paintPeople(){
     (isLocal(m)?'<span class="onlyhere" aria-label="on this device only">\u25CF</span>':'')+
     '</button>').join("");
 }
+
+/* ------------------------------------------- handing your book over ----
+
+   Ty asked for the one thing this design forbade: the person who
+   orchestrates the family's information should be able to see all of it.
+   The book was built so that could not happen. Every row on the server is
+   locked to the account that wrote it by a database rule, and records a
+   relative hands you are marked `local` and excluded from the sync so they
+   never reach a server through your account.
+
+   That promise is not weakened below; it is left exactly where it was. This
+   is a SECOND, separate copy, which the sharer creates deliberately and
+   deletes by switching off. Three things make it narrower than it sounds:
+
+   - The recipient is not chosen here. The page never names it. The database
+     reads it from family_invites.invited_by, so the only person you can hand
+     your book to is the person who let you in.
+   - The recipient can read and can never write. There is no policy on that
+     table that lets anybody modify a row they do not own.
+   - Anything already marked `local` is left out, for the same reason it is
+     left out of the sync: a record a third person handed you is theirs, and
+     it does not take one more hop because you decided to share.
+
+   What it still is: another person's medical record, in Singapore, readable
+   by an account that is not theirs. Migration 0022 says so in as many words
+   and so does the panel. */
+let shareRows = null, shareMsg = null, _orch;
+
+function shareDoc(){
+  const out = {kind:"passbook", v:2, exported:today(),
+    members: syncable(S.members),
+    observations: syncable(S.observations),
+    actions: syncable(S.actions)};
+  LISTS.forEach(l=>{ out[l[0]] = syncable(S[l[0]]||[]); });
+  return out;
+}
+/* No argument, deliberately: the function on the database answers only for
+   the caller's own token, so this cannot be used to ask who invited anybody
+   else. */
+async function whoInvitedMe(){
+  if(_orch !== undefined) return _orch;
+  const r = await supa("/rest/v1/rpc/my_orchestrator", {method:"POST", body:{}});
+  _orch = (r.ok && r.body) ? r.body : null;
+  return _orch;
+}
+async function sharePush(quiet){
+  if(IS_ARTIFACT || !syncConfigured() || !AUTH || !S.shareOn) return;
+  const to = await whoInvitedMe();
+  if(!to){
+    S.shareOn = false; save();
+    shareMsg = {t:"amber", k:"There is nobody to share with",
+      x:"Sharing hands your book to whoever invited you, and the database says nobody invited this account \u2014 this is the account that does the inviting."};
+    return;
+  }
+  const r = await supa("/rest/v1/passbook_shares", {method:"POST",
+    headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
+    body:[{user_id:AUTH.uid, shared_with:to, shared_email:AUTH.email||"",
+           label:((S.shareLabel||"").trim()||null), doc:shareDoc()}]});
+  if(!r.ok){
+    shareMsg = {t:"red", k:"The copy did not go",
+      x:(r.body&&(r.body.message||r.body.hint))||("The database refused it (HTTP "+r.status+"). Nothing on this device changed.")};
+    return;
+  }
+  S.lastShare = new Date().toISOString(); save();
+  if(!quiet) shareMsg = {t:"green", k:"Copy updated", x:"They are seeing what this book holds as of now."};
+}
+async function shareStop(){
+  if(!AUTH) return;
+  const r = await supa("/rest/v1/passbook_shares?user_id=eq."+encodeURIComponent(AUTH.uid),
+    {method:"DELETE"});
+  S.shareOn = false; S.lastShare = null; save();
+  shareMsg = r.ok
+    ? {t:"blue", k:"Sharing stopped", x:"The copy was deleted, not hidden. There is nothing left for them to open."}
+    : {t:"red", k:"Switched off here, but the copy may still be on the server",
+       x:"Press \u201cStop sharing\u201d again when you have a connection, so the row is actually deleted."};
+}
+async function loadShares(){
+  if(!AUTH || IS_ARTIFACT || !syncConfigured()){ shareRows = []; return; }
+  const r = await supa("/rest/v1/passbook_shares?select=user_id,shared_email,label,doc,updated_at&shared_with=eq."+encodeURIComponent(AUTH.uid));
+  shareRows = (r.ok && Array.isArray(r.body)) ? r.body : [];
+  render();
+}
+/* Read somebody else's book with the functions that read this one, without
+   letting those functions keep it: S is swapped for the length of one call
+   and put back in a finally, so a throw cannot leave the page looking at
+   the wrong book. */
+function withBook(doc, fn){
+  const keepS = S, keepWho = who;
+  try{
+    S = Object.assign({meds:[],allergies:[],conditions:[],shots:[],visits:[],
+      members:[],observations:[],actions:[],reports:[],
+      customCodes:keepS.customCodes||{}, panel:keepS.panel||[],
+      tomb:{o:[],a:[],m:[],p:[]}}, doc||{});
+    return fn();
+  } finally { S = keepS; who = keepWho; }
+}
+function sharedPeople(doc){
+  return withBook(doc, ()=> (S.members||[]).map(m=>{
+    const L = latest(m.id);
+    const flagged = L.filter(o=>{ const st=statusOf(o); return st==="act"||st==="discuss"||st==="watch"; })
+                     .sort((a,b)=>RANK[statusOf(a)]-RANK[statusOf(b)]);
+    return {name:m.name, age:ageOf(m), total:L.length,
+      flagged:flagged.map(o=>({n:meta(o.code).n, v:o.valueRaw||fmt(o.value), u:o.unit,
+        st:statusOf(o), when:o.observedAt}))};
+  }));
+}
+function vShared(){
+  let h='<h2 style="margin-bottom:var(--s2)">'+esc(t("Shared with me"))+'</h2>'+
+    '<div class="cap" style="margin-bottom:var(--s4);max-width:62ch">Books other people chose to hand you, read-only. '+
+    'You cannot change anything here, and they can take it back whenever they like \u2014 switching it off deletes the copy rather than hiding it. '+
+    'Bringing one into your own book marks every row <b>on this device only</b>, so it is never uploaded again through your account.</div>';
+  if(shareMsg) h+='<div class="callout c-'+shareMsg.t+'" style="margin-bottom:var(--s4)"><div class="kick">'+esc(shareMsg.k)+'</div><p>'+esc(shareMsg.x)+'</p></div>';
+  if(shareRows===null){ loadShares(); return h+'<div class="cap">Reading\u2026</div>'; }
+  if(!shareRows.length)
+    return h+'<div class="card"><p style="margin:0">Nobody is sharing a book with you. '+
+      'Somebody you invited switches this on themselves, under Settings \u203a Share my book.</p></div>';
+  shareRows.forEach(r=>{
+    const people = sharedPeople(r.doc);
+    h+='<div class="card" style="margin-bottom:var(--s4)">'+
+      '<div class="row" style="justify-content:space-between;align-items:baseline">'+
+      '<h3 style="margin:0">'+esc(r.label||r.shared_email||"Somebody")+'</h3>'+
+      '<span class="cap">'+esc(fmtWhen(r.updated_at))+'</span></div>'+
+      (r.label&&r.shared_email?'<div class="cap">'+esc(r.shared_email)+'</div>':'');
+    if(!people.length) h+='<p class="cap" style="margin-top:var(--s3)">Their book is empty.</p>';
+    people.forEach(x=>{
+      h+='<div style="margin-top:var(--s3)"><b>'+esc(x.name)+'</b>'+
+        (x.age!==null?' <span class="cap">'+x.age+'</span>':'')+
+        ' <span class="cap">\u00b7 '+x.total+' on file</span></div>';
+      if(!x.flagged.length) h+='<div class="cap">Nothing outside or near its range.</div>';
+      else h+='<div class="row" style="margin-top:var(--s2);flex-wrap:wrap">'+
+        x.flagged.map(f=>'<span class="badge st-'+f.st+'"><span class="dot"></span>'+
+          esc(f.n)+' '+esc(f.v)+(f.u?' '+esc(f.u):'')+'</span>').join("")+'</div>';
+    });
+    h+='<div class="row" style="margin-top:var(--s3)">'+
+      '<button class="btn" data-shmerge="'+esc(r.user_id)+'">Bring it into my book</button></div></div>';
+  });
+  return h;
+}
+function shareCard(){
+  if(IS_ARTIFACT)
+    return '<div class="callout c-amber"><div class="kick">Not in this preview</div>'+
+      '<p>The claude.ai viewer blocks a page from reaching an outside server, so nothing can be shared from this copy. Open the book at <b>ttrng3.github.io/passbook</b>.</p></div>';
+  if(!AUTH)
+    return '<div class="card"><p style="margin:0">Sign in first, under Settings \u203a Account and sync. '+
+      'Sharing hands a copy to the person who invited you, and the database works out who that is from your account rather than asking this page.</p></div>';
+  let h='<div class="card" style="margin-bottom:var(--s4)">';
+  if(shareMsg) h+='<div class="callout c-'+shareMsg.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(shareMsg.k)+'</div><p>'+esc(shareMsg.x)+'</p></div>';
+  h+='<div class="qbar">'+qSwitch("shareSw","Share my book with the person who invited me",
+      S.shareOn ? (S.lastShare ? "Copy updated "+fmtWhen(S.lastShare) : "On \u2014 nothing sent yet")
+                : "Off. Nothing of yours is shared.",
+      !!S.shareOn, false)+'</div>'+
+    '<div style="margin-top:var(--s3)"><label class="fl" for="shareName">What to call you on their screen</label>'+
+    '<input class="inp" id="shareName" placeholder="e.g. V\u00e2n Anh" value="'+esc(S.shareLabel||"")+'"></div>';
+  if(S.shareOn) h+='<div class="row" style="margin-top:var(--s3)">'+
+    '<button class="btn" id="shareNow">Update the copy now</button>'+
+    '<button class="btn warn" id="shareStop">Stop sharing and delete it</button></div>';
+  h+='</div>';
+  h+='<div class="callout c-amber"><div class="kick">What this actually does</div>'+
+    '<p>It puts a <b>second copy</b> of your readings in the same database your own sync uses, in Singapore, and lets exactly one other account read it: the person who invited you. The database works out who that is. This page never names them, so it cannot send your book anywhere else.</p>'+
+    '<p>They can read it. They can never edit it or delete it. You can delete it at any moment, and switching off deletes it rather than hiding it.</p>'+
+    '<p><b>Records somebody else handed you are left out</b>, exactly as they are left out of your own sync. They are that person\u2019s, and they do not travel one more hop because you decided to share. Report photographs never leave your browser either.</p>'+
+    '<p>Said plainly: this is a copy of a medical record on a server somebody else operates. The switch and the delete are real controls. They do not change that sentence.</p></div>';
+  return h;
+}
+
 /* A failed sign-in writes its reason into syncMsg, and syncMsg is drawn in
    exactly one place: Settings > Account and sync. Somebody whose link had
    already been spent was handed back a signed-out book, on a tab they never
@@ -4175,7 +4348,8 @@ function render(){
   document.getElementById("view").innerHTML = alertBanner() +
     (tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
     tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
-    tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings());
+    tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff():
+    tab==="shared"?vShared(): vSettings());
   drawer();
   paintNotePhotos();
   if(tab==="trends") wireChart();
@@ -4198,10 +4372,35 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-invsend],#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-invsend],[data-shmerge],#shareSw,#shareNow,#shareStop,#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.id==="goAccount"){ tab="settings"; setPage="sync"; render(); window.scrollTo(0,0); return; }
+  if(t.id==="shareSw"||t.id==="shareNow"||t.id==="shareStop"){
+    const el=document.getElementById("shareName"); if(el) S.shareLabel=el.value.trim();
+    if(t.id==="shareStop"){
+      if(!confirm("Stop sharing and delete the copy they can see?")) return;
+      await shareStop(); render(); return; }
+    if(t.id==="shareSw" && S.shareOn){
+      if(!confirm("Stop sharing and delete the copy they can see?")) return;
+      await shareStop(); render(); return; }
+    if(t.id==="shareSw") S.shareOn=true;
+    shareMsg=null; save(); render();
+    await sharePush(); render(); return; }
+  if(t.dataset.shmerge){
+    const row=(shareRows||[]).find(x=>x.user_id===t.dataset.shmerge);
+    if(!row) return;
+    let r;
+    /* Their copy is parsed fresh so mergeIn's `local` stamping cannot write
+       back into the row still on screen. */
+    try{ r=mergeIn(JSON.parse(JSON.stringify(row.doc||{})),
+      "from "+(row.label||row.shared_email||"a relative")+", "+today()); }
+    catch(e){ shareMsg={t:"red",k:"Could not bring it in",x:e.message||String(e)}; render(); return; }
+    save();
+    shareMsg={t:"green",k:"Brought into your book",
+      x:r.addedO+" reading"+(r.addedO===1?"":"s")+" and "+r.addedM+" "+(r.addedM===1?"person":"people")+
+        " added, every row marked on this device only"+(r.dupO?"; "+r.dupO+" you already had":"")+"."};
+    render(); return; }
   if(t.id==="showSample"){
     const f=seed();
     S.members=(S.members||[]).concat(f.members);
@@ -4496,7 +4695,8 @@ document.addEventListener("click", async e=>{
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;
     if(!confirm(AUTH ? "Last check — this clears this device. Your synced copy stays on the server." : "Last check — there is no other copy and this cannot be undone.")) return;
     try{ localStorage.removeItem(LS); }catch(e){}
-    S=seed(); who=S.members[0].id; detail=null; save(); render(); return; }
+    S=emptyBook(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
+    ensurePerson(); detail=null; save(); render(); return; }
 });
 
 async function saveFile(filename, data){
@@ -4624,7 +4824,7 @@ function start(){
   (async function(){
     const arrived = await consumeSignInLink();
     if(arrived){ tab="handoff"; render(); }
-    if(AUTH) await syncNow();
+    if(AUTH){ await syncNow(); await loadShares(); }
   })();
 }
 start();
