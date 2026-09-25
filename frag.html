@@ -3111,6 +3111,34 @@ function familyNoAccount(){
    addresses somebody inside deliberately wrote down. */
 let inviteRows = null, inviteMsg = null;
 
+/* Adding someone to the family list did not send them anything. The panel
+   said "Invite family" over a button reading "Add them", so an email was
+   implied and none was ever sent -- a naming failure, not a broken server.
+   Two people sat at "not yet" waiting for a message that was never coming.
+
+   It turns out the link CAN be sent from here without the privileged key.
+   /auth/v1/otp takes the publishable key, and the signup gate fires on the
+   same insert, so an address that is not on the family list is refused at
+   request time -- verified against a stranger's address, which came back
+   "This address has not been invited to this family book." That closes the
+   obvious hole in sending mail from a public page: it cannot be pointed at
+   anybody who was not already invited by someone inside. */
+async function sendLink(email){
+  const back = encodeURIComponent(returnTo());
+  try{
+    const r = await fetch(SUPA.url + "/auth/v1/otp?redirect_to=" + back, {
+      method:"POST",
+      headers:{apikey: SUPA.key, "Content-Type":"application/json"},
+      body: JSON.stringify({email: email, create_user: true})
+    });
+    if(r.ok) return {ok:true};
+    let b=null; try{ b = await r.json(); }catch(e){}
+    if(r.status === 429)
+      return {ok:false, why:"This project can send two emails an hour and that is used up. Try the next one in an hour, or set up your own mail sender."};
+    return {ok:false, why:(b && (b.msg || b.message || b.error_description)) || ("the mail server refused it (HTTP "+r.status+")")};
+  }catch(e){ return {ok:false, why:String(e && e.message || e)}; }
+}
+
 async function loadInvites(){
   if(!AUTH) return;
   const r = await supa("/rest/v1/family_invites?select=email,note,created_at,used_at&order=created_at");
@@ -3134,8 +3162,9 @@ function inviteCard(){
 
   let h='<div class="card" style="margin-bottom:var(--s4)">'+
     '<h3 style="margin:0 0 var(--s2)">Invite a family member</h3>'+
-    '<div class="cap" style="margin-bottom:var(--s3);max-width:60ch">Write their email address here and they can sign up on this site themselves, set their own password, and keep their own book. '+
-    'Anyone whose address is not on this list is refused by the database, not by a checkbox &mdash; so the page can stay public without the front door being open.</div>';
+    '<div class="cap" style="margin-bottom:var(--s3);max-width:62ch">Adding someone puts their address on the family list and sends them a sign-in link. The link both signs them in and creates their own private book. '+
+    'Anyone whose address is not on this list is refused by the database, not by a checkbox &mdash; which is also why the link cannot be sent to anybody you have not added.<br><br>'+
+    'The mail comes from Supabase rather than from you, so it often lands in spam. This project can send <b>two emails an hour</b>; past that, use <b>Send the link</b> again later, or they can simply open '+esc(returnTo())+' and sign up themselves.</div>';
   if(inviteMsg) h+='<div class="callout c-'+inviteMsg.t+'" style="margin-bottom:var(--s3)"><div class="kick">'+esc(inviteMsg.k)+'</div><p>'+esc(inviteMsg.x)+'</p></div>';
   h+='<div class="row"><input class="inp" id="invEmail" type="email" placeholder="their email address" style="flex:1;min-width:200px">'+
      '<input class="inp" id="invNote" placeholder="who they are (optional)" style="flex:1;min-width:140px">'+
@@ -3146,7 +3175,9 @@ function inviteCard(){
       '<td>'+(r.used_at
         ? '<span class="badge st-in_range"><span class="dot"></span>yes</span>'
         : '<span class="badge st-watch"><span class="dot"></span>not yet</span>')+'</td>'+
-      '<td>'+(r.used_at?'':'<button class="btn sm warn" data-invdel="'+esc(r.email)+'">Remove</button>')+'</td></tr>').join("")+
+      '<td>'+(r.used_at?''
+        : '<button class="btn sm" data-invsend="'+esc(r.email)+'">Send the link</button> '+
+          '<button class="btn sm warn" data-invdel="'+esc(r.email)+'">Remove</button>')+'</td></tr>').join("")+
     '</tbody></table></div>';
   h+='<div class="cap" style="margin-top:var(--s3)">Each person gets their own private book. Nobody sees anybody else&rsquo;s records by signing in &mdash; sharing is still a copy you choose to send.</div>';
   return h+'</div>';
@@ -4113,7 +4144,7 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-invsend],#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
@@ -4202,12 +4233,28 @@ document.addEventListener("click", async e=>{
     const nt=(document.getElementById("invNote")||{}).value||"";
     if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em.trim())){
       inviteMsg={t:"amber",k:"That is not an email address",x:"Check the spelling and try again."}; render(); return; }
+    const addr = em.trim().toLowerCase();
     const r=await supa("/rest/v1/family_invites",{method:"POST",
-      body:[{email:em.trim().toLowerCase(), note:nt.trim()||null, invited_by:AUTH.uid}]});
-    inviteMsg = r.ok
-      ? {t:"blue",k:"Added",x:em.trim()+" can now sign up at this address and keep their own book."}
-      : {t:"red",k:"Could not add them",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+      body:[{email:addr, note:nt.trim()||null, invited_by:AUTH.uid}]});
+    if(!r.ok){
+      inviteMsg={t:"red",k:"Could not add them",x:(r.body&&(r.body.message||r.body.hint))||("HTTP "+r.status)};
+      inviteRows=null; render(); return;
+    }
+    const sent = await sendLink(addr);
+    inviteMsg = sent.ok
+      ? {t:"blue",k:"Added, and a link is on its way",
+         x:addr+" has been sent a sign-in link. It comes from Supabase rather than from you, so tell them to look in spam if it is not there in a few minutes."}
+      : {t:"amber",k:"Added, but the link did not go",
+         x:addr+" is on the list and can sign up at "+returnTo()+" themselves. The email failed: "+sent.why};
     inviteRows=null; render(); return;
+  }
+  if(t.dataset.invsend){
+    inviteMsg={t:"blue",k:"Sending",x:"Asking the mail server to send a link to "+t.dataset.invsend+"\u2026"}; render();
+    const sent = await sendLink(t.dataset.invsend);
+    inviteMsg = sent.ok
+      ? {t:"blue",k:"Link sent",x:"Sent to "+t.dataset.invsend+". It comes from Supabase, so it may sit in spam. The link signs them in and creates their book at the same time."}
+      : {t:"red",k:"The link did not go",x:sent.why};
+    render(); return;
   }
   if(t.dataset.invdel){
     const r=await supa("/rest/v1/family_invites?email=eq."+encodeURIComponent(t.dataset.invdel),{method:"DELETE"});
