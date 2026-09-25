@@ -1251,6 +1251,15 @@ function parseReport(text){
 let S=null, who=null, tab="today", detail=null, draft=null, trendCode=null;
 
 let _sn=0;
+/* What somebody who has never used this gets: nothing. The example book below
+   used to be the default, which meant the first thing an invited relative saw
+   was a stranger's two-person medical record -- named, dated, flagged. No
+   banner survives that first impression. Examples are now asked for, from the
+   empty state, and never arrive on their own. */
+function emptyBook(){
+  return {v:2, meds:[], allergies:[], conditions:[], shots:[], visits:[],
+          members:[], observations:[], actions:[], reports:[]};
+}
 function seed(){
   const a="smp-ty", b="smp-me"; _sn=0;
   const O=(memberId,code,valueRaw,unit,observedAt,source,refLow,refHigh,refLabel,fasting)=>({
@@ -1261,8 +1270,8 @@ function seed(){
     refLabel,observedAt,source,fasting:fasting||"",specimen:"",note:"",manualStatus:null,
     origin:"",sample:true});
   return {v:2, meds:[], allergies:[], conditions:[], shots:[], visits:[], members:[
-      {id:a,name:"Ty",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam",sample:true},
-      {id:b,name:"Mẹ",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam",sample:true}],
+      {id:a,name:"Nam (example)",sex:"male",dob:"1991-03-14",population:"asian_pacific",country:"Vietnam",sample:true},
+      {id:b,name:"Mẹ Nam (example)",sex:"female",dob:"1962-07-02",population:"asian_pacific",country:"Vietnam",sample:true}],
     observations:[
       O(a,"height_cm",171,"cm","2026-07-08","Kusumi",null,null,""),
       O(a,"weight_kg",83.8,"kg","2026-08-24","Medlatec Cầu Giấy",null,null,""),
@@ -1340,10 +1349,8 @@ function repairLegacy(p){
   p.actions      = (p.actions||[]).filter(a=>!isSample(a));
   const real = new Set(p.observations.map(o=>o.memberId).concat(p.actions.map(a=>a.memberId)));
   p.members = (p.members||[]).filter(m=>real.has(m.id));
-  if(!p.members.length){
-    const f = seed();
-    p.members=f.members; p.observations=f.observations; p.actions=f.actions;
-  }
+  /* Nobody left after the repair: ensurePerson() gives them themselves.
+     It used to re-seed the examples here, which put the stranger's book back. */
   return p;
 }
 function load(){
@@ -1357,7 +1364,7 @@ function load(){
       if(p && p.members && p.members.length){ _cameFrom = key; return repairLegacy(migrate(p)); }
     }
   }catch(e){ console.warn("read failed", e); }
-  return seed();
+  return emptyBook();
 }
 function migrate(p){
   (p.observations||[]).forEach(o=>{
@@ -2148,13 +2155,25 @@ function vCard(){
 }
 
 /* ============================================================== views */
+function bookIsEmpty(){ return !(S.observations||[]).length && !(S.actions||[]).length; }
+/* The examples earn their keep -- they are the only place the mg/dL vs mmol/L
+   handling is visible before you have two reports of your own. So they are
+   still here, one press away, and described as made-up before they appear
+   rather than after. */
+function emptyNote(){
+  return '<div class="callout c-blue" style="margin-bottom:var(--s4)"><div class="kick">Nothing in this book yet</div>'+
+    '<p>This book is yours and it starts empty. Add a report and these rows fill in.</p>'+
+    '<p>If you would rather see the shape of a filled book first, '+
+    '<button class="btn sm" id="showSample">show an example</button> \u2014 two made-up people, made-up numbers, '+
+    'cleared again in one press and never uploaded anywhere.</p></div>';
+}
 function sampleNote(){
   return '<div class="callout c-amber" style="margin-bottom:var(--s4)"><div class="kick">Example records</div>'+
     '<p>These are not anybody&rsquo;s real results — they show the shape of the book, including one glucose reading in mg/dL so you can see the unit handling. '+
     '<button class="btn sm" id="clearSample" style="margin-left:var(--s2)">Clear examples</button></p></div>';
 }
 function vOverview(){
-  let h = hasSamples()?sampleNote():"";
+  let h = hasSamples()?sampleNote():(bookIsEmpty()?emptyNote():"");
   h += '<div class="sec"><h2>Household</h2><div class="grid g300">';
   for(const m of S.members){
     const L=latest(m.id), cnt={act:0,discuss:0,watch:0,in_range:0,unknown:0};
@@ -2362,7 +2381,7 @@ function panelEditor(){
 }
 function vRecord(){
   const m=person(who), L=latest(m.id);
-  let h = hasSamples()?sampleNote():"";
+  let h = hasSamples()?sampleNote():(bookIsEmpty()?emptyNote():"");
   h += '<div class="row" style="justify-content:space-between;margin-bottom:var(--s3)">'+
     '<h2>'+esc(m.name)+'</h2>'+
     '<button class="btn pri" data-tab="add" style="font-size:16px;padding:12px 20px">'+esc(t("Add a report"))+'</button></div>';
@@ -3491,7 +3510,12 @@ function dropExamples(){
   S.observations=(S.observations||[]).filter(o=>!isSample(o));
   S.actions=(S.actions||[]).filter(a=>!isSample(a));
   S.members=(S.members||[]).filter(m=>!isSample(m));
-  if(S.members.length && !S.members.some(m=>m.id===who)) who=S.members[0].id;
+  /* Clearing the examples can empty the book completely -- that is the normal
+     case for somebody who just signed up. Three of the four callers did not
+     put a person back, so a successful first sign-in ended on a book with no
+     people in it and `who` pointing at a member that no longer existed. */
+  ensurePerson();
+  if(!S.members.some(m=>m.id===who)) who=S.members[0].id;
   save(); return true;
 }
 
@@ -4116,12 +4140,23 @@ function paintPeople(){
     (isLocal(m)?'<span class="onlyhere" aria-label="on this device only">\u25CF</span>':'')+
     '</button>').join("");
 }
+/* A failed sign-in writes its reason into syncMsg, and syncMsg is drawn in
+   exactly one place: Settings > Account and sync. Somebody whose link had
+   already been spent was handed back a signed-out book, on a tab they never
+   chose, with the explanation sitting on a page they had no reason to open.
+   They saw no error at all. A red message follows the person now. */
+function alertBanner(){
+  if(!syncMsg || syncMsg.t!=="red" || tab==="settings") return "";
+  return '<div class="callout c-red" style="margin-bottom:var(--s4)"><div class="kick">'+esc(syncMsg.k)+'</div>'+
+    '<p>'+esc(syncMsg.x)+'</p>'+
+    '<button class="btn sm" id="goAccount">Open Account and sync</button></div>';
+}
 function render(){
   paintPeople(); paintTabs(); paintSyncBadge();
-  document.getElementById("view").innerHTML =
-    tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
+  document.getElementById("view").innerHTML = alertBanner() +
+    (tab==="today"?vToday(): tab==="overview"?vOverview(): tab==="record"?vRecord():
     tab==="trends"?vTrends(): tab==="card"?vCard(): tab==="sheet"?vSheet():
-    tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings();
+    tab==="actions"?vActions(): tab==="add"?vAdd(): tab==="handoff"?vHandoff(): vSettings());
   drawer();
   paintNotePhotos();
   if(tab==="trends") wireChart();
@@ -4144,17 +4179,27 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-invsend],#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-invsend],#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
+  if(t.id==="goAccount"){ tab="settings"; setPage="sync"; render(); window.scrollTo(0,0); return; }
+  if(t.id==="showSample"){
+    const f=seed();
+    S.members=(S.members||[]).concat(f.members);
+    S.observations=(S.observations||[]).concat(f.observations);
+    S.actions=(S.actions||[]).concat(f.actions);
+    who=f.members[0].id; save(); render(); window.scrollTo(0,0); return; }
   if(t.dataset.tab){ tab=t.dataset.tab; detail=null; setPage=null; render(); window.scrollTo(0,0); return; }
   if(t.dataset.p){ who=t.dataset.p; detail=null; if(draft) draft.memberId=who; render(); return; }
   if(t.dataset.openp){ who=t.dataset.openp; tab="record"; render(); window.scrollTo(0,0); return; }
   if(t.dataset.obs){ detail=t.dataset.obs; drawer(); return; }
   if(t.dataset.x!==undefined){ detail=null; drawer(); return; }
 
+  /* This dropped the example readings and left the two example PEOPLE in the
+     strip, with a Family tab above them. dropExamples() removes all three
+     kinds and puts a person back if that emptied the book. */
   if(t.id==="clearSample"){ if(!confirm("Remove the example records? Anything you added is kept.")) return;
-    S.observations=S.observations.filter(o=>!o.sample); S.actions=S.actions.filter(a=>!a.sample); save(); render(); return; }
+    dropExamples(); render(); return; }
 
   if(t.id==="doParse"){
     const txt=document.getElementById("paste").value;
@@ -4389,8 +4434,8 @@ document.addEventListener("click", async e=>{
     AUTH=null; saveAuth(); codeSent=false;
     try{ localStorage.removeItem(LS); localStorage.removeItem(LS_OLD); }catch(e){}
     try{ indexedDB.deleteDatabase(IDB); _db=null; indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
-    S=seed(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
-    who=S.members[0].id; detail=null; draft=null;
+    S=emptyBook(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
+    ensurePerson(); who=S.members[0].id; detail=null; draft=null;
     syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
     render(); return; }
   if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
