@@ -4,12 +4,35 @@ A personal and family medical record book — the small book you carry and get
 updated at every visit, kept in a browser instead of a drawer.
 Paste a lab report, check every value against the sheet, keep the series.
 
+**You need a key to open it.** As of 2026-09-25 the address shows a front
+door: an introduction, the invitation rule, and a sign-in box. No session, no
+book. A browser that still holds records can be *erased* from that screen but
+never read from it — destroying is safe to offer a stranger, opening is not.
+**Signing out erases this browser**; it syncs to the account first and refuses
+to erase if that sync did not land, so a sign-out cannot silently drop
+readings that never left the device.
+
+*(Until 2026-09-25 the door let a browser holding records walk past it, so an
+expired session could not strand anybody from their own chart. That modelled
+the wrong threat — a stranger typing the address has an empty browser and
+never sees that offer; the person holding your unlocked phone sees exactly
+it. A lock that hands the key to whoever is standing at the door is not a
+lock.)*
+
+The page itself is public and always will be — it is a static file on GitHub
+Pages and anyone can read its source. **The door is not what protects
+records; row-level security on the database is**, and that has not changed.
+
 **Where records go, stated exactly.** The book lives in the browser's own
 storage on the device that entered it, and attached report images live in that
 browser's IndexedDB. Three things leave it, and nothing else does:
 
 1. **Signed in, your own records sync** to a single row that only your account
-   can read, on Supabase in Singapore. Signed out, nothing syncs at all.
+   can read, on Supabase in Singapore. Signed out, nothing syncs at all — and
+   signed out is now also erased, so the account copy is the one that persists.
+   A book carries the account id that wrote it, and a *different* account
+   signing in on that device clears it before anything syncs, so one person's
+   records can never be uploaded under another person's name.
 2. **Reading a report sends that page off the device** — the photo goes to the
    same Supabase project and on to Anthropic in the United States to be read,
    and the stored copy is deleted as soon as the read finishes. The original
@@ -69,6 +92,16 @@ targets, no drift.
 
 Open `index.html`. That is the whole install. For a phone, serve it over HTTPS
 (GitHub Pages does this) and add it to the home screen.
+
+## Sharing with the person who invited you
+
+A relative may hand a read-only copy of their book to whoever invited them,
+and take it back by switching it off, which deletes it. The page never names
+the recipient — the database reads it from `family_invites.invited_by`, so a
+copy cannot be aimed anywhere else. The recipient can read and can never
+write. Records somebody else handed the sharer are excluded, by the same
+`syncable()` that keeps them out of the sync document. Migrations 0022 and
+0023; the panel in the app says what it does and what it does not undo.
 
 ## Moving records between devices
 

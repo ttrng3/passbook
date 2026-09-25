@@ -310,7 +310,7 @@ details.sec[open]>summary:before{transform:rotate(90deg)}
    The page is called Passbook as of 2026-09-24. These are not names; they
    are addresses, and changing one is a data-loss event with no error:
 
-     LS / LS_OLD / the IndexedDB name  -- the records and the report images
+     LS / LS_LEGACY / the IndexedDB name -- the records and the report images
        already written in this browser. A new key is an empty book.
      famrec-auth / -text / -simple / -readms -- the sign-in, the text size,
        simple mode and the measured read times on this device.
@@ -1421,6 +1421,21 @@ function hasSamples(){ return (S.observations||[]).some(o=>o.sample) || (S.actio
 /* --------------------------------------------------- attachments */
 let _db=null;
 const IDB = "passbook-files", IDB_OLD = "vitals-journal-files";
+/* Erasing was written as `removeItem(LS); removeItem(LS_OLD);` inside a
+   try/catch, and LS_OLD was never declared anywhere -- so the line threw a
+   ReferenceError after clearing the current key, the catch swallowed it, and
+   the legacy keys were left sitting there. load() reads those keys when the
+   current one is missing, so "erase this device" erased nothing that lasted
+   a reload. Every key a book can live under is listed in one place now, and
+   erasing walks the list. */
+function wipeLocal(){
+  [LS].concat(LS_LEGACY).forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  try{ indexedDB.deleteDatabase(IDB); _db=null; }catch(e){}
+  try{ indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
+  S = emptyBook(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
+  ensurePerson(); detail=null; draft=null; trendCode=null;
+  try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){}
+}
 function openIdb(name){
   return new Promise((res,rej)=>{ let r; try{ r = indexedDB.open(name,1);}catch(e){return rej(e);}
     r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("f")) r.result.createObjectStore("f"); };
@@ -3030,8 +3045,8 @@ function syncCard(){
       '<div class="callout c-green" style="margin-top:var(--s3)"><div class="kick">Who can see these records</div>'+
       '<p>Only this account. The page is public, so anyone can open it &mdash; they get an empty book of their own and cannot reach yours. '+
       'Every row in the database is locked to the account that wrote it by a database rule, not by anything this page does, '+
-      'and new accounts open only to addresses on your family list. <b>The one thing that is not protected is this browser:</b> anyone using this device, signed in as you, sees what is on it. '+
-      'If that is a shared machine, use <i>Sign out and erase this device</i> below.</p></div>'+
+      'and new accounts open only to addresses on your family list. The book stays shut without a signed-in session, and <b>signing out erases this browser</b> &mdash; it syncs first so the account keeps everything, and refuses to erase if that sync does not land.</p>'+
+      '<p><b>What this does not do:</b> while you are signed in, anybody holding this unlocked device sees what you see. That is the device&rsquo;s own lock screen to solve, not this page&rsquo;s.</p></div>'+
       '<details><summary>Set or change your password</summary><div>'+
         '<div class="hint">A password signs you in without waiting for an email, which matters because this project allows one auth email a minute. Make it long and used nowhere else &mdash; it opens a medical record.</div>'+
         '<div class="row" style="margin-top:var(--s3)">'+
@@ -3040,7 +3055,7 @@ function syncCard(){
       '</div></details>'+
       '<details><summary>Leaving a shared or borrowed device</summary><div>'+
         '<div class="hint">Signs out and removes every record, attachment and setting from this browser. The account copy is untouched &mdash; sign in again anywhere and it all comes back.</div>'+
-        '<button class="btn warn sm" id="signOutWipe" style="margin-top:var(--s3)">Sign out and erase this device</button>'+
+
       '</div></details>'+
       '<details><summary>Something looks wrong with sync</summary><div>'+
         '<div class="hint">Wipes the copy held in the database and re-uploads this device as the truth. '+
@@ -3465,9 +3480,11 @@ async function consumeSignInLink(){
   const me = await supa("/auth/v1/user");
   if(me.ok && me.body && me.body.id){
     AUTH.uid = me.body.id; AUTH.email = me.body.email || null; saveAuth();
+    const other = claimDevice();
     const cleared = dropExamples();
     syncMsg = {t:"green", k:"Signed in",
       x:"This device now shows whatever "+(AUTH.email||"this account")+" holds."+
+        (other?" Another account's book was in this browser and was cleared \u2014 it was not this account's to carry.":"")+
         (cleared?" The example records were cleared \u2014 you have an account now, so the account is the record.":"")};
     return true;
   }
@@ -3564,6 +3581,7 @@ async function syncNow(quiet){
     render(); return;
   }
   syncing = true;
+  let ok = false;
   if(!quiet){ syncMsg = {t:"blue", k:"Syncing", x:"Reading what the other device left."}; render(); }
   const TBL = await stateTable();
   const q = "/rest/v1/" + TBL + "?select=doc,updated_at&user_id=eq." + encodeURIComponent(AUTH.uid);
@@ -3628,6 +3646,7 @@ async function syncNow(quiet){
                   : "Everything already matched. ")
         +"Your devices share "+after+" reading"+(after===1?"":"s")+"."
         +(samples? " The "+samples+" example records are local scaffolding and deliberately do not sync — clear them when you are done looking.":"")};
+    ok = true;
   }catch(e){
     changed = true;
     const offline = e && /Failed to fetch|NetworkError|Load failed/i.test(e.message||"");
@@ -3641,6 +3660,7 @@ async function syncNow(quiet){
   /* A background sync that found nothing must not repaint the page: a repaint
      mid-keystroke costs the caret and whatever was half-typed. */
   if(!quiet || changed) render();
+  return ok;
 }
 
 
@@ -4173,12 +4193,22 @@ function paintPeople(){
    in its own storage, refusing to open them until an email arrives. So the
    door is shut to a stranger and never to somebody whose records are
    already inside. Ty chose that shape knowing the alternatives. */
-const DOOR_KEY = "passbook-door";
-let doorOpen = (function(){ try{ return sessionStorage.getItem(DOOR_KEY)==="open"; }catch(e){ return false; } })();
-function openDoor(){
-  doorOpen = true;
-  try{ sessionStorage.setItem(DOOR_KEY,"open"); }catch(e){}
-}
+/* FIRST SHAPE, AND WHY IT WAS WRONG. This door used to let a browser that
+   already held records walk straight past it -- "there are records on this
+   device, open them" -- so an expired session could never strand somebody
+   from their own chart. Ty, on seeing it: "that is pretty much the back door
+   to my app. Anyone without approval from sign-in can still open that link
+   and see the records in there."
+
+   He is right, and the reasoning that produced it was wrong. I modelled the
+   threat as a stranger typing the address, who has an empty browser and
+   never sees that card. The threat that matters is somebody holding YOUR
+   phone, where the card is precisely what they need. A lock that offers the
+   key to whoever is standing at the door is not a lock.
+
+   So: no session, no records. The way back from an expired session is to
+   sign in, and the account is holding everything -- which is why signing out
+   syncs first and refuses to erase if that sync did not land. */
 function hasOwnRecords(){
   return (S.observations||[]).some(o=>!isSample(o))
       || (S.actions||[]).some(a=>!isSample(a))
@@ -4188,7 +4218,19 @@ function atDoor(){
   /* The artifact copy cannot reach the server at all, so a door there is a
      lock with no key. Same if no database was built into this copy. */
   if(IS_ARTIFACT || !syncConfigured()) return false;
-  return !AUTH && !doorOpen;
+  return !AUTH;
+}
+/* Records stay in the browser after a session expires, which is what makes
+   signing back in cheap. It also means a second person could sign in on this
+   device and the sync would merge somebody else's records into THEIR account
+   and upload them. The book records whose it is; a different account clears
+   it before anything syncs. */
+function claimDevice(){
+  if(!AUTH || !AUTH.uid) return false;
+  const taken = S.ownerUid && S.ownerUid !== AUTH.uid;
+  if(taken) wipeLocal();
+  S.ownerUid = AUTH.uid; save();
+  return !!taken;
 }
 function vDoor(){
   let h='<div style="max-width:56ch;margin:0 auto;padding:var(--s5) 0">'+
@@ -4221,12 +4263,13 @@ function vDoor(){
       'will not need a link again.</p></div>':'')+
     '</div>';
 
-  /* Never locked out of records that are sitting in this browser. */
+  /* A book left in this browser can be destroyed from here and never opened
+     from here. Erasing is a thing a stranger may safely do; reading is not. */
   if(hasOwnRecords())
-    h+='<div class="card" style="margin-bottom:var(--s4)"><div class="kick">On this device</div>'+
-      '<p style="margin:var(--s2) 0 var(--s3)">There are records stored in this browser. You can open them without '+
-      'signing in — they are here either way, and a book you cannot open is no use at a clinic.</p>'+
-      '<button class="btn" id="doorIn">Open them</button></div>';
+    h+='<div class="card" style="margin-bottom:var(--s4)"><div class="kick">There is a book in this browser</div>'+
+      '<p style="margin:var(--s2) 0 var(--s3)">It stays shut until somebody signs in to the account that wrote it. '+
+      'If this is not your device, or you are finished with it, you can wipe it from here without signing in.</p>'+
+      '<button class="btn warn" id="doorWipe">Erase the book in this browser</button></div>';
 
   h+='<div class="callout c-blue"><div class="kick">What it is, and what it never does</div>'+
     '<p>Every value is checked against the range printed on your own report, never against one this app made up. '+
@@ -4452,11 +4495,15 @@ function wireChart(){
 }
 
 document.addEventListener("click", async e=>{
-  const t=e.target.closest("[data-invsend],[data-shmerge],#doorIn,#shareSw,#shareNow,#shareStop,#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
+  const t=e.target.closest("[data-invsend],[data-shmerge],#doorWipe,#shareSw,#shareNow,#shareStop,#showSample,#goAccount,#qLang,#biToggle,[data-zoomsrc],[data-vzoom],[data-vrm],#invAdd,[data-invdel],[data-setpage],#qText,#qSimple,#qEmpty,[data-ladd],[data-ldel],#printCard,#printSheet,#simpleOn,#simpleOff,[data-tab],[data-trend],[data-p],[data-obs],[data-x],[data-openp],[data-rm],[data-dela],[data-delo],[data-fix],[data-flag],[data-delm],#clearSample,#doParse,#clearPaste,#addRow,#saveDraft,#killDraft,#aAdd,#addP,#expGo,#expCopy,#expFile,#impGo,#syncBtn,#syncReset,#sendCode,#verifyCode,#signOut,#panelAddBtn,#panelReset,[data-unpanel],[data-dropcode],#signOutWipe,[data-addcode],#pwSignIn,#pwSet,[data-docok],[data-docrm],[data-zoom],#docAll,[data-keep],[data-usealt],#pickFile,#pickFile2,#textSize,#wipe");
   if(!t) return;
   if(t.dataset.setpage!==undefined){ setPage=t.dataset.setpage||null; render(); window.scrollTo(0,0); return; }
   if(t.id==="goAccount"){ tab="settings"; setPage="sync"; render(); window.scrollTo(0,0); return; }
-  if(t.id==="doorIn"){ openDoor(); tab="today"; render(); window.scrollTo(0,0); return; }
+  if(t.id==="doorWipe"){
+    if(!confirm("Erase the book stored in this browser?\n\nIf it was never synced to an account, this cannot be undone.")) return;
+    wipeLocal(); who=S.members[0].id;
+    syncMsg={t:"blue",k:"This browser is clear",x:"Nothing is stored here any more."};
+    render(); return; }
   if(t.id==="shareSw"||t.id==="shareNow"||t.id==="shareStop"){
     const el=document.getElementById("shareName"); if(el) S.shareLabel=el.value.trim();
     if(t.id==="shareStop"){
@@ -4727,19 +4774,25 @@ document.addEventListener("click", async e=>{
       await syncNow();
     }catch(err){ syncMsg={t:"red",k:"Could not reset",x:err.message||String(err)}; render(); }
     return; }
-  if(t.id==="signOutWipe"){
-    if(!confirm("Erase every record from this browser and sign out?\n\nThe account copy is not touched \u2014 signing in again brings it all back.")) return;
-    if(!confirm("Last check. Anything on this device that was never synced will be gone for good.")) return;
+  /* Signing out erases this browser, so it has to get everything to the
+     account FIRST and prove it did. A sign-out that silently dropped the
+     readings somebody entered in a waiting room would be worse than any
+     door. If the sync does not land, nothing is erased, the reason is on
+     screen, and the hand-off is offered as the way to carry them out by
+     hand. */
+  if(t.id==="signOut"||t.id==="signOutWipe"){
+    if(!confirm("Sign out and erase this browser?\n\nEverything is synced to your account first, and comes back the next time you sign in.")) return;
+    syncMsg={t:"blue",k:"Syncing before it erases",x:"Making sure the account has everything that is on this device."};
+    render();
+    const landed = await syncNow(true);
+    if(!landed){
+      syncMsg={t:"red",k:"Not signed out, and nothing was erased",
+        x:"The account copy could not be brought up to date, so erasing this browser could lose whatever is only here. Nothing has been touched. Try again with a connection, or take a hand-off first and keep it yourself."};
+      render(); return; }
     AUTH=null; saveAuth(); codeSent=false;
-    try{ localStorage.removeItem(LS); localStorage.removeItem(LS_OLD); }catch(e){}
-    try{ indexedDB.deleteDatabase(IDB); _db=null; indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
-    S=emptyBook(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
-    ensurePerson(); who=S.members[0].id; detail=null; draft=null;
-    syncMsg={t:"blue",k:"This device is clear",x:"Signed out and wiped. Nothing of yours is left in this browser."};
-    render(); return; }
-  if(t.id==="signOut"){ AUTH=null; saveAuth(); codeSent=false;
-    doorOpen=false; try{ sessionStorage.removeItem(DOOR_KEY); }catch(e){}
-    syncMsg={t:"blue",k:"Signed out",x:"Every record is still on this device. Signing out does not delete anything."};
+    wipeLocal(); who=S.members[0].id;
+    syncMsg={t:"blue",k:"Signed out, and this browser is clear",
+      x:"Everything reached your account first. Nothing of yours is left here \u2014 sign in again and it all comes back."};
     render(); return; }
   if(t.id==="pwSignIn"){
     const em=(document.getElementById("syEmail").value||"").trim();
@@ -4748,7 +4801,7 @@ document.addEventListener("click", async e=>{
     if(!pw){ document.getElementById("syPass").focus(); return; }
     pendingEmail=em;
     syncMsg={t:"blue",k:"Signing in",x:"Checking with the database."}; render();
-    try{ await signInPassword(em,pw); dropExamples(); syncMsg=null; render(); await syncNow(); }
+    try{ await signInPassword(em,pw); claimDevice(); dropExamples(); syncMsg=null; render(); await syncNow(); await loadShares(); }
     catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
     return; }
   if(t.id==="pwSet"){
@@ -4770,7 +4823,7 @@ document.addEventListener("click", async e=>{
   if(t.id==="verifyCode"){
     const c=(document.getElementById("syCode").value||"").trim();
     if(!c) return;
-    try{ await verifyCode(pendingEmail,c); codeSent=false; dropExamples(); syncMsg=null; render(); await syncNow(); }
+    try{ await verifyCode(pendingEmail,c); codeSent=false; claimDevice(); dropExamples(); syncMsg=null; render(); await syncNow(); await loadShares(); }
     catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
