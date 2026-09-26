@@ -3566,19 +3566,24 @@ function queueSync(){
 }
 
 async function syncNow(quiet){
-  if(syncing) return;
+  if(syncing) return false;
   if(IS_ARTIFACT){
     syncMsg = {t:"amber", k:"Sync does not run in this copy",
       x:"The claude.ai viewer blocks a page from reaching an outside server, so this copy is local-only by platform rule, not by choice. Open the same book at ttrng3.github.io/passbook to sync."};
-    render(); return;
+    render(); return false;
   }
   if(!syncConfigured()){
     syncMsg = {t:"amber", k:"Sync is not wired up", x:"No database address was built into this copy of the page."};
-    render(); return;
+    render(); return false;
   }
   if(!AUTH){
+    /* A sync queued before sign-out fires just after it and used to land on
+       the door, replacing "this browser is clear" with "Not signed in" --
+       an answer to a question nobody had asked. A background sync with no
+       session has nothing to say. */
+    if(quiet) return false;
     syncMsg = {t:"amber", k:"Not signed in", x:"Sign in below, then sync will run."};
-    render(); return;
+    render(); return false;
   }
   syncing = true;
   let ok = false;
@@ -4209,11 +4214,6 @@ function paintPeople(){
    So: no session, no records. The way back from an expired session is to
    sign in, and the account is holding everything -- which is why signing out
    syncs first and refuses to erase if that sync did not land. */
-function hasOwnRecords(){
-  return (S.observations||[]).some(o=>!isSample(o))
-      || (S.actions||[]).some(a=>!isSample(a))
-      || LISTS.some(l=>(S[l[0]]||[]).some(x=>!isSample(x)));
-}
 function atDoor(){
   /* The artifact copy cannot reach the server at all, so a door there is a
      lock with no key. Same if no database was built into this copy. */
@@ -4263,13 +4263,6 @@ function vDoor(){
       'will not need a link again.</p></div>':'')+
     '</div>';
 
-  /* A book left in this browser can be destroyed from here and never opened
-     from here. Erasing is a thing a stranger may safely do; reading is not. */
-  if(hasOwnRecords())
-    h+='<div class="card" style="margin-bottom:var(--s4)"><div class="kick">There is a book in this browser</div>'+
-      '<p style="margin:var(--s2) 0 var(--s3)">It stays shut until somebody signs in to the account that wrote it. '+
-      'If this is not your device, or you are finished with it, you can wipe it from here without signing in.</p>'+
-      '<button class="btn warn" id="doorWipe">Erase the book in this browser</button></div>';
 
   h+='<div class="callout c-blue"><div class="kick">What it is, and what it never does</div>'+
     '<p>Every value is checked against the range printed on your own report, never against one this app made up. '+
@@ -4278,6 +4271,16 @@ function vDoor(){
     'the original report is what a clinician should see.</p></div>'+
     '<p class="cap" style="margin-top:var(--s4)">The page is public and its source is readable by anyone. '+
     'Records are not: each account reads only its own, enforced by the database.</p>'+
+    /* ONE SCREEN, THE SAME FOR EVERYBODY. This was a card that appeared only
+       when a book was present. It showed no records -- it reads nothing and
+       renders nothing from the book, it only deletes -- but it told whoever
+       was holding the phone that there WAS one, and it made the front screen
+       differ between visitors. Existence is a disclosure. Offered to
+       everyone now, in a footer, phrased so it says nothing about this
+       browser either way: a person who has something here and a person who
+       has nothing see the identical page. */
+    '<p class="cap" style="margin-top:var(--s3)">'+
+      '<button class="btn sm" id="doorWipe">Erase anything this browser has stored</button></p>'+
   '</div>';
   return h;
 }
