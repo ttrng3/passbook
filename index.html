@@ -4956,7 +4956,39 @@ document.addEventListener("change", async e=>{
   if(el.id==="globalPick"){ const fs=el.files; const copy=fs?[...fs]:[]; el.value=""; if(copy.length) await handleIncomingFiles(copy); return; }
 
 });
-document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&detail){ detail=null; drawer(); } });
+/* Enter should sign you in. These are loose inputs rather than a <form>:
+   the page's own CSP sets form-action 'none', and a real submit would try
+   to navigate rather than call the handler. So the key is wired to the
+   button somebody would otherwise have to reach for.
+
+   From the email box with nothing in the password box yet, Enter moves to
+   the password box instead of submitting. That is what every other sign-in
+   does, and it saves a request that could only fail -- which matters here,
+   because a wrong attempt costs a round trip and the email routes are rate
+   limited to two an hour.
+
+   isComposing is checked because Enter also commits a Vietnamese IME
+   candidate, and swallowing that keystroke would submit the form while
+   somebody was still typing a word. */
+function submitOnEnter(e){
+  if(e.key!=="Enter" || e.isComposing || e.shiftKey) return;
+  const id = e.target && e.target.id;
+  if(id==="syEmail"){
+    const pw = document.getElementById("syPass");
+    if(pw && !pw.value){ e.preventDefault(); pw.focus(); return; }
+  }
+  const btn = (id==="syEmail"||id==="syPass")   ? document.getElementById("pwSignIn")
+            : (id==="syCode")                   ? document.getElementById("verifyCode")
+            : (id==="invEmail"||id==="invNote") ? document.getElementById("invAdd")
+            : null;
+  if(!btn || btn.disabled) return;
+  e.preventDefault();
+  btn.click();
+}
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&detail){ detail=null; drawer(); return; }
+  submitOnEnter(e);
+});
 
 /* print: CSS cannot open a <details>, so do it here */
 (function(){var r=[];function o(){r=[];document.querySelectorAll("details:not([open])").forEach(function(d){r.push(d);d.open=true});}
