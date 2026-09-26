@@ -1452,7 +1452,7 @@ function wipeLocal(){
   try{ indexedDB.deleteDatabase(IDB); _db=null; }catch(e){}
   try{ indexedDB.deleteDatabase(IDB_OLD); _dbOld=null; }catch(e){}
   S = emptyBook(); S.tomb={o:[],a:[],m:[],p:[]}; S.customCodes={}; S.panel=DEFAULT_PANEL.slice();
-  ensurePerson(); detail=null; draft=null; trendCode=null;
+  ensurePerson(); detail=null; draft=null; trendCode=null; _lastShareDoc=null;
   try{ localStorage.setItem(LS, JSON.stringify(S)); }catch(e){}
 }
 function openIdb(name){
@@ -4329,7 +4329,7 @@ function vDoor(){
    What it still is: another person's medical record, in Singapore, readable
    by an account that is not theirs. Migration 0022 says so in as many words
    and so does the panel. */
-let shareRows = null, shareMsg = null, _orch;
+let shareRows = null, shareMsg = null, _orch, _lastShareDoc = null;
 
 function shareDoc(){
   const out = {kind:"passbook", v:2, exported:today(),
@@ -4357,15 +4357,25 @@ async function sharePush(quiet){
       x:"Sharing hands your book to whoever invited you, and the database says nobody invited this account \u2014 this is the account that does the inviting."};
     return;
   }
+  /* Flipping the switch pushes once, and save() queues a sync that pushes
+     again 2.5s later -- so turning sharing on uploaded the whole book twice,
+     and every background sync afterwards re-uploaded it unchanged. A medical
+     document is not a thing to send again for no reason. A background push
+     with nothing new to say stays quiet; pressing "Update the copy now"
+     still sends, because somebody asking for that is asking for a round
+     trip they can see the result of. */
+  const doc = shareDoc(), stamp = JSON.stringify(doc);
+  if(quiet && stamp === _lastShareDoc) return;
   const r = await supa("/rest/v1/passbook_shares", {method:"POST",
     headers:{"Prefer":"resolution=merge-duplicates,return=minimal"},
     body:[{user_id:AUTH.uid, shared_with:to, shared_email:AUTH.email||"",
-           label:((S.shareLabel||"").trim()||null), doc:shareDoc()}]});
+           label:((S.shareLabel||"").trim()||null), doc:doc}]});
   if(!r.ok){
     shareMsg = {t:"red", k:"The copy did not go",
       x:(r.body&&(r.body.message||r.body.hint))||("The database refused it (HTTP "+r.status+"). Nothing on this device changed.")};
     return;
   }
+  _lastShareDoc = stamp;
   S.lastShare = new Date().toISOString(); save();
   if(!quiet) shareMsg = {t:"green", k:"Copy updated", x:"They are seeing what this book holds as of now."};
 }
@@ -4373,7 +4383,7 @@ async function shareStop(){
   if(!AUTH) return;
   const r = await supa("/rest/v1/passbook_shares?user_id=eq."+encodeURIComponent(AUTH.uid),
     {method:"DELETE"});
-  S.shareOn = false; S.lastShare = null; save();
+  S.shareOn = false; S.lastShare = null; _lastShareDoc = null; save();
   shareMsg = r.ok
     ? {t:"blue", k:"Sharing stopped", x:"The copy was deleted, not hidden. There is nothing left for them to open."}
     : {t:"red", k:"Switched off here, but the copy may still be on the server",

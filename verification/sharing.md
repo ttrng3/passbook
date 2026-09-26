@@ -36,6 +36,13 @@ window.fetch = async (url, opts) => {
 AUTH = {tok:"tok", ref:"ref", uid:"u-me-uuid", email:"t.trng3@gmail.com"};
 ```
 
+**`AUTH = {...}` with no prefix is load-bearing, not styling.** The app
+declares `let AUTH = null` at top-level script scope. `window.AUTH = {...}`
+sets an unrelated property, throws nothing, and the app goes on reading its
+own lexical binding as null — the sign-in screen just stays up and the run
+looks broken for no visible reason. Assign bare. (Found 26/09 by a cold run
+that hit it.)
+
 **Proves:** what leaves the device, the recipient's provenance, the on/off
 verbs, the recipient-side render and merge. **Does not prove:** that the
 server enforces any of it — that is the curl section, which is not optional
@@ -105,6 +112,20 @@ JSON.stringify({
 | Anonymous writer | refused by the database | curl below returns `401` / `42501` |
 | Recipient merging a book in | every row marked device-only | `syncable()` excludes all of it |
 | The row on screen | not mutated by the merge | source `doc` still has no `local` flags |
+| A background sync after a push | **no second upload** | exactly one POST to `passbook_shares` per toggle |
+
+**26/09 — one toggle, two uploads.** Flipping the switch pushed once, and the
+sync `save()` queued pushed the identical document again 2.5s later; every
+later background sync re-uploaded it unchanged. Nothing leaked, but a medical
+document was being sent repeatedly for no reason. A cold run reported the
+duplicate as an observation; the protocol had made no claim about it, which is
+why it survived. It makes one now:
+
+```js
+sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length  // expect 1
+```
+Press "Update the copy now" and it must still send — an explicit request earns
+a round trip; a background one with nothing new to say does not.
 
 Recipient-side merge assertions:
 
