@@ -4514,6 +4514,7 @@ document.addEventListener("click", async e=>{
   if(t.id==="goAccount"){ tab="settings"; setPage="sync"; render(); window.scrollTo(0,0); return; }
   if(t.id==="doorWipe"){
     if(!confirm("Erase the book stored in this browser?\n\nIf it was never synced to an account, this cannot be undone.")) return;
+    pendingEmail=""; codeSent=false;
     wipeLocal(); who=S.members[0].id;
     syncMsg={t:"blue",k:"This browser is clear",x:"Nothing is stored here any more."};
     render(); return; }
@@ -4803,6 +4804,12 @@ document.addEventListener("click", async e=>{
         x:"The account copy could not be brought up to date, so erasing this browser could lose whatever is only here. Nothing has been touched. Try again with a connection, or take a hand-off first and keep it yourself."};
       render(); return; }
     AUTH=null; saveAuth(); codeSent=false;
+    /* pwSignIn parks the address in pendingEmail so a failed attempt can be
+       retried without retyping it. Signing out left it parked, so the door
+       came back carrying the last person's email address -- 2260 bytes where
+       a stranger gets 2093. The one screen is supposed to be the same screen,
+       and handing the phone over is exactly the moment it was not. */
+    pendingEmail="";
     wipeLocal(); who=S.members[0].id;
     syncMsg={t:"blue",k:"Signed out, and this browser is clear",
       x:"Everything reached your account first. Nothing of yours is left here \u2014 sign in again and it all comes back."};
@@ -4815,7 +4822,13 @@ document.addEventListener("click", async e=>{
     pendingEmail=em;
     syncMsg={t:"blue",k:"Signing in",x:"Checking with the database."}; render();
     try{ await signInPassword(em,pw); claimDevice(); dropExamples(); syncMsg=null; render(); await syncNow(); await loadShares(); }
-    catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
+    catch(err){
+      syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render();
+      /* render() replaces the inputs, so focus fell to <body> and the next
+         keystroke went nowhere. After asking for Enter to work, landing a
+         mistyped password back at the mouse is the same complaint again. */
+      const el=document.getElementById("syPass"); if(el) el.focus();
+    }
     return; }
   if(t.id==="pwSet"){
     const pw=document.getElementById("newPass").value||"";
@@ -4837,7 +4850,10 @@ document.addEventListener("click", async e=>{
     const c=(document.getElementById("syCode").value||"").trim();
     if(!c) return;
     try{ await verifyCode(pendingEmail,c); codeSent=false; claimDevice(); dropExamples(); syncMsg=null; render(); await syncNow(); await loadShares(); }
-    catch(err){ syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render(); }
+    catch(err){
+      syncMsg={t:"red",k:"Sign-in failed",x:err.message||String(err)}; render();
+      const el=document.getElementById("syCode"); if(el) el.focus();
+    }
     return; }
   if(t.id==="impGo"){ doImport(document.getElementById("impBox").value); return; }
   if(t.id==="wipe"){ if(!confirm("Delete every person, reading and follow-up?")) return;

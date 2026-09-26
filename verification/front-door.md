@@ -109,6 +109,20 @@ Use an `example.invalid` address only — the gate refuses it, so nothing is cre
 | Someone after a sign-out | the door, and nothing stored | `storedObs === 0` |
 | Expired session, book still present | the door, no way through | `atDoor() === true`, no `doorIn` element |
 | A second account signing in here | the first person's book cleared first | `claimDevice()` returns `true`, `S.observations.length === 0` |
+| **Someone picking up the phone after a sign-out** | the stranger's door, no trace of who was here | door is 2093 bytes once the sign-out banner is dismissed; `syEmail` is empty |
+
+**27/09 — the invariant had a blind spot, and this is the lesson.** The
+byte-identity check compared *empty browser* against *loaded browser*, and
+both are **pre**-sign-in states. It never looked at the door **after** a
+sign-out — and there it was 2260 bytes, carrying the previous account's email
+address in the sign-in box, because `pwSignIn` parks it in `pendingEmail` so a
+failed attempt can be retried and sign-out never cleared it. A reload cleaned
+it, so it was invisible to anyone who refreshed before looking.
+
+**An invariant is only as good as the states you evaluate it in.** Two states
+felt like coverage; the third was the one a person actually reaches by handing
+over a phone. When a protocol asserts sameness, enumerate the ways in — a
+fresh arrival and a departure are different doors.
 | Same account signing back in | its book kept | `claimDevice()` returns `false`, records intact |
 
 **26/09 — `saysABookExists: false`.** A card used to appear only when a book
