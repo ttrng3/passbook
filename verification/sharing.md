@@ -164,7 +164,20 @@ curl -s -o /dev/null -w '%{http_code}\n' -X POST "$URL/rest/v1/passbook_shares" 
   -d '[{"user_id":"00000000-0000-0000-0000-000000000001","shared_with":"00000000-0000-0000-0000-000000000002","shared_email":"x@x.com"}]'
                                                                                      # expect 401 / 42501
 curl -s "$URL/rest/v1/does_not_exist?select=x" -H "apikey: $KEY"                     # CONTROL: PGRST205
+curl -s -X POST "$URL/rest/v1/rpc/my_orchestrator" -H "apikey: $KEY" \
+  -H 'Content-Type: application/json' -d '{}'
+             # expect 401 {"code":"42501","message":"permission denied for function my_orchestrator"}
 ```
+
+**26/09 — a null is not a lock.** For a day and a half this call answered
+`200 null` and was read as "inert, therefore fine". The live ACL said
+`anon=X`: anon held EXECUTE the whole time, and two rounds of diagnosis blamed
+a PostgREST plan cache that was never involved. The cause is that Supabase
+grants execute on new `public` functions to anon **by name**, so
+`revoke all ... from public` leaves it standing — *in this project, revoking
+from PUBLIC is not revoking from anon.* Migration 0024. Assert the `42501`,
+never the `null`: a function that is merely inert and one that is actually
+locked return the same body.
 A `[]` only means "locked" if the control proves a missing table looks
 different. Run the control every time.
 
