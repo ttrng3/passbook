@@ -1,0 +1,54 @@
+# Publishes only the paths listed in .pages-allow. Everything else in the
+# repo (verification/, supabase/, work/, sources) is never served.
+# Fails closed: a missing or escaping path stops the deploy and the live
+# site stays as it was.
+name: Pages (allowlist)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Stage allowlisted files
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf _site && mkdir _site
+          n=0
+          while IFS= read -r line || [ -n "$line" ]; do
+            path="${line%%#*}"; path="$(echo "$path" | xargs)"
+            [ -z "$path" ] && continue
+            case "$path" in /*|*..*) echo "::error::refusing path outside the repo: $path"; exit 1;; esac
+            [ -f "$path" ] || { echo "::error::listed in .pages-allow but missing: $path"; exit 1; }
+            cp --parents "$path" _site/
+            n=$((n+1))
+          done < .pages-allow
+          [ "$n" -gt 0 ] || { echo "::error::.pages-allow lists nothing"; exit 1; }
+          echo "Publishing $n file(s):"; find _site -type f | sort
+
+      - uses: actions/configure-pages@v6
+
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v5

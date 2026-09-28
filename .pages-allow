@@ -1,0 +1,5 @@
+# Files GitHub Pages publishes. Nothing else in this repo is served.
+# One path per line, relative to the repo root. A missing path fails the deploy
+# (the live site stays as it was). Add a line here only for a file the page
+# itself needs; never a folder of notes, protocols, config or data.
+index.html
