@@ -33,7 +33,7 @@ window.fetch = async (url, opts) => {
   if(String(url).includes('rpc/my_orchestrator')) return new Response('"u-ty-uuid"',{status:200});
   return new Response('[]',{status:200});
 };
-AUTH = {tok:"tok", ref:"ref", uid:"u-me-uuid", email:"t.trng3@gmail.com"};
+AUTH = {tok:"tok", ref:"ref", uid:"u-me-uuid", email:"owner@example.com"};
 ```
 
 **`AUTH = {...}` with no prefix is load-bearing, not styling.** The app

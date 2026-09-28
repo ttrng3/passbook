@@ -39,12 +39,12 @@ S.observations.push({id:"x1",memberId:S.members[0].id,code:"ldl_c",valueRaw:"9.9
   unit:"mmol/L",value:9.9,observedAt:"2026-09-20",source:"A private lab",
   refLow:0,refHigh:3.4,refLabel:"",fasting:"",specimen:"",note:"",
   manualStatus:null,origin:""});
-S.members[0].name = "Ty Truong"; S.ownerUid = "u-me"; save(); render();
+S.members[0].name = "Test Owner"; S.ownerUid = "u-me"; save(); render();
 const loadedDoor = document.getElementById('view').innerHTML;
 JSON.stringify({
   IDENTICAL: strangerDoor === loadedDoor,
   len: strangerDoor.length,                       // expect 2093
-  leaksTheName: /Ty Truong/.test(loadedDoor),     // expect false
+  leaksTheName: /Test Owner/.test(loadedDoor),     // expect false
   leaksAValue: /9\.9|private lab/i.test(loadedDoor), // expect false
   saysABookExists: /book in this browser|There is a book/i.test(loadedDoor), // expect false
   eraseOfferedInBoth: /doorWipe/.test(strangerDoor) && /doorWipe/.test(loadedDoor),
@@ -64,7 +64,7 @@ out loud in the report rather than left to inference:
 
 ```js
 window.fetch = async () => new Response('[]', {status:200});  // stub FIRST
-AUTH = {tok:"t", ref:"r", uid:"u-me", email:"t.trng3@gmail.com"};
+AUTH = {tok:"t", ref:"r", uid:"u-me", email:"owner@example.com"};
 claimDevice(); render();
 ```
 
