@@ -100,6 +100,35 @@ JSON.stringify({
 
 `RELATIVE_LEAKED` is the assertion this whole protocol exists for.
 
+**Step 4, the owner's own account.** The database answers `null` for the
+account that does the inviting. Re-stub so the RPC says so, reset the cached
+answer, and flip the switch:
+
+```js
+const sent4 = [];
+window.fetch = async (url, opts) => {
+  sent4.push({url:String(url).replace(/^https?:\/\/[^/]+/,''), method:(opts&&opts.method)||'GET'});
+  if(String(url).includes('rpc/my_orchestrator')) return new Response('null',{status:200});
+  return new Response('[]',{status:200});
+};
+_orch = undefined; S.shareOn = false; shareMsg = null; _lastShareDoc = null;
+tab="settings"; setPage="share"; render();
+document.getElementById('shareSw').click();
+// wait ~3s (past the 2.5s background sync), then:
+JSON.stringify({
+  askedTheRpc: sent4.some(s=>s.url.includes('rpc/my_orchestrator')),                       // expect true
+  writesToShares: sent4.filter(s=>s.url.includes('passbook_shares') && s.method!=='GET').length, // expect 0
+  shareOn: S.shareOn,                                                                       // expect false
+  saidWhy: shareMsg && shareMsg.k                                                           // expect "There is nobody to share with"
+}, null, 1)
+```
+
+Assert on writes to `passbook_shares`, not on "no other request". Routine book
+sync (`passbook_state`) legitimately fires in the same window. A check that
+says "only the RPC fired" comes out false on a correct app, and a protocol
+must not pass with a false assertion in it. (28/09: a verifier improvised that
+check here, and it read false.)
+
 ## Adversary
 
 | Who / what | Must happen | Assertion |
@@ -107,7 +136,7 @@ JSON.stringify({
 | The page tries to choose a recipient | it cannot — the client never sends one | `shared_with` equals only what the RPC returned |
 | Sharer holds a third person's records | they do not travel | `RELATIVE_LEAKED === false` |
 | Sharer switches off | the copy is **deleted**, not flagged | a `DELETE` is issued; no `revoked` field anywhere |
-| An account nobody invited (the owner) | nothing is written at all | only the RPC call fires; no POST to `passbook_shares` |
+| An account nobody invited (the owner) | nothing is written to the shares table, and the page says why | the RPC is asked; **zero writes** (POST/PATCH/DELETE) to `passbook_shares`; switch back off; "There is nobody to share with" shown. Background book sync (`passbook_state`) may fire and is not a failure |
 | Anonymous reader | sees nothing | curl below returns `[]` |
 | Anonymous writer | refused by the database | curl below returns `401` / `42501` |
 | Recipient merging a book in | every row marked device-only | `syncable()` excludes all of it |
