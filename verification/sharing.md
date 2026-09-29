@@ -69,17 +69,17 @@ Plant a relative's records via the hand-off path first, so the exclusion is
 tested against records that really are marked `local`:
 
 ```js
-S.observations.push({id:"mine-1",memberId:S.members[0].id,code:"ldl_c",valueRaw:"3.1",
-  unit:"mmol/L",value:3.1,refLow:0,refHigh:3.4,refLabel:"< 3.4 mmol/L",
-  observedAt:"2026-09-20",source:"Medlatec",fasting:"fasting",specimen:"",note:"",
+S.observations.push({id:"mine-1",memberId:S.members[0].id,code:"ldl_c",valueRaw:"3.2",
+  unit:"mmol/L",value:3.2,refLow:0,refHigh:3.4,refLabel:"< 3.4 mmol/L",
+  observedAt:"2026-09-20",source:"Example Lab",fasting:"fasting",specimen:"",note:"",
   manualStatus:null,origin:""});
 mergeIn({kind:"passbook",v:2,
-  members:[{id:"va-1",name:"Vân Anh",sex:"female",dob:"1994-02-09",population:"asian_pacific"}],
-  observations:[{id:"va-o1",memberId:"va-1",code:"glucose_fasting",valueRaw:"7.2",
-    unit:"mmol/L",value:7.2,refLow:3.9,refHigh:6.1,refLabel:"3.9–6.1 mmol/L",
-    observedAt:"2026-09-01",source:"Vinmec",fasting:"fasting",specimen:"",note:"",
+  members:[{id:"rel-1",name:"Relative (example)",sex:"female",dob:"1990-01-01",population:"asian_pacific"}],
+  observations:[{id:"rel-o1",memberId:"rel-1",code:"glucose_fasting",valueRaw:"6.9",
+    unit:"mmol/L",value:6.9,refLow:3.9,refHigh:6.1,refLabel:"3.9–6.1 mmol/L",
+    observedAt:"2026-09-01",source:"Example Lab",fasting:"fasting",specimen:"",note:"",
     manualStatus:null,origin:""}],
-  actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]}, "from Vân Anh");
+  actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]}, "from Relative (example)");
 _orch = undefined; S.shareOn = false; shareRows = [];
 tab="settings"; setPage="share"; render();
 document.getElementById('shareName').value = "Ty";
@@ -93,8 +93,8 @@ JSON.stringify({
   sharedEmail: push && push.body[0].shared_email,     // the caller's own
   docMembers: doc && doc.members.map(m=>m.name),      // ["Me"] only
   docObsIds: doc && doc.observations.map(o=>o.id),    // ["mine-1"] only
-  RELATIVE_LEAKED: doc ? (doc.observations.some(o=>o.memberId==='va-1')
-                       || doc.members.some(m=>m.id==='va-1')) : "no push"   // MUST be false
+  RELATIVE_LEAKED: doc ? (doc.observations.some(o=>o.memberId==='rel-1')
+                       || doc.members.some(m=>m.id==='rel-1')) : "no push"   // MUST be false
 }, null, 1)
 ```
 
@@ -159,22 +159,22 @@ a round trip; a background one with nothing new to say does not.
 Recipient-side merge assertions:
 
 ```js
-shareRows = [{user_id:"u-va", shared_email:"vananh@example.com", label:"Vân Anh",
-  doc:{kind:"passbook",v:2,members:[{id:"vb-1",name:"Vân Anh",sex:"female",dob:"1994-02-09",population:"asian_pacific"}],
-    observations:[{id:"vb-o1",memberId:"vb-1",code:"glucose_fasting",valueRaw:"7.2",unit:"mmol/L",
-      value:7.2,refLow:3.9,refHigh:6.1,refLabel:"",observedAt:"2026-09-01",source:"Vinmec",
+shareRows = [{user_id:"u-rel", shared_email:"relative@example.com", label:"Relative (example)",
+  doc:{kind:"passbook",v:2,members:[{id:"relb-1",name:"Relative (example)",sex:"female",dob:"1990-01-01",population:"asian_pacific"}],
+    observations:[{id:"relb-o1",memberId:"relb-1",code:"glucose_fasting",valueRaw:"6.9",unit:"mmol/L",
+      value:6.9,refLow:3.9,refHigh:6.1,refLabel:"",observedAt:"2026-09-01",source:"Example Lab",
       fasting:"fasting",specimen:"",note:"",manualStatus:null,origin:""}],
     actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]},
   updated_at:new Date().toISOString()}];
 render();
 document.querySelector('[data-shmerge]').click();
 // then:
-const imported = S.observations.filter(o=>o.memberId==='vb-1');
+const imported = S.observations.filter(o=>o.memberId==='relb-1');
 JSON.stringify({
   tabAppeared: [...document.querySelectorAll('#tabs .tab')].some(b=>/Shared/.test(b.textContent)),
   importedCount: imported.length,
   allMarkedLocal: imported.every(o=>o.local===true),
-  excludedFromSync: syncable(S.observations).filter(o=>o.memberId==='vb-1').length,  // 0
+  excludedFromSync: syncable(S.observations).filter(o=>o.memberId==='relb-1').length,  // 0
   sourceRowNotMutated: shareRows[0].doc.observations.every(o=>o.local===undefined)
 }, null, 1)
 ```
