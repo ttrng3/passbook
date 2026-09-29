@@ -84,8 +84,13 @@ _orch = undefined; S.shareOn = false; shareRows = [];
 tab="settings"; setPage="share"; render();
 document.getElementById('shareName').value = "Ty";
 document.getElementById('shareSw').click();
-// wait ~4s: save() queues a sync 2.5s after a change (frag.html, the comment above
-// the share push), so step 1's sync has fired before anything later reads traffic; then:
+```
+
+Wait ~4s, then read in a separate paste. The app's `save()` queues a sync 2.5s
+after a change (frag.html, the comment above the share push), so step 1's sync
+has fired before anything later reads traffic:
+
+```js
 var push = sent.find(s=>s.url.includes('passbook_shares') && s.method==='POST');
 var doc = push && push.body[0].doc;
 JSON.stringify({
@@ -228,6 +233,10 @@ different. Run the control every time.
 - console clean of `TypeError|ReferenceError|Uncaught`
 
 ## Traps
+
+- Re-pasting a block never throws (every block declares with `var`), but it runs
+  its actions again: a second invariants paste adds a second observation and a
+  second push. To retry a step, start again from **Clean state**.
 
 - Stub `fetch` **before** `AUTH`, or the queued sync gets a 401 and clears it.
 - Stub `window.confirm`; switching off asks for confirmation.
