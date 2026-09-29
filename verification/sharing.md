@@ -121,8 +121,7 @@ Then press "Update the copy now", which must still send:
 shareMsg = null; document.getElementById('shareNow').click();
 ```
 
-Wait until the panel says "Copy updated" (`shareMsg && shareMsg.k === "Copy updated"`,
-normally under a second), then:
+Wait until the panel says "Copy updated" (`shareMsg && shareMsg.k === "Copy updated"`), then:
 
 ```js
 sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle   // expect 1
@@ -132,6 +131,7 @@ sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - 
 confirmation passes.)
 
 ```js
+var sentBeforeStop = sent.length;
 shareMsg = null; document.getElementById('shareStop').click();
 ```
 
@@ -139,12 +139,15 @@ Wait until the panel says "Sharing stopped", then:
 
 ```js
 JSON.stringify({
-  deleteIssued: sent.some(s=>s.url.includes('passbook_shares') && s.method==='DELETE'),   // expect true
+  deleteIssued: sent.slice(sentBeforeStop).some(s=>s.url.includes('passbook_shares') && s.method==='DELETE'),   // expect true
   noRevokedField: sent.every(s=>!JSON.stringify(s.body||'').includes('revoked')),          // expect true
   shareOn: S.shareOn,                                                                       // expect false
   lastShare: S.lastShare                                                                    // expect null
 }, null, 1)
 ```
+
+Before step 4, wait ~4s after "Sharing stopped", so the stop's own queued sync
+(2.5s, as above) has fired before step 4's stub goes in.
 
 **Step 4, the owner's own account.** The database answers `null` for the
 account that does the inviting. Re-stub so the RPC says so, reset the cached
@@ -160,7 +163,11 @@ window.fetch = async (url, opts) => {
 _orch = undefined; S.shareOn = false; shareMsg = null; _lastShareDoc = null;
 tab="settings"; setPage="share"; render();
 document.getElementById('shareSw').click();
-// wait ~3s (past the 2.5s background sync), then:
+```
+
+Wait ~4s (past the 2.5s queued sync), then read in a separate paste:
+
+```js
 JSON.stringify({
   askedTheRpc: sent4.some(s=>s.url.includes('rpc/my_orchestrator')),                       // expect true
   writesToShares: sent4.filter(s=>s.url.includes('passbook_shares') && s.method!=='GET').length, // expect 0
