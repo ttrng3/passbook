@@ -74,12 +74,12 @@ S.observations.push({id:"mine-1",memberId:S.members[0].id,code:"ldl_c",valueRaw:
   observedAt:"2026-09-20",source:"Medlatec",fasting:"fasting",specimen:"",note:"",
   manualStatus:null,origin:""});
 mergeIn({kind:"passbook",v:2,
-  members:[{id:"va-1",name:"Vân Anh",sex:"female",dob:"1994-02-09",population:"asian_pacific"}],
-  observations:[{id:"va-o1",memberId:"va-1",code:"glucose_fasting",valueRaw:"7.2",
-    unit:"mmol/L",value:7.2,refLow:3.9,refHigh:6.1,refLabel:"3.9–6.1 mmol/L",
-    observedAt:"2026-09-01",source:"Vinmec",fasting:"fasting",specimen:"",note:"",
+  members:[{id:"va-1",name:"Relative (example)",sex:"female",dob:"1990-01-01",population:"asian_pacific"}],
+  observations:[{id:"va-o1",memberId:"va-1",code:"glucose_fasting",valueRaw:"6.9",
+    unit:"mmol/L",value:6.9,refLow:3.9,refHigh:6.1,refLabel:"3.9–6.1 mmol/L",
+    observedAt:"2026-09-01",source:"Example Lab",fasting:"fasting",specimen:"",note:"",
     manualStatus:null,origin:""}],
-  actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]}, "from Vân Anh");
+  actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]}, "from Relative (example)");
 _orch = undefined; S.shareOn = false; shareRows = [];
 tab="settings"; setPage="share"; render();
 document.getElementById('shareName').value = "Ty";
@@ -159,10 +159,10 @@ a round trip; a background one with nothing new to say does not.
 Recipient-side merge assertions:
 
 ```js
-shareRows = [{user_id:"u-va", shared_email:"vananh@example.com", label:"Vân Anh",
-  doc:{kind:"passbook",v:2,members:[{id:"vb-1",name:"Vân Anh",sex:"female",dob:"1994-02-09",population:"asian_pacific"}],
-    observations:[{id:"vb-o1",memberId:"vb-1",code:"glucose_fasting",valueRaw:"7.2",unit:"mmol/L",
-      value:7.2,refLow:3.9,refHigh:6.1,refLabel:"",observedAt:"2026-09-01",source:"Vinmec",
+shareRows = [{user_id:"u-va", shared_email:"relative@example.com", label:"Relative (example)",
+  doc:{kind:"passbook",v:2,members:[{id:"vb-1",name:"Relative (example)",sex:"female",dob:"1990-01-01",population:"asian_pacific"}],
+    observations:[{id:"vb-o1",memberId:"vb-1",code:"glucose_fasting",valueRaw:"6.9",unit:"mmol/L",
+      value:6.9,refLow:3.9,refHigh:6.1,refLabel:"",observedAt:"2026-09-01",source:"Example Lab",
       fasting:"fasting",specimen:"",note:"",manualStatus:null,origin:""}],
     actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]},
   updated_at:new Date().toISOString()}];
