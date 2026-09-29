@@ -56,8 +56,10 @@ twin and only the twin is load-bearing.
    `POST /rest/v1/passbook_shares`.
 2. **Inspect what left.** The share document must contain the owner's rows
    and nothing marked `local`.
-3. **Turn it off.** Expect `DELETE /rest/v1/passbook_shares`, the switch off,
-   `S.lastShare` null.
+3. **Turn it off.** Expect `DELETE /rest/v1/passbook_shares`, no upload after it,
+   no `revoked` field anywhere, the switch off, `S.lastShare` null. (Before this
+   step, while sharing is on: one upload per toggle, and "Update the copy now"
+   still sends.)
 4. **The owner's own account.** With `my_orchestrator` returning `null`,
    flipping the switch must write **nothing** and say so.
 5. **Recipient side.** With a row in `shareRows`, a "Shared with me" tab
@@ -213,7 +215,7 @@ shareRows = [{user_id:"u-rel", shared_email:"relative@example.com", label:"Relat
       fasting:"fasting",specimen:"",note:"",manualStatus:null,origin:""}],
     actions:[],meds:[],allergies:[],conditions:[],shots:[],visits:[]},
   updated_at:new Date().toISOString()}];
-render();
+tab="shared"; render();   // the merge button only exists on the "Shared with me" tab
 document.querySelector('[data-shmerge]').click();
 ```
 
@@ -270,8 +272,9 @@ different. Run the control every time.
 ## Traps
 
 - Re-pasting a block never throws (every block declares with `var`), but it runs
-  its actions again: a second invariants paste adds a second observation and a
-  second push. To retry a step, start again from **Clean state**.
+  its actions again and resets what it declares: a second invariants paste adds a
+  second observation and push, and re-pasting the one-POST block after "Update
+  the copy now" resets its baseline. To retry a step, start again from **Clean state**.
 - Stub `fetch` **before** `AUTH`, or the queued sync gets a 401 and clears it.
 - Stub `window.confirm`; switching off asks for confirmation.
 - `_orch` caches the recipient for the session — reset it between cases.
