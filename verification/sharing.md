@@ -84,7 +84,7 @@ _orch = undefined; S.shareOn = false; shareRows = [];
 tab="settings"; setPage="share"; render();
 document.getElementById('shareName').value = "Ty";
 document.getElementById('shareSw').click();
-// wait ~500ms, then:
+// wait ~3s (past the 2.5s background sync, so it can't land in step 4), then:
 const push = sent.find(s=>s.url.includes('passbook_shares') && s.method==='POST');
 const doc = push && push.body[0].doc;
 JSON.stringify({
@@ -105,7 +105,7 @@ account that does the inviting. Re-stub so the RPC says so, reset the cached
 answer, and flip the switch:
 
 ```js
-const sent4 = [];
+var sent4 = [];   // var, not const: pasting this block again must not throw
 window.fetch = async (url, opts) => {
   sent4.push({url:String(url).replace(/^https?:\/\/[^/]+/,''), method:(opts&&opts.method)||'GET'});
   if(String(url).includes('rpc/my_orchestrator')) return new Response('null',{status:200});
@@ -154,7 +154,14 @@ why it survived. It makes one now:
 sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length  // expect 1
 ```
 Press "Update the copy now" and it must still send — an explicit request earns
-a round trip; a background one with nothing new to say does not.
+a round trip; a background one with nothing new to say does not:
+
+```js
+const before = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;
+document.getElementById('shareNow').click();
+// wait ~1s, then:
+sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - before  // expect 1
+```
 
 Recipient-side merge assertions:
 
@@ -212,7 +219,7 @@ different. Run the control every time.
 
 ## Evidence
 
-- both invariant JSON blocks
+- every JSON result: the step 1–2 invariants, the one-POST count, the explicit-update count, step 4, and the recipient merge
 - a screenshot of the Share my book panel, and of the Shared with me tab
 - console clean of `TypeError|ReferenceError|Uncaught`
 
