@@ -121,10 +121,11 @@ Then press "Update the copy now", which must still send:
 shareMsg = null; document.getElementById('shareNow').click();
 ```
 
-Wait until the panel says "Copy updated" (`shareMsg && shareMsg.k === "Copy updated"`), then:
+Wait until the panel says "Copy updated" (`shareMsg && shareMsg.k === "Copy updated"`),
+then ~4s more, so any sync the update queued has fired too, then:
 
 ```js
-sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle   // expect 1
+sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle   // expect 1: the update, and no background repeat
 ```
 
 **Step 3, turn it off.** (`window.confirm` is stubbed, so the button's
@@ -135,19 +136,18 @@ var sentBeforeStop = sent.length;
 shareMsg = null; document.getElementById('shareStop').click();
 ```
 
-Wait until the panel says "Sharing stopped", then:
+Wait until the panel says "Sharing stopped", then ~4s more (the stop's own
+queued sync, 2.5s as above, must have fired), then:
 
 ```js
 JSON.stringify({
   deleteIssued: sent.slice(sentBeforeStop).some(s=>s.url.includes('passbook_shares') && s.method==='DELETE'),   // expect true
+  noUploadAfterStop: sent.slice(sentBeforeStop).filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length === 0,   // expect true
   noRevokedField: sent.every(s=>!JSON.stringify(s.body||'').includes('revoked')),          // expect true
   shareOn: S.shareOn,                                                                       // expect false
   lastShare: S.lastShare                                                                    // expect null
 }, null, 1)
 ```
-
-Before step 4, wait ~4s after "Sharing stopped", so the stop's own queued sync
-(2.5s, as above) has fired before step 4's stub goes in.
 
 **Step 4, the owner's own account.** The database answers `null` for the
 account that does the inviting. Re-stub so the RPC says so, reset the cached
@@ -215,7 +215,11 @@ shareRows = [{user_id:"u-rel", shared_email:"relative@example.com", label:"Relat
   updated_at:new Date().toISOString()}];
 render();
 document.querySelector('[data-shmerge]').click();
-// then:
+```
+
+Then, in a separate paste:
+
+```js
 var imported = S.observations.filter(o=>o.memberId==='relb-1');
 JSON.stringify({
   tabAppeared: [...document.querySelectorAll('#tabs .tab')].some(b=>/Shared/.test(b.textContent)),
@@ -268,7 +272,6 @@ different. Run the control every time.
 - Re-pasting a block never throws (every block declares with `var`), but it runs
   its actions again: a second invariants paste adds a second observation and a
   second push. To retry a step, start again from **Clean state**.
-
 - Stub `fetch` **before** `AUTH`, or the queued sync gets a 401 and clears it.
 - Stub `window.confirm`; switching off asks for confirmation.
 - `_orch` caches the recipient for the session — reset it between cases.
