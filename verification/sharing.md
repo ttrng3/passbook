@@ -111,15 +111,39 @@ JSON.stringify({
 
 ```js
 // one toggle, one upload: the background sync must not re-send an unchanged book
-var postsAfterToggle = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;  // expect 1
-// an explicit "Update the copy now" must still send
-document.getElementById('shareNow').click();
+var postsAfterToggle = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;
+postsAfterToggle   // expect 1
 ```
 
-Wait ~1s (the push is async), then, as a separate paste:
+Then press "Update the copy now", which must still send:
 
 ```js
-sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle        // expect 1
+shareMsg = null; document.getElementById('shareNow').click();
+```
+
+Wait until the panel says "Copy updated" (`shareMsg && shareMsg.k === "Copy updated"`,
+normally under a second), then:
+
+```js
+sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle   // expect 1
+```
+
+**Step 3, turn it off.** (`window.confirm` is stubbed, so the button's
+confirmation passes.)
+
+```js
+shareMsg = null; document.getElementById('shareStop').click();
+```
+
+Wait until the panel says "Sharing stopped", then:
+
+```js
+JSON.stringify({
+  deleteIssued: sent.some(s=>s.url.includes('passbook_shares') && s.method==='DELETE'),   // expect true
+  noRevokedField: sent.every(s=>!JSON.stringify(s.body||'').includes('revoked')),          // expect true
+  shareOn: S.shareOn,                                                                       // expect false
+  lastShare: S.lastShare                                                                    // expect null
+}, null, 1)
 ```
 
 **Step 4, the owner's own account.** The database answers `null` for the
@@ -228,7 +252,7 @@ different. Run the control every time.
 
 ## Evidence
 
-- every result, six in all: the step 1–2 invariants JSON, the one-POST count, the explicit-update count, the step 4 JSON, the recipient-merge JSON, and the server-side curl output with its control
+- every result, seven in all: the step 1–2 invariants JSON, the one-POST count, the explicit-update count, the step 3 JSON, the step 4 JSON, the recipient-merge JSON, and the server-side curl output with its control
 - a screenshot of the Share my book panel, and of the Shared with me tab
 - console clean of `TypeError|ReferenceError|Uncaught`
 
