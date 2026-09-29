@@ -84,7 +84,8 @@ _orch = undefined; S.shareOn = false; shareRows = [];
 tab="settings"; setPage="share"; render();
 document.getElementById('shareName').value = "Ty";
 document.getElementById('shareSw').click();
-// wait ~3s (past the 2.5s background sync, so it can't land in step 4), then:
+// wait ~4s: save() queues a sync 2.5s after a change (frag.html, the comment above
+// the share push), so step 1's sync has fired before anything later reads traffic; then:
 const push = sent.find(s=>s.url.includes('passbook_shares') && s.method==='POST');
 const doc = push && push.body[0].doc;
 JSON.stringify({
@@ -99,6 +100,18 @@ JSON.stringify({
 ```
 
 `RELATIVE_LEAKED` is the assertion this whole protocol exists for.
+
+**Before step 3, while sharing is still on** (still on the step 1 stub and its
+`sent` log, and after the ~4s wait above), two counts:
+
+```js
+// one toggle, one upload: the background sync must not re-send an unchanged book
+var postsAfterToggle = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;  // expect 1
+// an explicit "Update the copy now" must still send
+document.getElementById('shareNow').click();
+// wait ~1s, then:
+sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle        // expect 1
+```
 
 **Step 4, the owner's own account.** The database answers `null` for the
 account that does the inviting. Re-stub so the RPC says so, reset the cached
@@ -148,21 +161,7 @@ sync `save()` queued pushed the identical document again 2.5s later; every
 later background sync re-uploaded it unchanged. Nothing leaked, but a medical
 document was being sent repeatedly for no reason. A cold run reported the
 duplicate as an observation; the protocol had made no claim about it, which is
-why it survived. It makes one now:
-
-```js
-sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length  // expect 1
-```
-Press "Update the copy now" and it must still send — an explicit request earns
-a round trip; a background one with nothing new to say does not. Run this while
-sharing is still on (after steps 1–2, before step 3):
-
-```js
-const before = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;
-document.getElementById('shareNow').click();
-// wait ~1s, then:
-sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - before  // expect 1
-```
+why it survived. It makes one now: the two counts in "Before step 3" above.
 
 Recipient-side merge assertions:
 
@@ -220,7 +219,7 @@ different. Run the control every time.
 
 ## Evidence
 
-- every JSON result: the step 1–2 invariants, the one-POST count, the explicit-update count, step 4, and the recipient merge
+- every result, five in all: the step 1–2 invariants JSON, the one-POST count, the explicit-update count, the step 4 JSON, and the recipient-merge JSON
 - a screenshot of the Share my book panel, and of the Shared with me tab
 - console clean of `TypeError|ReferenceError|Uncaught`
 
