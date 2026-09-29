@@ -26,7 +26,7 @@ asserted — that is the point of this protocol, not the round trip:
 
 ```js
 window.confirm = () => true;
-const sent = [];
+var sent = [];
 window.fetch = async (url, opts) => {
   sent.push({url:String(url).replace(/^https?:\/\/[^/]+/,''), method:(opts&&opts.method)||'GET',
              body: opts && opts.body ? JSON.parse(opts.body) : null});
@@ -86,8 +86,8 @@ document.getElementById('shareName').value = "Ty";
 document.getElementById('shareSw').click();
 // wait ~4s: save() queues a sync 2.5s after a change (frag.html, the comment above
 // the share push), so step 1's sync has fired before anything later reads traffic; then:
-const push = sent.find(s=>s.url.includes('passbook_shares') && s.method==='POST');
-const doc = push && push.body[0].doc;
+var push = sent.find(s=>s.url.includes('passbook_shares') && s.method==='POST');
+var doc = push && push.body[0].doc;
 JSON.stringify({
   askedTheDatabaseWhoTheRecipientIs: sent.some(s=>s.url.includes('rpc/my_orchestrator')),
   recipient: push && push.body[0].shared_with,        // "u-ty-uuid", from the DB
@@ -109,7 +109,11 @@ JSON.stringify({
 var postsAfterToggle = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;  // expect 1
 // an explicit "Update the copy now" must still send
 document.getElementById('shareNow').click();
-// wait ~1s, then:
+```
+
+Wait ~1s (the push is async), then, as a separate paste:
+
+```js
 sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length - postsAfterToggle        // expect 1
 ```
 
@@ -176,7 +180,7 @@ shareRows = [{user_id:"u-rel", shared_email:"relative@example.com", label:"Relat
 render();
 document.querySelector('[data-shmerge]').click();
 // then:
-const imported = S.observations.filter(o=>o.memberId==='relb-1');
+var imported = S.observations.filter(o=>o.memberId==='relb-1');
 JSON.stringify({
   tabAppeared: [...document.querySelectorAll('#tabs .tab')].some(b=>/Shared/.test(b.textContent)),
   importedCount: imported.length,
@@ -219,7 +223,7 @@ different. Run the control every time.
 
 ## Evidence
 
-- every result, five in all: the step 1–2 invariants JSON, the one-POST count, the explicit-update count, the step 4 JSON, and the recipient-merge JSON
+- every result, six in all: the step 1–2 invariants JSON, the one-POST count, the explicit-update count, the step 4 JSON, the recipient-merge JSON, and the server-side curl output with its control
 - a screenshot of the Share my book panel, and of the Shared with me tab
 - console clean of `TypeError|ReferenceError|Uncaught`
 
