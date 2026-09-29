@@ -154,7 +154,8 @@ why it survived. It makes one now:
 sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length  // expect 1
 ```
 Press "Update the copy now" and it must still send — an explicit request earns
-a round trip; a background one with nothing new to say does not:
+a round trip; a background one with nothing new to say does not. Run this while
+sharing is still on (after steps 1–2, before step 3):
 
 ```js
 const before = sent.filter(s=>s.url.includes('passbook_shares') && s.method==='POST').length;
