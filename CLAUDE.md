@@ -25,7 +25,7 @@ A personal and family medical record book kept in the browser, entity **personal
 ## Known mistakes
 - In this project revoking from `PUBLIC` is not revoking from `anon`: new functions are granted to `anon` by name. Name `anon` in every revoke (`supabase/0024_my_orchestrator_refuses_anon.sql`, 2026-09-26).
 - A `200 null` is not a lock: an inert function and a locked one return the same body. Assert the error code, and make a control call to something that does not exist (verify skill, 2026-09-26).
-- When an observable and a privilege check disagree, read the privilege itself. A "plan cache" was diagnosed twice before one ACL query showed the real grant (2026-09-26).
+- When an observable and a privilege check disagree, read the privilege itself. A "plan cache" was misdiagnosed before one ACL query showed the real grant (2026-09-26).
 - A convenience escape on the front door let whoever held an unlocked phone past it. Ask who is actually standing at the door, not who typed the address (README, 2026-09-25).
 - The example book was the default, so an invited relative's first view was a stranger's named medical record. Examples are asked for, never arrive on their own (`frag.html` above `emptyBook()`, 2026-09-25).
 - "Erase this device" once erased nothing: an undeclared name inside a `try/catch` threw and was swallowed. `wipeLocal()` walks every key a book can live under (`frag.html` above `wipeLocal()`, 2026-09-25).
